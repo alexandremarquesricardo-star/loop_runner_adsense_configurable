@@ -1,6 +1,17 @@
-# Loop Runner — Fancy Buttons Build (playloop.run)
-- Embedded AdSense pub: ca-pub-3857946786580406
-- Top slot: 7067398117; Modal slot: 7067398117 (can change later)
-- Adds gradient, sheen, ripple + sparkles to Play/Daily buttons.
+# Loop Runner Prototype
 
-Deploy on GitHub Pages with CNAME `playloop.run`. `ads.txt` included.
+This package contains the **Loop Runner: Dash & Chain** prototype with a lightweight local leaderboard.
+
+## Files
+- `index.html` → the full game (open in browser)
+- `favicon.ico` → simple placeholder icon
+- `README.md` → this file
+
+## How to run
+1. Unzip the package.
+2. Open `index.html` in a modern web browser (Chrome, Firefox, Edge, Safari).
+3. Play using mouse/touch to dash. Use **Space** to restart, **P** to pause.
+
+Scores are saved locally in your browser (via localStorage).
+
+Enjoy!

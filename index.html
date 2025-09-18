@@ -8,34 +8,25 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico">
 
-  <!-- Consent Mode v2 (default denied) — must be before any Google tags -->
+  <!-- Consent Mode v2 (default denied) -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
     gtag('consent','default',{ 
-      'ad_storage':'denied',
-      'ad_user_data':'denied',
-      'ad_personalization':'denied',
-      'analytics_storage':'denied'
+      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
     });
   </script>
 
-  <!-- Google AdSense (async) -->
+  <!-- AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
 
-  <!-- Google Funding Choices (CMP) -->
+  <!-- Funding Choices (CMP) -->
   <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
   <script>
     (function signalGooglefcPresent() {
       if (!window.frames['googlefcPresent']) {
-        if (document.body) {
-          const f = document.createElement('iframe');
-          f.style = 'width:0;height:0;border:0;display:none';
-          f.name = 'googlefcPresent';
-          document.body.appendChild(f);
-        } else {
-          setTimeout(signalGooglefcPresent, 0);
-        }
+        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+        document.body ? add() : setTimeout(signalGooglefcPresent,0);
       }
     })();
   </script>
@@ -44,7 +35,7 @@
     html, body { height:100%; margin:0; background:#0b0f14; color:#e6edf3; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
     canvas { display:block; width:100vw; height:100vh; image-rendering: crisp-edges; }
     #ui { position: fixed; inset: 0; pointer-events: none; }
-    .hud { position:absolute; top:12px; left:12px; display:flex; gap:12px; align-items:center; }
+    .hud { position:absolute; left:12px; top: calc(var(--adH, 72px) + 12px); display:flex; gap:12px; align-items:center; }
     .pill { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; }
     .center { position:absolute; left:50%; top:50%; transform: translate(-50%, -50%); text-align:center; }
     .hint { opacity:.8; font-size:14px; margin-top:8px; }
@@ -75,25 +66,13 @@
       box-shadow:0 6px 18px rgba(255,122,182,.35), inset 0 1px 0 rgba(255,255,255,.25);
       border-color:rgba(255,210,119,.25);
     }
-
-    .cta::before{
-      content:""; position:absolute; inset:-30% -10% auto -30%; height:200%; width:140%;
+    .cta::before{ content:""; position:absolute; inset:-30% -10% auto -30%; height:200%; width:140%;
       background:linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.35) 20%,rgba(255,255,255,0) 40%);
-      transform:translateX(-120%) rotate(-20deg); transition:transform .35s ease; pointer-events:none;
-    }
+      transform:translateX(-120%) rotate(-20deg); transition:transform .35s ease; pointer-events:none; }
     .cta:hover::before{ transform:translateX(40%) rotate(-20deg); }
-
-    .cta .ripple{
-      position:absolute; border-radius:999px; transform:translate(-50%,-50%);
-      background:rgba(255,255,255,.45); mix-blend-mode:soft-light; pointer-events:none;
-      animation:ripple .6s ease-out forwards;
-    }
+    .cta .ripple{ position:absolute; border-radius:999px; transform:translate(-50%,-50%); background:rgba(255,255,255,.45); mix-blend-mode:soft-light; pointer-events:none; animation:ripple .6s ease-out forwards; }
     @keyframes ripple{ from{width:0;height:0;opacity:.55} to{width:520px;height:520px;opacity:0} }
-
-    .cta .spark{
-      position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; filter:blur(.2px);
-      animation:pop .6s ease-out forwards;
-    }
+    .cta .spark{ position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; filter:blur(.2px); animation:pop .6s ease-out forwards; }
     @keyframes pop{ 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0} }
 
     /* Ads */
@@ -110,7 +89,6 @@
   </style>
 </head>
 <body>
-  <!-- Top Ad (Responsive) -->
   <div id="ad-top-wrapper">
     <ins id="ad-top-unit" class="adsbygoogle"
          style="display:block; text-align:center;"
@@ -137,27 +115,20 @@
       <h1>Loop Runner</h1>
       <p>Dash through enemies. Click/tap to dash toward the pointer.<br/>Chain kills to build combo. Don’t touch enemies while not dashing.</p>
       <div class="row" style="margin:8px 0;">
-        <button id="start" class="cta cta--primary" aria-label="Play">
-          <span class="cta__icon" aria-hidden="true">▶</span> Play
-        </button>
-        <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run">
-          <span class="cta__icon" aria-hidden="true">☀</span> Daily Run
-        </button>
+        <button id="start" class="cta cta--primary" aria-label="Play"><span class="cta__icon" aria-hidden="true">▶</span> Play</button>
+        <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span class="cta__icon" aria-hidden="true">☀</span> Daily Run</button>
       </div>
       <div class="hint">Controls: Click/Tap to dash • Space to restart • P to pause</div>
       <div style="margin-top:10px; opacity:.85; font-size:13px;">Name: <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" /></div>
     </div>
   </div>
 
-  <!-- Leaderboard modal -->
   <div id="lbModal" class="modal">
     <div class="sheet">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>Leaderboard</h2>
         <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
       </div>
-
-      <!-- In-modal Ad (Responsive) — load only when shown -->
       <div style="margin: 8px 0;">
         <ins id="ad-modal-unit" class="adsbygoogle"
             style="display:block; text-align:center;"
@@ -166,7 +137,6 @@
             data-ad-format="auto"
             data-full-width-responsive="true"></ins>
       </div>
-
       <div class="row" style="margin:8px 0 12px 0; align-items:center;">
         <select id="lbMode" style="pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none;">
           <option value="normal">Normal</option>
@@ -174,10 +144,7 @@
         </select>
         <div id="lbInfo" style="opacity:.8; font-size:13px;"></div>
       </div>
-      <table id="lbTable">
-        <thead><tr><th style="width:56px;">#</th><th>Name</th><th>Score</th><th style="text-align:right;">When</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <table id="lbTable"><thead><tr><th style="width:56px;">#</th><th>Name</th><th>Score</th><th style="text-align:right;">When</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 
@@ -205,7 +172,7 @@
     }
   });
 
-  // Keep game content from sitting under the ad — auto spacer
+  // Auto spacer for ad height
   const spacer = document.getElementById('ad-spacer');
   if('ResizeObserver' in window){
     new ResizeObserver(()=>{
@@ -215,68 +182,67 @@
     }).observe(document.getElementById('ad-top-wrapper'));
   }
 
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const dist=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by);
+  // localStorage-safe helpers
+  function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
+  function setLS(k, v){ try{ localStorage.setItem(k, v); }catch{} }
+
+  const state={ running:false, paused:false, score:0, combo:0, time:0,
+    best:Number(getLS('lr_best', 0)), dailyBest:Number(getLS('lr_daily', 0)),
+    spawnTimer:0, spawnInterval:1.1, dailyMode:false };
+
+  const ui={ 
+    score:document.getElementById('score'), combo:document.getElementById('combo'),
+    best:document.getElementById('best'), daily:document.getElementById('daily'),
+    overlay:document.getElementById('overlay'),
+    start:document.getElementById('start'), dailyBtn:document.getElementById('dailyBtn'),
+    lbBtn:document.getElementById('lbBtn'), nameInput:document.getElementById('nameInput'),
+  };
+  function hydrateHUD(){ ui.score.textContent='Score: 0'; ui.combo.textContent='Combo: 0'; ui.best.textContent='Best: '+state.best; ui.daily.textContent='Daily: '+state.dailyBest; }
+  hydrateHUD();
+
+  // Seeded RNG for daily
   const todayKey=()=>new Date().toISOString().slice(0,10);
-  function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+  function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
   let seededRand=Math.random; let usingSeed=false;
   function setDailySeed(){ usingSeed=true; seededRand=mulberry32(hashToInt('looprunner:'+todayKey())); }
   function rnd(a=0,b=1){ return (usingSeed?seededRand():Math.random())*(b-a)+a; }
   function rndi(a,b){ return Math.floor(rnd(a,b+1)); }
   function hashToInt(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
+  // Audio
   let audio, master;
   function initAudio(){ if(!audio){ audio=new (window.AudioContext||window.webkitAudioContext)(); master=audio.createGain(); master.gain.value=0.08; master.connect(audio.destination); } }
-  function beep({freq=440,dur=0.08,type='sine',vol=1}){ if(!audio) return; const o=audio.createOscillator(); const g=audio.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=0; g.gain.linearRampToValueAtTime(vol, audio.currentTime+0.005); g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime+dur); o.connect(g); g.connect(master); o.start(); o.stop(audio.currentTime+dur+0.02); }
 
-  const state={ running:false, paused:false, score:0, combo:0, time:0,
-    best:Number(localStorage.getItem('lr_best')||0),
-    dailyBest:Number(localStorage.getItem('lr_daily')||0),
-    spawnTimer:0, spawnInterval:1.1, dailyMode:false };
-
-  const ui={ 
-    score:document.getElementById('score'),
-    combo:document.getElementById('combo'),
-    best:document.getElementById('best'),
-    daily:document.getElementById('daily'),
-    overlay:document.getElementById('overlay'),
-    start:document.getElementById('start'),
-    dailyBtn:document.getElementById('dailyBtn'),
-    lbBtn:document.getElementById('lbBtn'),
-    nameInput:document.getElementById('nameInput'),
-  };
-  ui.best.textContent=`Best: ${state.best}`;
-  ui.daily.textContent=`Daily: ${state.dailyBest}`;
-
-  const player={ x:W/2, y:H/2, r:10, vx:0, vy:0, maxSpeed:900, friction:9, dashing:false, dashCooldown:0, dashWindup:0 };
+  const player={ x:W/2, y:H/2, r:12, vx:0, vy:0, maxSpeed:900, friction:9, dashing:false, dashCooldown:0, dashWindup:0 };
   const enemies=[]; const particles=[];
 
   function addParticle(x,y,size=2,life=0.4){ const a=rnd(0,Math.PI*2); const sp=rnd(40,240); particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life, maxLife:life, size}); }
   function spawnEnemy(){ const m=24; const side=rndi(0,3); let x,y; if(side===0){x=rnd(-m,W+m); y=-m;} else if(side===1){x=W+m; y=rnd(-m,H+m);} else if(side===2){x=rnd(-m,W+m); y=H+m;} else {x=-m; y=rnd(-m,H+m);}
-    const r=rnd(12,18); const speed=rnd(40,90)+Math.min(state.time*4,220); const ang=Math.atan2(player.y-y, player.x-x)+rnd(-0.5,0.5); const vx=Math.cos(ang)*speed, vy=Math.sin(ang)*speed; enemies.push({x,y,r,vx,vy,speed,ang}); }
+    const r=rnd(14,22); const speed=rnd(40,90)+Math.min(state.time*4,220); const ang=Math.atan2(player.y-y, player.x-x)+rnd(-0.5,0.5); const vx=Math.cos(ang)*speed, vy=Math.sin(ang)*speed; enemies.push({x,y,r,vx,vy,speed,ang}); }
 
+  // Input
   let pointer={ x:W/2, y:H/2, down:false };
   function screenToWorld(e){ const rect=canvas.getBoundingClientRect(); return { x:(e.clientX-rect.left), y:(e.clientY-rect.top) }; }
   function startDashTowards(px,py){ if(player.dashCooldown>0) return; const dx=px-player.x, dy=py-player.y; const len=Math.hypot(dx,dy)||1; const ux=dx/len, uy=dy/len; player.vx=ux*player.maxSpeed; player.vy=uy*player.maxSpeed; player.dashing=true; player.dashCooldown=0.35; player.dashWindup=0.12; for(let i=0;i<10;i++) addParticle(player.x,player.y,3,0.25); }
   canvas.addEventListener('pointerdown',(e)=>{ initAudio(); const p=screenToWorld(e); pointer.down=true; pointer.x=p.x; pointer.y=p.y; startDashTowards(pointer.x,pointer.y); });
   canvas.addEventListener('pointermove',(e)=>{ const p=screenToWorld(e); pointer.x=p.x; pointer.y=p.y; });
   canvas.addEventListener('pointerup',()=>{ pointer.down=false; });
-
   addEventListener('keydown',(e)=>{ if(e.code==='Space'){ if(!state.running) startGame(); } const amt=80; if(e.key.startsWith('Arrow')){ let dx=0,dy=0; if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt; startDashTowards(player.x+dx, player.y+dy); } });
 
+  // Leaderboard (local)
   const lb={ modal:document.getElementById('lbModal'), close:document.getElementById('lbClose'), modeSel:document.getElementById('lbMode'), info:document.getElementById('lbInfo'), table:document.getElementById('lbTable').querySelector('tbody') };
-  function loadLB(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch{ return []; } }
-  function saveLB(key,arr){ localStorage.setItem(key, JSON.stringify(arr)); }
-  function submitScore(){ const name=(ui.nameInput.value||localStorage.getItem('lr_name')||'Player').slice(0,20).trim()||'Player'; localStorage.setItem('lr_name',name); const entry={ name, score: state.score|0, when: Date.now(), mode: state.dailyMode?'daily':'normal', day: todayKey() }; const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); arr.push(entry); arr.sort((a,b)=>b.score-a.score); saveLB(key, arr.slice(0,20)); }
+  function loadLB(key){ try{ return JSON.parse(getLS(key,'[]')); }catch{ return []; } }
+  function saveLB(key,arr){ setLS(key, JSON.stringify(arr)); }
+  function submitScore(){ const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player'; setLS('lr_name',name); const entry={ name, score: state.score|0, when: Date.now(), mode: state.dailyMode?'daily':'normal', day: todayKey() }; const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); arr.push(entry); arr.sort((a,b)=>b.score-a.score); saveLB(key, arr.slice(0,20)); }
   function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
   function hideLeaderboard(){ lb.modal.classList.remove('show'); }
   function renderLeaderboard(){ const mode=lb.modeSel.value; const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); lb.table.innerHTML=''; lb.info.textContent = mode==='daily' ? `Date: ${todayKey()} (today)` : 'All-time local (this device)'; arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); }); if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); }}
-  function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+  function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\\":"&quot;"}[c])); }
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
   document.getElementById('lbBtn').addEventListener('click', ()=> showLeaderboard());
 
-  // Fill modal ad only when visible (fixes availableWidth=0 on hidden)
+  // Fill modal ad only when visible
   let modalAdFilled = false;
   function maybeFillModalAd(){
     if(modalAdFilled) return;
@@ -287,8 +253,8 @@
     else { setTimeout(maybeFillModalAd, 200); }
   }
 
-  function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; ui.score.textContent='Score: 0'; ui.combo.textContent='Combo: 0'; state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
-  function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); localStorage.setItem('lr_daily', state.dailyBest); ui.daily.textContent = `Daily: ${state.dailyBest}`; } else { state.best=Math.max(state.best, state.score|0); localStorage.setItem('lr_best', state.best); ui.best.textContent = `Best: ${state.best}`; } submitScore(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; showLeaderboard(state.dailyMode?'daily':'normal'); }
+  function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
+  function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); setLS('lr_daily', state.dailyBest); } else { state.best=Math.max(state.best, state.score|0); setLS('lr_best', state.best); } hydrateHUD(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; showLeaderboard(state.dailyMode?'daily':'normal'); }
 
   ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
   ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
@@ -299,7 +265,7 @@
     state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`; update(dt); render(); }
   function update(dt){ state.spawnTimer-=dt; if(state.spawnTimer<=0){ spawnEnemy(); state.spawnTimer=state.spawnInterval; }
     if(player.dashWindup>0){ player.dashWindup-=dt; if(player.dashWindup<=0) player.dashing=false; }
-    const f=Math.exp(-player.friction*dt); player.vx*=f; player.vy*=f; player.x+=player.vx*dt; player.y+=player.vy*dt; player.x=clamp(player.x,8,W-8); player.y=clamp(player.y,8,H-8); if(player.dashCooldown>0) player.dashCooldown-=dt;
+    const f=Math.exp(-player.friction*dt); player.vx*=f; player.vy*=f; player.x+=player.vx*dt; player.y+=player.vy*dt; player.x=Math.max(8,Math.min(W-8,player.x)); player.y=Math.max(8,Math.min(H-8,player.y)); if(player.dashCooldown>0) player.dashCooldown-=dt;
     for(let i=0;i<enemies.length;i++){ const e=enemies[i]; const ang=Math.atan2(player.y-e.y, player.x-e.x); e.vx=Math.cos(ang)*e.speed; e.vy=Math.sin(ang)*e.speed; e.ang = Math.atan2(e.vy, e.vx); e.x+=e.vx*dt; e.y+=e.vy*dt;
       const d=Math.hypot(e.x-player.x, e.y-player.y);
       if(d<e.r+player.r){ if(player.dashing){ enemies.splice(i,1); i--; state.combo+=1; const add = Math.floor(10*Math.pow(1.4, state.combo-1)); state.score += add; ui.combo.textContent=`Combo: ${state.combo}`; ui.score.textContent=`Score: ${state.score|0}`; for(let k=0;k<24;k++) addParticle(e.x,e.y, Math.random()*2+2, Math.random()*0.4+0.2); } else { gameOver(); break; } }
@@ -312,39 +278,29 @@
     ctx.save();
     ctx.translate(e.x, e.y);
     ctx.rotate(e.ang||0);
+    ctx.lineJoin='round'; ctx.lineCap='round';
     // Body
     ctx.fillStyle = '#2bd4a5';
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); // thorax
-    ctx.ellipse(0, 0, e.r*0.9, e.r*0.65, 0, 0, Math.PI*2);
-    ctx.fill(); ctx.stroke();
-    ctx.beginPath(); // head
-    ctx.ellipse(e.r*0.9, 0, e.r*0.45, e.r*0.45, 0, 0, Math.PI*2);
-    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.ellipse(0, 0, e.r*0.9, e.r*0.65, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(e.r*0.9, 0, e.r*0.45, e.r*0.45, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
     // Stripe
-    ctx.beginPath();
-    ctx.moveTo(-e.r*0.6, -e.r*0.2);
-    ctx.lineTo(-e.r*0.6, e.r*0.2);
-    ctx.stroke();
-    // Legs
+    ctx.beginPath(); ctx.moveTo(-e.r*0.55, -e.r*0.18); ctx.lineTo(-e.r*0.55, e.r*0.18); ctx.stroke();
+    // Legs & antennae in LIGHT color
+    ctx.strokeStyle = '#d9fff2';
+    ctx.lineWidth = 2.5;
     for(let i=-1;i<=1;i++){ 
       const y = i*e.r*0.35;
       ctx.beginPath();
-      ctx.moveTo(-e.r*0.6, y);
-      ctx.lineTo(-e.r*1.1, y-3);
-      ctx.moveTo(-e.r*0.2, y);
-      ctx.lineTo(-e.r*0.7, y+4);
-      ctx.moveTo(e.r*0.2, y);
-      ctx.lineTo(e.r*0.7, y-4);
+      ctx.moveTo(-e.r*0.6, y);   ctx.lineTo(-e.r*1.2, y-3);
+      ctx.moveTo(-e.r*0.2, y);   ctx.lineTo(-e.r*0.9, y+4);
+      ctx.moveTo(e.r*0.2, y);    ctx.lineTo(e.r*0.9, y-4);
       ctx.stroke();
     }
-    // Antennae
     ctx.beginPath();
-    ctx.moveTo(e.r*1.3, -e.r*0.2);
-    ctx.quadraticCurveTo(e.r*1.6, -e.r*0.6, e.r*1.0, -e.r*0.8);
-    ctx.moveTo(e.r*1.3, e.r*0.2);
-    ctx.quadraticCurveTo(e.r*1.6, e.r*0.6, e.r*1.0, e.r*0.8);
+    ctx.moveTo(e.r*1.2, -e.r*0.2); ctx.quadraticCurveTo(e.r*1.6, -e.r*0.7, e.r*1.0, -e.r*0.9);
+    ctx.moveTo(e.r*1.2, e.r*0.2);  ctx.quadraticCurveTo(e.r*1.6,  e.r*0.7, e.r*1.0,  e.r*0.9);
     ctx.stroke();
     ctx.restore();
   }
@@ -354,11 +310,18 @@
     for(const e of enemies){ drawBug(e); }
     ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3'; ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000'; ctx.shadowBlur = player.dashing ? 12 : 0; ctx.fill(); ctx.restore(); }
 
-  ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
-  ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
-  ui.overlay.style.display='block';
+  // Modal close
+  document.getElementById('lbModal').addEventListener('click', (e)=>{ if(e.target.id==='lbModal') e.currentTarget.classList.remove('show'); });
 
-  lb.modal.addEventListener('click', (e)=>{ if(e.target===lb.modal) lb.modal.classList.remove('show'); });
+  // Fill ad in modal lazily
+  function maybeFillModalAd(){
+    const ins = document.getElementById('ad-modal-unit');
+    if(!ins) return;
+    const w = ins.clientWidth;
+    if(w && w>0) (window.adsbygoogle=window.adsbygoogle||[]).push({});
+    else setTimeout(maybeFillModalAd, 200);
+  }
+
   loop();
 })(); 
 </script>
