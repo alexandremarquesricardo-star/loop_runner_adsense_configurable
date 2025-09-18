@@ -12,9 +12,7 @@
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
-    gtag('consent','default',{ 
-      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
-    });
+    gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
   </script>
 
   <!-- AdSense -->
@@ -56,9 +54,12 @@
     .cta .spark{ position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; filter:blur(.2px); animation:pop .6s ease-out forwards; }
     @keyframes pop{ 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0} }
 
-    /* Ads */
-    #ad-top-wrapper { position: fixed; top:0; left:0; right:0; z-index:5; background:#0b0f14; padding:6px 8px 0; width:100%; }
+    /* Ads (responsive with caps, centered) */
+    #ad-top-wrapper { position: fixed; top:0; left:0; right:0; z-index:5; background:#0b0f14; padding:6px 8px 0; width:100%; display:flex; justify-content:center; }
     #ad-spacer { height: var(--adH, 72px); }
+    #ad-top-unit { width:100%; max-width:728px; margin:0 auto; }   /* desktop cap */
+    @media (max-width:1024px){ #ad-top-unit { max-width:468px; } } /* tablet cap  */
+    @media (max-width:480px) { #ad-top-unit { max-width:320px; } } /* phone cap   */
 
     /* Collapse ad UI if blocked */
     .ads-blocked #ad-top-wrapper { display:none; }
@@ -76,11 +77,11 @@
 <body>
   <div id="ad-top-wrapper">
     <ins id="ad-top-unit" class="adsbygoogle"
-         style="display:block; text-align:center;"
+         style="display:block"
          data-ad-client="ca-pub-3857946786580406"
          data-ad-slot="7067398117"
          data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
+         data-full-width-responsive="false"></ins>
   </div>
   <div id="ad-spacer"></div>
 
@@ -116,11 +117,11 @@
       </div>
       <div style="margin: 8px 0;">
         <ins id="ad-modal-unit" class="adsbygoogle"
-            style="display:block; text-align:center;"
-            data-ad-client="ca-pub-3857946786580406"
-            data-ad-slot="7067398117"
-            data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
+             style="display:block; width:100%; max-width:336px; margin:0 auto;"
+             data-ad-client="ca-pub-3857946786580406"
+             data-ad-slot="7067398117"
+             data-ad-format="auto"
+             data-full-width-responsive="false"></ins>
       </div>
       <div class="row" style="margin:8px 0 12px 0; align-items:center;">
         <select id="lbMode" style="pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none;">
@@ -164,7 +165,7 @@
 
   resize();
 
-  // ---------- Ad handling (blocker-safe) ----------
+  // ---------- Ad handling (blocker-safe + width-capped) ----------
   function markAdsBlocked(){ document.documentElement.classList.add('ads-blocked'); }
   window.addEventListener('load', () => {
     setTimeout(() => { if(!window.adsbygoogle || !window.adsbygoogle.loaded) markAdsBlocked(); }, 1200);
@@ -253,7 +254,7 @@
   function submitScore(){ const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player'; setLS('lr_name',name); const entry={ name, score: state.score|0, when: Date.now(), mode: state.dailyMode?'daily':'normal', day: todayKey() }; const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); arr.push(entry); arr.sort((a,b)=>b.score-a.score); saveLB(key, arr.slice(0,20)); }
   function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
   function hideLeaderboard(){ lb.modal.classList.remove('show'); }
-  function renderLeaderboard(){ const mode=lb.modeSel.value; const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); lb.table.innerHTML=''; lb.info.textContent = mode==='daily' ? `Date: ${todayKey()} (today)` : 'All-time local (this device)'; arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); }); if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); }}
+  function renderLeaderboard(){ const mode=lb.modeSel.value; const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); lb.table.innerHTML=''; lb.info.textContent = mode==='daily' ? `Date: ${todayKey()} (today)` : 'All-time local (this device)'; arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); }); if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); } }
   function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
