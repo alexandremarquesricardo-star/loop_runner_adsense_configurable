@@ -309,7 +309,6 @@
     for(const e of enemies){ ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fillStyle='#ff7a7a'; ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.stroke(); }
     ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3'; ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000'; ctx.shadowBlur = player.dashing ? 12 : 0; ctx.fill(); ctx.restore(); }
   ui.overlay.style.display = 'block';
-  const lb={{}}; // keep modal helpers above
   loop();
 })(); 
 </script>
