@@ -351,7 +351,8 @@
     const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player';
     setLS('lr_name',name);
     try {
-      const body = { name: name.slice(0,12), score: state.score|0 };
+      const body = { name: name.slice(0,12), score: state.score|0, mode: (state.dailyMode ? 'daily' : 'normal') };
+
       fetch(SB_URL, {
         method:'POST',
         headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
