@@ -8,62 +8,55 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico">
 
-  <!-- Lock viewport & responsive, reserved ad area -->
   <style>
-    :root {
-      --ad-w: 320px;
-      --ad-h: 50px;    /* mobile banner */
-    }
-
-    /* Tablet (468x60) */
-    @media (min-width: 600px) {
-      :root { --ad-w: 468px; --ad-h: 60px; }
-    }
-
-    /* Desktop (728x90) */
-    @media (min-width: 992px) {
-      :root { --ad-w: 728px; --ad-h: 90px; }
-    }
-
-    /* Large desktop (970x90) */
-    @media (min-width: 1200px) {
-      :root { --ad-w: 970px; --ad-h: 90px; }
-    }
+    :root { --ad-w: 320px; --ad-h: 50px; }
+    @media (min-width: 600px) { :root { --ad-w: 468px; --ad-h: 60px; } }
+    @media (min-width: 992px) { :root { --ad-w: 728px; --ad-h: 90px; } }
+    @media (min-width: 1200px){ :root { --ad-w: 970px; --ad-h: 90px; } }
 
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      overflow: hidden;          /* no vertical scroll */
+      overflow: hidden; /* no vertical scroll */
       background: #000;
     }
 
+    /* Make canvas truly full-screen and visible */
     #game {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       display: block;
-      width: 100vw;
-      height: 100vh;             /* fill screen behind the ad overlay */
-      touch-action: none;        /* optional: prevent touch scrolling on canvas */
+      touch-action: none;
     }
 
+    /* Ad overlay pinned at bottom, with fixed reserved size per breakpoint */
     .ad-container {
-      position: absolute;
+      position: fixed;
       left: 50%;
       bottom: env(safe-area-inset-bottom, 0);
       transform: translateX(-50%);
       width: var(--ad-w);
       height: var(--ad-h);
-      z-index: 10;
+      z-index: 20;
       display: grid;
       place-items: center;
-      background: #000;          /* avoids flicker */
+      background: #000;
       overflow: hidden;
+
+      /* Important: don’t block game input except on the ad itself */
+      pointer-events: none;
     }
 
-    /* Make the AdSense box exactly match the reserved space */
     .ad-container > .adsbygoogle {
       display: inline-block !important;
       width: var(--ad-w) !important;
       height: var(--ad-h) !important;
+
+      /* Re-enable clicks only on the ad frame */
+      pointer-events: auto;
     }
   </style>
 
@@ -83,7 +76,7 @@
 <body>
   <canvas id="game"></canvas>
 
-  <!-- Responsive, *fixed-size* reserved ad slot (prevents layout shift) -->
+  <!-- Responsive reserved ad slot (no layout shift) -->
   <div class="ad-container">
     <ins class="adsbygoogle"
          style="display:inline-block"
@@ -91,5 +84,40 @@
          data-ad-slot="1234567890"></ins>
     <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
   </div>
+
+  <!-- Minimal, safe canvas resize helper -->
+  <script>
+    (function () {
+      const canvas = document.getElementById('game');
+      if (!canvas) return;
+
+      function resizeCanvas() {
+        // Match canvas bitmap to CSS pixels * device pixel ratio for crisp rendering
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        const cssW = Math.floor(canvas.clientWidth);
+        const cssH = Math.floor(canvas.clientHeight);
+        const targetW = Math.max(1, Math.floor(cssW * dpr));
+        const targetH = Math.max(1, Math.floor(cssH * dpr));
+
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width = targetW;
+          canvas.height = targetH;
+          // If your engine listens for resize, also dispatch an event:
+          window.dispatchEvent(new Event('game:canvas-resized'));
+        }
+      }
+
+      // Resize now and on changes
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('orientationchange', resizeCanvas);
+
+      // Some engines initialize before fonts/viewport settle; ensure a late pass
+      window.addEventListener('load', () => setTimeout(resizeCanvas, 0));
+    })();
+  </script>
+
+  <!-- Your existing game scripts below this line -->
+  <!-- <script src="game.js"></script> -->
 </body>
 </html>
