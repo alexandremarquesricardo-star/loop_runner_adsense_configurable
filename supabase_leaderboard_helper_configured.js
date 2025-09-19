@@ -1,147 +1,66 @@
+// leaderboard-supabase.js — Global leaderboard via Supabase
+// Lightweight, browser-friendly module. Safe to ship with anon key (RLS required).
+// Usage:
+//   import { GlobalBoard } from './leaderboard-supabase.js';
+//   const LB = new GlobalBoard('playloop');
+//   await LB.submit(name, score);
+//   await LB.render(ctx, 10, 56);
 
-/**
- * Playloop / Loop Runner — Supabase Leaderboard Helper
- * Drop this <script> AFTER your game code and AFTER the Supabase client script.
- * Fill in SUPABASE_URL and SUPABASE_ANON_KEY below.
- */
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// 1) ---- REQUIRED: your Supabase credentials ----
-const SUPABASE_URL = "https://zpoerliqhcywaulbthyf.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpwb2VybGlxaGN5d2F1bGJ0aHlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDQxNjYsImV4cCI6MjA3Mzc4MDE2Nn0.7jjITj1H2AxWPnCeyzmMsNw3uAVACoYb_CV5rRoD65k";
+// You can set these at runtime via window.SUPABASE_URL / window.SUPABASE_ANON_KEY
+// They are also defaulted here for convenience, derived from your provided anon key
+// (project ref: zpoerliqhcywaulbthyf)
+const SUPABASE_URL  = window.SUPABASE_URL || 'https://zpoerliqhcywaulbthyf.supabase.co';
+const SUPABASE_ANON = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpwb2VybGlxaGN5d2F1bGJ0aHlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDQxNjYsImV4cCI6MjA3Mzc4MDE2Nn0.7jjITj1H2AxWPnCeyzmMsNw3uAVACoYb_CV5rRoD65k';
 
-// 2) ---- Init client (safe to do on the public web; anon key is designed for client use) ----
-let supabaseClient = null;
-try {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false },
-    global: { headers: { "x-client-info": "playloop-leaderboard/1.0" } }
-  });
-} catch (e) {
-  console.warn("[Playloop] Supabase init failed; falling back to local scores.", e);
-}
+const configured = SUPABASE_URL && SUPABASE_ANON;
+const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
-// 3) ---- Helpers ----
-const TABLE = "scores";                      // Supabase table name
-const TODAY = () => new Date().toISOString().slice(0,10); // YYYY-MM-DD
-
-const ui = {
-  nameInput: document.getElementById("nameInput"),
-  lbBtn: document.getElementById("lbBtn"),
-  lbModal: document.getElementById("lbModal"),
-  lbClose: document.getElementById("lbClose"),
-  lbMode: document.getElementById("lbMode"),
-  lbTable: document.getElementById("lbTable")?.querySelector("tbody"),
-  lbInfo: document.getElementById("lbInfo"),
-  best: document.getElementById("best"),
-  daily: document.getElementById("daily"),
-};
-
-// 4) ---- Local fallback storage (device-only) ----
-const LOCAL_KEY = "playloop_local_scores";
-function loadLocal() {
-  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); } catch { return []; }
-}
-function saveLocal(entry) {
-  const arr = loadLocal();
-  arr.push(entry);
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(arr));
-}
-
-// 5) ---- API: submit score ----
-async function submitScore(score, mode = "normal") {
-  const name = (ui.nameInput?.value || "").trim() || "Anonymous";
-  const entry = { name, score: Math.floor(score||0), mode, daystamp: TODAY(), created_at: new Date().toISOString() };
-
-  // Keep best/daily HUD updated optimistically
-  try {
-    const best = Math.max(Number(ui.best?.dataset.value||0), entry.score);
-    if (ui.best) { ui.best.dataset.value = String(best); ui.best.textContent = "Best: " + best; }
-    if (mode === "daily" && ui.daily) {
-      const dailyBest = Math.max(Number(ui.daily?.dataset.value||0), entry.score);
-      ui.daily.dataset.value = String(dailyBest);
-      ui.daily.textContent = "Daily: " + dailyBest;
-    }
-  } catch {}
-
-  if (!supabaseClient) { saveLocal(entry); return { ok:true, local:true }; }
-
-  const { data, error } = await supabaseClient.from(TABLE).insert(entry).select().single();
-  if (error) {
-    console.warn("[Playloop] Supabase insert failed, saving local:", error);
-    saveLocal(entry);
-    return { ok:false, error, local:true };
-  }
-  return { ok:true, data };
-}
-
-// 6) ---- API: fetch leaderboard ----
-async function fetchLeaderboard(mode = "normal", limit = 50) {
-  // Fallback: return local-only sorted view
-  if (!supabaseClient) {
-    const all = loadLocal().filter(e => e.mode === mode && (mode==="daily" ? e.daystamp === TODAY() : true));
-    return all.sort((a,b)=>b.score - a.score).slice(0, limit);
+export class GlobalBoard {
+  constructor(namespace='game'){
+    this.ns = namespace;
+    this.bestKey = `${namespace}:best`;
+    this.cache = { rows: [], at: 0 };
   }
 
-  let query = supabaseClient.from(TABLE)
-    .select("name,score,mode,daystamp,created_at")
-    .eq("mode", mode)
-    .order("score", { ascending: false })
-    .limit(limit);
+  best(){ return Number(localStorage.getItem(this.bestKey) || 0); }
+  _setBest(score){ const s = Math.floor(score)||0; if (s > this.best()) localStorage.setItem(this.bestKey, String(s)); }
 
-  if (mode === "daily") query = query.eq("daystamp", TODAY());
-
-  const { data, error } = await query;
-  if (error) {
-    console.warn("[Playloop] Supabase select failed; showing local scores.", error);
-    const all = loadLocal().filter(e => e.mode === mode && (mode==="daily" ? e.daystamp === TODAY() : true));
-    return all.sort((a,b)=>b.score - a.score).slice(0, limit);
+  async submit(name, score){
+    this._setBest(score);
+    if (!supabase) return;
+    const cleanName = String(name || 'anon').slice(0,12);
+    const cleanScore = Math.max(0, Math.floor(score) || 0);
+    try {
+      await supabase.from('scores').insert({ name: cleanName, score: cleanScore });
+      this.cache.at = 0; // bust cache
+    } catch (_) {}
   }
-  return data;
+
+  async top(limit=10){
+    if (Date.now() - this.cache.at < 5000 && this.cache.rows.length) return this.cache.rows;
+    if (!supabase) return [{ name: '(offline)', score: this.best(), ts: new Date().toISOString() }];
+    const { data, error } = await supabase
+      .from('scores')
+      .select('name, score, ts')
+      .order('score', { ascending: false })
+      .order('ts', { ascending: true })
+      .limit(limit);
+    if (!error && data){ this.cache = { rows: data, at: Date.now() }; return data; }
+    return [];
+  }
+
+  async render(ctx, x, y){
+    const rows = await this.top(10);
+    ctx.save();
+    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Top 10 (global)', x, y);
+    rows.forEach((r,i)=>{
+      const line = `${String(i+1).padStart(2,' ')}. ${(r.name||'anon').padEnd(12,' ')} — ${r.score}`;
+      ctx.fillText(line, x, y + 16 + i*14);
+    });
+    ctx.restore();
+  }
 }
-
-// 7) ---- UI wiring: Leaderboard modal ----
-function renderTable(rows) {
-  if (!ui.lbTable) return;
-  ui.lbTable.innerHTML = "";
-  rows.forEach((r, i) => {
-    const tr = document.createElement("tr");
-    const when = (r.created_at || new Date()).toString();
-    tr.innerHTML = `
-      <td>${i+1}</td>
-      <td>${(r.name||"Anonymous").replace(/[<>&]/g, "")}</td>
-      <td>${r.score}</td>
-      <td style="text-align:right; opacity:.8;">${new Date(when).toLocaleString()}</td>
-    `;
-    ui.lbTable.appendChild(tr);
-  });
-}
-
-async function refreshLeaderboard() {
-  const mode = ui.lbMode?.value || "normal";
-  ui.lbInfo && (ui.lbInfo.textContent = mode === "daily" ? `Showing today's (${TODAY()}) scores` : "Showing all-time scores");
-  const rows = await fetchLeaderboard(mode);
-  renderTable(rows);
-}
-
-ui.lbBtn?.addEventListener("click", () => {
-  ui.lbModal?.classList.add("show");
-  // Kick an ad refresh if AdSense is present in modal
-  try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
-  refreshLeaderboard();
-});
-
-ui.lbClose?.addEventListener("click", () => ui.lbModal?.classList.remove("show"));
-ui.lbMode?.addEventListener("change", refreshLeaderboard);
-
-// 8) ---- Export minimal surface for your game loop ----
-window.Playloop = window.Playloop || {};
-window.Playloop.submitScore = submitScore;
-window.Playloop.fetchLeaderboard = fetchLeaderboard;
-
-/**
- * In your game-over logic, call:
- *   const mode = isDaily ? "daily" : "normal";
- *   Playloop.submitScore(finalScore, mode);
- *
- * That's it.
- */
