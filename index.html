@@ -245,8 +245,12 @@
       showOverlay({ title:`Game Over — ${lastRunSeconds}s`, body:'Nice run! Tap/click “Play Again” or press <kbd>Space</kbd>.', mode:'gameover' });
     }
 
-    // Optional: start immediately (comment out if you have a menu)
-    quickRestart();
+    // Optional: auto-start only if your game core exposes restartGame/startGame
+if (window.restartGame || typeof window.startGame === 'function') {
+  quickRestart();
+} else {
+  console.info('[Loop Runner] Waiting for game core. Define window.restartGame(opts) or startGame(opts) before this script runs.');
+}
   </script>
 
   <script>
