@@ -118,49 +118,63 @@
     </div>
   </div>
   <script>
-  // === Start function resolver with always-available fallback ===
+  // === Start function resolver with always-available fallback (robust, no warnings) ===
   (function(){
     function createFallbackEngine(){
-      const canvas = document.getElementById('game');
-      const ctx = canvas.getContext('2d');
-      let raf = 0, running = false, paused = false, t0 = 0;
+      var canvas = document.getElementById('game');
+      var ctx = canvas.getContext('2d');
+      var raf = 0, running = false, paused = false, t0 = 0;
       function loop(now){
         if(!running){ return; }
         if(!paused){
-          const s = (now - t0) / 1000;
+          var s = (now - t0) / 1000;
           window.currentRunSeconds = s;
           // background
-          ctx.fillStyle = '#0f131b'; ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle = '#0f131b';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
           // player dot
-          const x = canvas.width/2 + Math.cos(s*1.3) * (120 + 30*Math.sin(s*.8));
-          const y = canvas.height/2 + Math.sin(s*1.1) * (60 + 20*Math.cos(s*.7));
-          ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2); ctx.fillStyle = '#66ccff'; ctx.fill();
+          var x = canvas.width/2 + Math.cos(s*1.3) * (120 + 30*Math.sin(s*0.8));
+          var y = canvas.height/2 + Math.sin(s*1.1) * (60 + 20*Math.cos(s*0.7));
+          ctx.beginPath();
+          ctx.arc(x,y,16,0,Math.PI*2);
+          ctx.fillStyle = '#66ccff';
+          ctx.fill();
         }
         raf = requestAnimationFrame(loop);
       }
       return {
-        start(){ cancelAnimationFrame(raf); running = true; paused = false; t0 = performance.now(); raf = requestAnimationFrame(loop); },
-        pause(){ paused = true; },
-        resume(){ paused = false; },
-        stop(){ running = false; cancelAnimationFrame(raf); }
+        start: function(){ cancelAnimationFrame(raf); running = true; paused = false; t0 = performance.now(); raf = requestAnimationFrame(loop); },
+        pause: function(){ paused = true; },
+        resume: function(){ paused = false; },
+        stop: function(){ running = false; cancelAnimationFrame(raf); }
       };
     }
 
-    let fallback = null;
+    var fallback = null;
     function getStartFn(){
-      if (window.restartGame) return window.restartGame;
-      if (typeof window.startGame === 'function') return window.startGame;
+      // Prefer real engine if available
+      if (window.restartGame) {
+        if (fallback) { try { fallback.stop(); } catch(e) {} fallback = null; }
+        return window.restartGame;
+      }
+      if (typeof window.startGame === 'function') {
+        if (fallback) { try { fallback.stop(); } catch(e) {} fallback = null; }
+        return window.startGame;
+      }
+      // Otherwise ensure fallback exists and return it
       if (!fallback) fallback = createFallbackEngine();
-      if (typeof window.pauseGame !== 'function') window.pauseGame = () => fallback?.pause();
-      if (typeof window.resumeGame !== 'function') window.resumeGame = () => fallback?.resume();
-      return () => fallback.start();
+      if (typeof window.pauseGame !== 'function') window.pauseGame = function(){ if (fallback) fallback.pause(); };
+      if (typeof window.resumeGame !== 'function') window.resumeGame = function(){ if (fallback) fallback.resume(); };
+      return function(){ fallback.start(); };
     }
     window.__getStartFn = getStartFn;
 
-    // Always auto-start the available engine (real one if present, fallback otherwise)
-    window.addEventListener('load', () => {
-      // quickRestart will use __getStartFn once it exists; if not, start directly.
-      const startDirect = () => { try { getStartFn()({ seed: Number(window.DAILY) || 0 }); } catch(_){} };
+    function startDirect(){
+      try { getStartFn()({ seed: Number(window.DAILY) || 0 }); } catch(e) {}
+    }
+
+    // Auto-start whatever is available on load
+    window.addEventListener('load', function(){
       if (typeof window.quickRestart === 'function') { window.quickRestart(); }
       else { startDirect(); }
     });
@@ -213,7 +227,13 @@
     function quickRestart(){
       var startFn = (typeof window.__getStartFn === 'function') ? window.__getStartFn() : (window.restartGame || window.startGame);
       if (typeof startFn === 'function') {
-        try { startFn({ seed:Number(DAILY) }); } catch(_) {}
+        try { startFn({ seed: Number(DAILY) }); } catch(e) {}
+        GAME_STATE = 'playing';
+        hideOverlay();
+        return true;
+      }
+      return false;
+    }); } catch(_) {}
         GAME_STATE='playing'; hideOverlay();
         return true;
       }
