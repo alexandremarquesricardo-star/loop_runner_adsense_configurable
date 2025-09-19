@@ -117,8 +117,27 @@
       <div id="dailyBanner"></div>
     </div>
   </div>
-
   <script>
+  // === Game core autodetect & autostart (non-intrusive) ===
+  (function(){
+    function coreReady(){ return !!(window.restartGame || typeof window.startGame === 'function'); }
+    function setUIEnabled(on){ var b=document.getElementById('restartBtn'); if(b) b.disabled=!on; }
+    var tries=0, maxTries=200; // ~20s
+    var iv=setInterval(function(){
+      if(coreReady()){
+        clearInterval(iv);
+        setUIEnabled(true);
+        if (typeof window.quickRestart === 'function') window.quickRestart();
+      } else {
+        setUIEnabled(false);
+        if(++tries>=maxTries) clearInterval(iv);
+      }
+    },100);
+    window.addEventListener('load', function(){ if(coreReady()) setUIEnabled(true); });
+  })();
+</script>
+
+<script>
     /* ======================================================
        Loop Runner: Daily seed + Share + Quick Restart
        ====================================================== */
@@ -162,7 +181,12 @@
 
     // Quick restart (wire to your game). Expects restartGame or startGame to exist.
     function quickRestart(){
-      if(window.restartGame)      window.restartGame({ seed:Number(DAILY) });
+      if(window.restartGame){ window.restartGame({ seed:Number(DAILY) }); }
+      else if(typeof window.startGame==='function'){ window.startGame({ seed:Number(DAILY) }); }
+      else { return false; }
+      GAME_STATE='playing'; hideOverlay();
+      return true;
+    });
       else if(typeof window.startGame==='function') window.startGame({ seed:Number(DAILY) });
       else console.warn('Implement restartGame/startGame and call quickRestart()');
       GAME_STATE='playing'; hideOverlay();
@@ -245,10 +269,8 @@
       showOverlay({ title:`Game Over — ${lastRunSeconds}s`, body:'Nice run! Tap/click “Play Again” or press <kbd>Space</kbd>.', mode:'gameover' });
     }
 
-    // Optional: auto-start only if your game core exposes restartGame/startGame
-if (window.restartGame || typeof window.startGame === 'function') {
-  quickRestart();
-} else {
+    // Autostart handled by the non-intrusive autodetect script above.
+// (No direct quickRestart call here.) else {
   console.info('[Loop Runner] Waiting for game core. Define window.restartGame(opts) or startGame(opts) before this script runs.');
 }
   </script>
