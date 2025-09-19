@@ -2,328 +2,94 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Loop Runner — playloop.run</title>
   <meta name="description" content="Dash, chain, and climb the leaderboard. A fast, tiny browser action game." />
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico">
 
+  <!-- Lock viewport & responsive, reserved ad area -->
+  <style>
+    :root {
+      --ad-w: 320px;
+      --ad-h: 50px;    /* mobile banner */
+    }
+
+    /* Tablet (468x60) */
+    @media (min-width: 600px) {
+      :root { --ad-w: 468px; --ad-h: 60px; }
+    }
+
+    /* Desktop (728x90) */
+    @media (min-width: 992px) {
+      :root { --ad-w: 728px; --ad-h: 90px; }
+    }
+
+    /* Large desktop (970x90) */
+    @media (min-width: 1200px) {
+      :root { --ad-w: 970px; --ad-h: 90px; }
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;          /* no vertical scroll */
+      background: #000;
+    }
+
+    #game {
+      display: block;
+      width: 100vw;
+      height: 100vh;             /* fill screen behind the ad overlay */
+      touch-action: none;        /* optional: prevent touch scrolling on canvas */
+    }
+
+    .ad-container {
+      position: absolute;
+      left: 50%;
+      bottom: env(safe-area-inset-bottom, 0);
+      transform: translateX(-50%);
+      width: var(--ad-w);
+      height: var(--ad-h);
+      z-index: 10;
+      display: grid;
+      place-items: center;
+      background: #000;          /* avoids flicker */
+      overflow: hidden;
+    }
+
+    /* Make the AdSense box exactly match the reserved space */
+    .ad-container > .adsbygoogle {
+      display: inline-block !important;
+      width: var(--ad-w) !important;
+      height: var(--ad-h) !important;
+    }
+  </style>
+
   <!-- Consent Mode v2 (default denied) -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
-    gtag('consent','default',{ 
-      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+    gtag('consent','default',{
+      'ad_storage':'denied','ad_user_data':'denied',
+      'ad_personalization':'denied','analytics_storage':'denied'
     });
   </script>
 
   <!-- AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
-
-  <!-- Funding Choices (CMP) -->
-  <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
-  <script>
-    (function signalGooglefcPresent() {
-      if (!window.frames['googlefcPresent']) {
-        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
-        document.body ? add() : setTimeout(signalGooglefcPresent,0);
-      }
-    })();
-  </script>
-
-  <style>
-    html, body { height:100%; margin:0; background:#0b0f14; color:#e6edf3; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial; }
-    canvas { display:block; width:100vw; height:100vh; image-rendering: crisp-edges; }
-    #ui { position: fixed; inset: 0; pointer-events: none; }
-    .hud { position:absolute; left:12px; top: calc(var(--adH, 72px) + 12px); display:flex; gap:12px; align-items:center; }
-    .pill { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; }
-    .center { position:absolute; left:50%; top:50%; transform: translate(-50%, -50%); text-align:center; }
-    .hint { opacity:.8; font-size:14px; margin-top:8px; }
-    input[type="text"] { pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none; }
-
-    /* CTA buttons */
-    .cta{ position:relative; pointer-events:all; border:1px solid transparent; padding:14px 22px; border-radius:14px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; transition:transform .12s ease, filter .12s ease, box-shadow .12s ease; user-select:none; -webkit-tap-highlight-color:transparent; overflow:hidden; }
-    .cta:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
-    .cta:hover{ transform:translateY(-1px); filter:brightness(1.03); }
-    .cta:active{ transform:translateY(1px) scale(.98); }
-    .cta__icon{ font-size:18px; line-height:0; }
-    .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; box-shadow:0 6px 18px rgba(44,124,247,.35), inset 0 1px 0 rgba(255,255,255,.25); border-color:rgba(124,253,214,.25); }
-    .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; box-shadow:0 6px 18px rgba(255,122,182,.35), inset 0 1px 0 rgba(255,255,255,.25); border-color:rgba(255,210,119,.25); }
-    .cta::before{ content:""; position:absolute; inset:-30% -10% auto -30%; height:200%; width:140%; background:linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.35) 20%,rgba(255,255,255,0) 40%); transform:translateX(-120%) rotate(-20deg); transition:transform .35s ease; pointer-events:none; }
-    .cta:hover::before{ transform:translateX(40%) rotate(-20deg); }
-    .cta .ripple{ position:absolute; border-radius:999px; transform:translate(-50%,-50%); background:rgba(255,255,255,.45); mix-blend-mode:soft-light; pointer-events:none; animation:ripple .6s ease-out forwards; }
-    @keyframes ripple{ from{width:0;height:0;opacity:.55} to{width:520px;height:520px;opacity:0} }
-    .cta .spark{ position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; filter:blur(.2px); animation:pop .6s ease-out forwards; }
-    @keyframes pop{ 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0} }
-
-    /* Ads */
-    #ad-top-wrapper { position: fixed; top:0; left:0; right:0; z-index:5; background:#0b0f14; padding:6px 8px 0; width:100%; }
-    #ad-spacer { height: var(--adH, 72px); }
-
-    /* Modal */
-    .modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:10; }
-    .modal.show { display:flex; }
-    .sheet { width:min(560px, 92vw); background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size:14px; }
-  </style>
 </head>
 <body>
-  <div id="ad-top-wrapper">
-    <ins id="ad-top-unit" class="adsbygoogle"
-         style="display:block; text-align:center;"
-         data-ad-client="ca-pub-3857946786580406"
-         data-ad-slot="7067398117"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-  <div id="ad-spacer"></div>
-
   <canvas id="game"></canvas>
 
-  <div id="ui">
-    <div class="hud">
-      <div id="score" class="pill">Score: 0</div>
-      <div id="combo" class="pill">Combo: 0</div>
-      <div id="best" class="pill">Best: 0</div>
-      <div id="daily" class="pill">Daily: 0</div>
-      <a href="privacy.html" class="pill" style="text-decoration:none; pointer-events:auto;">Privacy</a>
-      <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
-    </div>
-
-    <div id="overlay" class="center" style="display:none">
-      <h1>Loop Runner</h1>
-      <p>Dash through enemies. Click/tap to dash toward the pointer.<br/>Chain kills to build combo. Don’t touch enemies while not dashing.</p>
-      <div class="row" style="margin:8px 0;">
-        <button id="start" class="cta cta--primary" aria-label="Play"><span class="cta__icon" aria-hidden="true">▶</span> Play</button>
-        <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span class="cta__icon" aria-hidden="true">☀</span> Daily Run</button>
-      </div>
-      <div class="hint">Controls: Click/Tap to dash • Space to restart • P to pause</div>
-      <div style="margin-top:10px; opacity:.85; font-size:13px;">Name: <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" /></div>
-    </div>
+  <!-- Responsive, *fixed-size* reserved ad slot (prevents layout shift) -->
+  <div class="ad-container">
+    <ins class="adsbygoogle"
+         style="display:inline-block"
+         data-ad-client="ca-pub-3857946786580406"
+         data-ad-slot="1234567890"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
   </div>
-
-  <div id="lbModal" class="modal">
-    <div class="sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Leaderboard</h2>
-        <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
-      </div>
-      <div style="margin: 8px 0;">
-        <ins id="ad-modal-unit" class="adsbygoogle"
-            style="display:block; text-align:center;"
-            data-ad-client="ca-pub-3857946786580406"
-            data-ad-slot="7067398117"
-            data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-      </div>
-      <div class="row" style="margin:8px 0 12px 0; align-items:center;">
-        <select id="lbMode" style="pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none;">
-          <option value="normal">Normal</option>
-          <option value="daily">Daily (today)</option>
-        </select>
-        <div id="lbInfo" style="opacity:.8; font-size:13px;"></div>
-      </div>
-      <table id="lbTable"><thead><tr><th style="width:56px;">#</th><th>Name</th><th>Score</th><th style="text-align:right;">When</th></tr></thead><tbody></tbody></table>
-    </div>
-  </div>
-
-<script>
-(() => {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  let W=0, H=0, DPR=Math.min(devicePixelRatio||1,2);
-  function resize(){ W=innerWidth|0; H=innerHeight|0; canvas.width=W*DPR; canvas.height=H*DPR; canvas.style.width=W+'px'; canvas.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0); }
-  addEventListener('resize', resize); resize();
-
-  // Safe Ad init
-  const topIns = document.getElementById('ad-top-unit');
-  function tryFillTopAd(){
-    if(!topIns) return;
-    const w = topIns.clientWidth;
-    if(w && w > 0){ (window.adsbygoogle=window.adsbygoogle||[]).push({}); return true; }
-    return false;
-  }
-  window.addEventListener('load', ()=>{
-    let ok = tryFillTopAd();
-    if(!ok){
-      const id = setInterval(()=>{ if(tryFillTopAd()) clearInterval(id); }, 200);
-      setTimeout(()=> clearInterval(id), 5000);
-    }
-  });
-
-  // Auto spacer for ad height
-  const spacer = document.getElementById('ad-spacer');
-  if('ResizeObserver' in window){
-    new ResizeObserver(()=>{
-      const h = document.getElementById('ad-top-wrapper').offsetHeight||72;
-      spacer.style.height = h + 'px';
-      document.documentElement.style.setProperty('--adH', h+'px');
-    }).observe(document.getElementById('ad-top-wrapper'));
-  }
-
-  // localStorage-safe helpers
-  function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
-  function setLS(k, v){ try{ localStorage.setItem(k, v); }catch{} }
-
-  const state={ running:false, paused:false, score:0, combo:0, time:0,
-    best:Number(getLS('lr_best', 0)), dailyBest:Number(getLS('lr_daily', 0)),
-    spawnTimer:0, spawnInterval:1.1, dailyMode:false };
-
-  const ui={ 
-    score:document.getElementById('score'), combo:document.getElementById('combo'),
-    best:document.getElementById('best'), daily:document.getElementById('daily'),
-    overlay:document.getElementById('overlay'),
-    start:document.getElementById('start'), dailyBtn:document.getElementById('dailyBtn'),
-    lbBtn:document.getElementById('lbBtn'), nameInput:document.getElementById('nameInput'),
-  };
-  function hydrateHUD(){ ui.score.textContent='Score: 0'; ui.combo.textContent='Combo: 0'; ui.best.textContent='Best: '+state.best; ui.daily.textContent='Daily: '+state.dailyBest; }
-  hydrateHUD();
-
-  // Seeded RNG for daily
-  const todayKey=()=>new Date().toISOString().slice(0,10);
-  function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
-  let seededRand=Math.random; let usingSeed=false;
-  function setDailySeed(){ usingSeed=true; seededRand=mulberry32(hashToInt('looprunner:'+todayKey())); }
-  function rnd(a=0,b=1){ return (usingSeed?seededRand():Math.random())*(b-a)+a; }
-  function rndi(a,b){ return Math.floor(rnd(a,b+1)); }
-  function hashToInt(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
-
-  // Audio
-  let audio, master;
-  function initAudio(){ if(!audio){ audio=new (window.AudioContext||window.webkitAudioContext)(); master=audio.createGain(); master.gain.value=0.08; master.connect(audio.destination); } }
-
-  const player={ x:W/2, y:H/2, r:12, vx:0, vy:0, maxSpeed:900, friction:9, dashing:false, dashCooldown:0, dashWindup:0 };
-  const enemies=[]; const particles=[];
-
-  function addParticle(x,y,size=2,life=0.4){ const a=rnd(0,Math.PI*2); const sp=rnd(40,240); particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life, maxLife:life, size}); }
-  function spawnEnemy(){ const m=24; const side=rndi(0,3); let x,y; if(side===0){x=rnd(-m,W+m); y=-m;} else if(side===1){x=W+m; y=rnd(-m,H+m);} else if(side===2){x=rnd(-m,W+m); y=H+m;} else {x=-m; y=rnd(-m,H+m);}
-    const r=rnd(14,22); const speed=rnd(40,90)+Math.min(state.time*4,220); const ang=Math.atan2(player.y-y, player.x-x)+rnd(-0.5,0.5); const vx=Math.cos(ang)*speed, vy=Math.sin(ang)*speed; enemies.push({x,y,r,vx,vy,speed,ang}); }
-
-  // Input
-  let pointer={ x:W/2, y:H/2, down:false };
-  function screenToWorld(e){ const rect=canvas.getBoundingClientRect(); return { x:(e.clientX-rect.left), y:(e.clientY-rect.top) }; }
-  function startDashTowards(px,py){ if(player.dashCooldown>0) return; const dx=px-player.x, dy=py-player.y; const len=Math.hypot(dx,dy)||1; const ux=dx/len, uy=dy/len; player.vx=ux*player.maxSpeed; player.vy=uy*player.maxSpeed; player.dashing=true; player.dashCooldown=0.35; player.dashWindup=0.12; for(let i=0;i<10;i++) addParticle(player.x,player.y,3,0.25); }
-  canvas.addEventListener('pointerdown',(e)=>{ initAudio(); const p=screenToWorld(e); pointer.down=true; pointer.x=p.x; pointer.y=p.y; startDashTowards(pointer.x,pointer.y); });
-  canvas.addEventListener('pointermove',(e)=>{ const p=screenToWorld(e); pointer.x=p.x; pointer.y=p.y; });
-  canvas.addEventListener('pointerup',()=>{ pointer.down=false; });
-  addEventListener('keydown',(e)=>{ if(e.code==='Space'){ if(!state.running) startGame(); } const amt=80; if(e.key.startsWith('Arrow')){ let dx=0,dy=0; if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt; startDashTowards(player.x+dx, player.y+dy); } });
-
-  // Leaderboard (local)
-  const lb={ modal:document.getElementById('lbModal'), close:document.getElementById('lbClose'), modeSel:document.getElementById('lbMode'), info:document.getElementById('lbInfo'), table:document.getElementById('lbTable').querySelector('tbody') };
-  function loadLB(key){ try{ return JSON.parse(getLS(key,'[]')); }catch{ return []; } }
-  function saveLB(key,arr){ setLS(key, JSON.stringify(arr)); }
-  function submitScore(){ const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player'; setLS('lr_name',name); const entry={ name, score: state.score|0, when: Date.now(), mode: state.dailyMode?'daily':'normal', day: todayKey() }; const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); arr.push(entry); arr.sort((a,b)=>b.score-a.score); saveLB(key, arr.slice(0,20)); }
-  function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
-  function hideLeaderboard(){ lb.modal.classList.remove('show'); }
-  function renderLeaderboard(){ const mode=lb.modeSel.value; const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); lb.table.innerHTML=''; lb.info.textContent = mode==='daily' ? `Date: ${todayKey()} (today)` : 'All-time local (this device)'; arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); }); if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); }}
-  function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;"," >":"&gt;","\"":"&quot;"}[c])); }
-  lb.close.addEventListener('click', hideLeaderboard);
-  lb.modeSel.addEventListener('change', renderLeaderboard);
-  document.getElementById('lbBtn').addEventListener('click', ()=> showLeaderboard());
-
-  // Fill modal ad only when visible
-  let modalAdFilled = false;
-  function maybeFillModalAd(){
-    if(modalAdFilled) return;
-    const ins = document.getElementById('ad-modal-unit');
-    if(!ins) return;
-    const w = ins.clientWidth;
-    if(w && w>0){ (window.adsbygoogle=window.adsbygoogle||[]).push({}); modalAdFilled = true; }
-    else { setTimeout(maybeFillModalAd, 200); }
-  }
-
-  function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
-  function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); setLS('lr_daily', state.dailyBest); } else { state.best=Math.max(state.best, state.score|0); setLS('lr_best', state.best); } hydrateHUD(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; showLeaderboard(state.dailyMode?'daily':'normal'); }
-
-  ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
-  ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
-  ui.overlay.style.display='block';
-
-  let last = performance.now();
-  function loop(){ requestAnimationFrame(loop); const t=performance.now(); let dt=(t-last)/1000; last=t; if(!state.running){ render(); return; }
-    state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`; update(dt); render(); }
-  function update(dt){ state.spawnTimer-=dt; if(state.spawnTimer<=0){ spawnEnemy(); state.spawnTimer=state.spawnInterval; }
-    if(player.dashWindup>0){ player.dashWindup-=dt; if(player.dashWindup<=0) player.dashing=false; }
-    const f=Math.exp(-player.friction*dt); player.vx*=f; player.vy*=f; player.x+=player.vx*dt; player.y+=player.vy*dt; player.x=Math.max(8,Math.min(W-8,player.x)); player.y=Math.max(8,Math.min(H-8,player.y)); if(player.dashCooldown>0) player.dashCooldown-=dt;
-    for(let i=0;i<enemies.length;i++){ const e=enemies[i]; const ang=Math.atan2(player.y-e.y, player.x-e.x); e.vx=Math.cos(ang)*e.speed; e.vy=Math.sin(ang)*e.speed; e.ang = Math.atan2(e.vy, e.vx); e.x+=e.vx*dt; e.y+=e.vy*dt;
-      const d=Math.hypot(e.x-player.x, e.y-player.y);
-      if(d<e.r+player.r){ if(player.dashing){ enemies.splice(i,1); i--; state.combo+=1; const add = Math.floor(10*Math.pow(1.4, state.combo-1)); state.score += add; ui.combo.textContent=`Combo: ${state.combo}`; ui.score.textContent=`Score: ${state.score|0}`; for(let k=0;k<24;k++) addParticle(e.x,e.y, Math.random()*2+2, Math.random()*0.4+0.2); } else { gameOver(); break; } }
-      if(e.x<-100||e.x>W+100||e.y<-100||e.y>H+100){ enemies.splice(i,1); i--; }
-    }
-    for(let i=0;i<particles.length;i++){ const p=particles[i]; p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.98; p.vy*=0.98; if(p.life<=0){ particles.splice(i,1); i--; } }
-  }
-
-  // ---------- Visual helpers ----------
-  function clamp01(t){ return Math.max(0, Math.min(1, t)); }
-  function lerp(a,b,t){ return a + (b-a)*t; }
-  function lerpColor(c1, c2, t){ // colors as [r,g,b]
-    return [ Math.round(lerp(c1[0], c2[0], t)),
-             Math.round(lerp(c1[1], c2[1], t)),
-             Math.round(lerp(c1[2], c2[2], t)) ];
-  }
-  const COL_BLUE=[88,166,255], COL_YELLOW=[255,210,119], COL_RED=[255,95,95];
-  function speedToColor(speed){ // map ~40..310 to blue->yellow->red
-    const t = clamp01((speed-40)/270);
-    if(t<0.5){ const u=t/0.5; const c=lerpColor(COL_BLUE, COL_YELLOW, u); return `rgb(${c[0]},${c[1]},${c[2]})`; }
-    const u=(t-0.5)/0.5; const c=lerpColor(COL_YELLOW, COL_RED, u); return `rgb(${c[0]},${c[1]},${c[2]})`;
-  }
-
-  function drawBug(e){ 
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.rotate(e.ang||0);
-    ctx.lineJoin='round'; ctx.lineCap='round';
-
-    // Color by speed + glow for accessibility
-    const body = speedToColor(e.speed);
-    ctx.shadowColor = body;
-    ctx.shadowBlur = 8;
-
-    // Body
-    ctx.fillStyle = body;
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.ellipse(0, 0, e.r*0.9, e.r*0.65, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(e.r*0.9, 0, e.r*0.45, e.r*0.45, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-
-    // Stripe (dark)
-    ctx.shadowBlur = 0;
-    ctx.beginPath(); ctx.moveTo(-e.r*0.55, -e.r*0.18); ctx.lineTo(-e.r*0.55, e.r*0.18); ctx.strokeStyle='rgba(0,0,0,0.55)'; ctx.stroke();
-
-    // Legs & antennae in light color for contrast
-    ctx.strokeStyle = '#d9fff2';
-    ctx.lineWidth = 2.5;
-    for(let i=-1;i<=1;i++){ 
-      const y = i*e.r*0.35;
-      ctx.beginPath();
-      ctx.moveTo(-e.r*0.6, y);   ctx.lineTo(-e.r*1.2, y-3);
-      ctx.moveTo(-e.r*0.2, y);   ctx.lineTo(-e.r*0.9, y+4);
-      ctx.moveTo(e.r*0.2, y);    ctx.lineTo(e.r*0.9, y-4);
-      ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(e.r*1.2, -e.r*0.2); ctx.quadraticCurveTo(e.r*1.6, -e.r*0.7, e.r*1.0, -e.r*0.9);
-    ctx.moveTo(e.r*1.2, e.r*0.2);  ctx.quadraticCurveTo(e.r*1.6,  e.r*0.7, e.r*1.0,  e.r*0.9);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function render(){ ctx.save(); ctx.clearRect(0,0,W,H);
-    for(const p of particles){ const a=Math.max(0, Math.min(1, p.life/p.maxLife)); ctx.globalAlpha=a; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle='#8fb3ff'; ctx.fill(); ctx.globalAlpha=1; }
-    for(const e of enemies){ drawBug(e); }
-    // Player
-    ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
-    ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3';
-    ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000'; ctx.shadowBlur = player.dashing ? 12 : 0; ctx.fill();
-    ctx.restore(); }
-
-  // Modal close-click
-  document.getElementById('lbModal').addEventListener('click', (e)=>{ if(e.target.id==='lbModal') e.currentTarget.classList.remove('show'); });
-
-  loop();
-})(); 
-</script>
 </body>
 </html>
