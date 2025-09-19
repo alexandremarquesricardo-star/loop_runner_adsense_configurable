@@ -182,155 +182,140 @@
 </script>
 
 <script>
-    /* ======================================================
-       Loop Runner: Daily seed + Share + Quick Restart
-       ====================================================== */
+  // Loop Runner: Daily seed + Share + Quick Restart (safe)
+  (function(){
     function getTodayKeyUTC(){
-      const d=new Date();
-      const y=d.getUTCFullYear();
-      const m=String(d.getUTCMonth()+1).padStart(2,'0');
-      const day=String(d.getUTCDate()).padStart(2,'0');
-      return `${y}${m}${day}`;
+      var d = new Date();
+      var y = d.getUTCFullYear();
+      var m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      var day = String(d.getUTCDate()).padStart(2, '0');
+      return y + '' + m + '' + day;
     }
-    const urlParams=new URLSearchParams(location.search);
-    const DAILY=urlParams.get('daily')||getTodayKeyUTC();
-    const IS_TODAY=DAILY===getTodayKeyUTC();
-    window.DAILY=DAILY; // expose for game systems
+    var urlParams = new URLSearchParams(location.search);
+    var DAILY = urlParams.get('daily') || getTodayKeyUTC();
+    var IS_TODAY = DAILY === getTodayKeyUTC();
+    window.DAILY = DAILY;
 
-    // Seeded RNG (simple LCG). Use rng() instead of Math.random() for Daily mode.
-    let _seed=Number(DAILY)%2147483647||1;
-    function rng(){ _seed=(_seed*48271)%2147483647; return (_seed-1)/2147483646; }
-    window.rng=rng;
+    var _seed = (Number(DAILY) % 2147483647) || 1;
+    function rng(){ _seed = (_seed * 48271) % 2147483647; return (_seed - 1) / 2147483646; }
+    window.rng = rng;
 
-    // Daily banner
-    const dailyBannerEl=document.getElementById('dailyBanner');
-    if(dailyBannerEl){ dailyBannerEl.textContent = IS_TODAY ? `Daily Challenge: ${DAILY}` : `Replaying Daily: ${DAILY}`; }
+    var dailyBannerEl = document.getElementById('dailyBanner');
+    if (dailyBannerEl) {
+      dailyBannerEl.textContent = IS_TODAY ? ('Daily Challenge: ' + DAILY) : ('Replaying Daily: ' + DAILY);
+    }
 
-    // Best tracking per daily
-    function saveDailyBest(seconds){ const key=`lr_best_${DAILY}`; const prev=Number(localStorage.getItem(key)||0); if(seconds>prev) localStorage.setItem(key,String(seconds)); }
-    function getDailyBest(){ return Number(localStorage.getItem(`lr_best_${DAILY}`)||0); }
-    window.saveDailyBest=saveDailyBest; window.getDailyBest=getDailyBest;
+    function saveDailyBest(seconds){
+      var key = 'lr_best_' + DAILY;
+      var prev = Number(localStorage.getItem(key) || 0);
+      if (seconds > prev) localStorage.setItem(key, String(seconds));
+    }
+    function getDailyBest(){ return Number(localStorage.getItem('lr_best_' + DAILY) || 0); }
+    window.saveDailyBest = saveDailyBest; window.getDailyBest = getDailyBest;
 
-    // Sharing
-    async function shareScore(seconds){
-      const shareUrl=new URL(location.href); shareUrl.searchParams.set('daily',DAILY);
-      const text=`I survived ${seconds}s in Loop Runner! #LoopRunner ${IS_TODAY?`#Daily${DAILY}`:`(Daily ${DAILY})`}`;
-      if(navigator.share){
-        try{ await navigator.share({ title:'Loop Runner', text, url:shareUrl.toString() }); return; }catch(e){}
+    function shareScore(seconds){
+      var shareUrl = new URL(location.href); shareUrl.searchParams.set('daily', DAILY);
+      var text = 'I survived ' + seconds + 's in Loop Runner! #LoopRunner ' + (IS_TODAY ? ('#Daily' + DAILY) : ('(Daily ' + DAILY + ')'));
+      if (navigator.share) {
+        navigator.share({ title: 'Loop Runner', text: text, url: shareUrl.toString() }).catch(function(){});
+      } else {
+        var t = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(shareUrl.toString());
+        window.open(t, '_blank', 'noopener,noreferrer');
       }
-      const t=`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl.toString())}`;
-      window.open(t,'_blank','noopener,noreferrer');
     }
-    window.shareScore=shareScore;
+    window.shareScore = shareScore;
 
-    // Quick restart (wire to your game). Expects restartGame or startGame to exist.
     function quickRestart(){
       var startFn = (typeof window.__getStartFn === 'function') ? window.__getStartFn() : (window.restartGame || window.startGame);
       if (typeof startFn === 'function') {
         try { startFn({ seed: Number(DAILY) }); } catch(e) {}
-        GAME_STATE = 'playing';
-        hideOverlay();
+        if (typeof hideOverlay === 'function') hideOverlay();
+        if (typeof window.GAME_STATE !== 'undefined') window.GAME_STATE = 'playing';
         return true;
       }
       return false;
-    }); } catch(_) {}
-        GAME_STATE='playing'; hideOverlay();
-        return true;
-      }
-      return false;
-    }); }
-      else if(typeof window.startGame==='function'){ window.startGame({ seed:Number(DAILY) }); }
-      else { return false; }
-      GAME_STATE='playing'; hideOverlay();
-      return true;
-    });
-      else if(typeof window.startGame==='function') window.startGame({ seed:Number(DAILY) });
-      else console.warn('Implement restartGame/startGame and call quickRestart()');
-      GAME_STATE='playing'; hideOverlay();
     }
-    window.quickRestart=quickRestart;
+    window.quickRestart = quickRestart;
 
-    // Buttons & keys
-    document.getElementById('restartBtn')?.addEventListener('click', quickRestart);
-    document.getElementById('shareBtn')?.addEventListener('click', ()=>{
-      const seconds=Math.round(window.currentRunSeconds||0); shareScore(seconds);
+    var rb = document.getElementById('restartBtn');
+    if (rb) rb.addEventListener('click', quickRestart);
+    var sb = document.getElementById('shareBtn');
+    if (sb) sb.addEventListener('click', function(){ var seconds = Math.round(window.currentRunSeconds || 0); shareScore(seconds); });
+
+    window.addEventListener('keydown', function(e){
+      if (e.repeat) return;
+      if (e.key === 'r' || e.key === 'R' || e.code === 'Space') { e.preventDefault(); quickRestart(); }
     });
-
-    // Keyboard: R or Space to restart
-    window.addEventListener('keydown',(e)=>{
-      if(e.repeat) return;
-      if(e.key==='r'||e.key==='R'||e.code==='Space'){ e.preventDefault(); quickRestart(); }
-    });
-
-    // Run-end hook (call this from your game loop when a run ends)
-    window.onRunEnd=function(secondsSurvived){
-      const s=Math.round(secondsSurvived||0); window.currentRunSeconds=s; saveDailyBest(s);
-      showOverlay({ title:`Game Over — ${s}s`, body:'Nice run! Tap/click “Play Again” or press <kbd>Space</kbd>.', mode:'gameover' });
-    }
-  </script>
+  })();
+</script>
 
   <script>
-    /* ======================================================
-       Canvas Overlay: Pause + Game Over (wired to canvas)
-       ====================================================== */
-    const $=(id)=>document.getElementById(id);
-    const overlay=$('overlay');
-    const overlayCard=$('overlayCard');
-    const ovTitle=$('ovTitle');
-    const ovBody=$('ovBody');
-    const btnResume=$('btnResume');
-    const btnPlayAgain=$('btnPlayAgain');
-    const btnShare=$('btnShare');
-    const ovClose=$('ovClose');
-    let GAME_STATE='menu'; // 'playing' | 'paused' | 'gameover' | 'menu'
-    let lastRunSeconds=0;
+  // Canvas Overlay: Pause + Game Over (wired to canvas)
+  (function(){
+    var $ = function(id){ return document.getElementById(id); };
+    var overlay = $('overlay');
+    var overlayCard = $('overlayCard');
+    var ovTitle = $('ovTitle');
+    var ovBody = $('ovBody');
+    var btnResume = $('btnResume');
+    var btnPlayAgain = $('btnPlayAgain');
+    var btnShare = $('btnShare');
+    var ovClose = $('ovClose');
+    window.GAME_STATE = 'menu';
+    var lastRunSeconds = 0;
 
-    function showOverlay({ title, body, mode }){
-      GAME_STATE=mode; if(ovTitle) ovTitle.textContent=title; if(ovBody) ovBody.innerHTML=body; overlay.hidden=false; overlayCard?.focus?.();
+    function showOverlay(opts){
+      var title = opts && opts.title ? opts.title : '';
+      var body = opts && opts.body ? opts.body : '';
+      var mode = opts && opts.mode ? opts.mode : 'paused';
+      window.GAME_STATE = mode;
+      if (ovTitle) ovTitle.textContent = title;
+      if (ovBody) ovBody.innerHTML = body;
+      if (overlay) overlay.hidden = false;
+      if (overlayCard && overlayCard.focus) setTimeout(function(){ overlayCard.focus(); }, 0);
     }
-    function hideOverlay(){ overlay.hidden=true; }
+    window.showOverlay = showOverlay;
 
-    window.pauseGameUI=function(){
-      if(GAME_STATE!=='playing') return;
-      if(typeof window.pauseGame==='function') window.pauseGame();
-      showOverlay({ title:'Paused', body:'Press <kbd>P</kbd> or <kbd>Esc</kbd> to resume.', mode:'paused' });
-    }
-    window.resumeGameUI=function(){
-      if(GAME_STATE!=='paused') return;
-      if(typeof window.resumeGame==='function') window.resumeGame();
-      GAME_STATE='playing'; hideOverlay();
-    }
+    function hideOverlay(){ if (overlay) overlay.hidden = true; }
+    window.hideOverlay = hideOverlay;
 
-    btnResume.addEventListener('click', ()=>{
-      if(GAME_STATE==='paused') window.resumeGameUI();
-      else if(GAME_STATE==='gameover') quickRestart();
+    window.pauseGameUI = function(){
+      if (window.GAME_STATE !== 'playing') return;
+      if (typeof window.pauseGame === 'function') window.pauseGame();
+      showOverlay({ title: 'Paused', body: 'Press <kbd>P</kbd> or <kbd>Esc</kbd> to resume.', mode: 'paused' });
+    };
+    window.resumeGameUI = function(){
+      if (window.GAME_STATE !== 'paused') return;
+      if (typeof window.resumeGame === 'function') window.resumeGame();
+      window.GAME_STATE = 'playing'; hideOverlay();
+    };
+
+    if (btnResume) btnResume.addEventListener('click', function(){
+      if (window.GAME_STATE === 'paused') window.resumeGameUI();
+      else if (window.GAME_STATE === 'gameover') { if (window.quickRestart) window.quickRestart(); }
     });
-    btnPlayAgain.addEventListener('click', quickRestart);
-    btnShare.addEventListener('click', ()=> window.shareScore?.(lastRunSeconds));
-    ovClose.addEventListener('click', ()=>{ if(GAME_STATE==='paused') window.resumeGameUI(); else hideOverlay(); });
+    if (btnPlayAgain) btnPlayAgain.addEventListener('click', function(){ if (window.quickRestart) window.quickRestart(); });
+    if (btnShare) btnShare.addEventListener('click', function(){ if (typeof window.shareScore === 'function') window.shareScore(lastRunSeconds); });
+    if (ovClose) ovClose.addEventListener('click', function(){ if (window.GAME_STATE === 'paused') window.resumeGameUI(); else hideOverlay(); });
 
-    $('game')?.addEventListener('pointerdown', ()=>{ if(GAME_STATE==='gameover') quickRestart(); });
+    var gameCanvas = $('game');
+    if (gameCanvas) gameCanvas.addEventListener('pointerdown', function(){ if (window.GAME_STATE === 'gameover') { if (window.quickRestart) window.quickRestart(); } });
 
-    window.addEventListener('keydown',(e)=>{
-      if(e.repeat) return;
-      if(e.key==='p'||e.key==='P'||e.key==='Escape'){
-        if(GAME_STATE==='playing'){ e.preventDefault(); window.pauseGameUI(); }
-        else if(GAME_STATE==='paused'){ e.preventDefault(); window.resumeGameUI(); }
+    window.addEventListener('keydown', function(e){
+      if (e.repeat) return;
+      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape'){
+        if (window.GAME_STATE === 'playing'){ e.preventDefault(); window.pauseGameUI(); }
+        else if (window.GAME_STATE === 'paused'){ e.preventDefault(); window.resumeGameUI(); }
       }
     });
 
-    // Public method to be called by your game loop when the run actually ends
-    window.onRunEnd=function(seconds){
-      lastRunSeconds=Math.round(seconds||0);
-      saveDailyBest(lastRunSeconds);
-      showOverlay({ title:`Game Over — ${lastRunSeconds}s`, body:'Nice run! Tap/click “Play Again” or press <kbd>Space</kbd>.', mode:'gameover' });
-    }
-
-    // Autostart handled by the non-intrusive autodetect script above.
-// (No direct quickRestart call here.) else {
-  console.info('[Loop Runner] Waiting for game core. Define window.restartGame(opts) or startGame(opts) before this script runs.');
-}
-  </script>
+    window.onRunEnd = function(seconds){
+      lastRunSeconds = Math.round(seconds || 0);
+      if (typeof window.saveDailyBest === 'function') window.saveDailyBest(lastRunSeconds);
+      showOverlay({ title: 'Game Over — ' + lastRunSeconds + 's', body: 'Nice run! Tap/click “Play Again” or press <kbd>Space</kbd>.', mode: 'gameover' });
+    };
+  })();
+</script>
 
   <script>
     /* ======================================================
