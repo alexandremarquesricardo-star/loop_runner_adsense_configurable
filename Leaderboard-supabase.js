@@ -33,7 +33,7 @@ export class GlobalBoard {
     const cleanName = String(name || 'anon').slice(0,12);
     const cleanScore = Math.max(0, Math.floor(score) || 0);
     try {
-      await supabase.from('scores').insert({ name: cleanName, score: cleanScore });
+      await supabase.from('scores').insert({ name: cleanName, score: cleanScore, mode: 'normal' });
       this.cache.at = 0; // bust cache
     } catch (_) {}
   }
@@ -43,9 +43,8 @@ export class GlobalBoard {
     if (!supabase) return [{ name: '(offline)', score: this.best(), ts: new Date().toISOString() }];
     const { data, error } = await supabase
       .from('scores')
-      .select('name, score, ts')
+      .select('name, score')
       .order('score', { ascending: false })
-      .order('ts', { ascending: true })
       .limit(limit);
     if (!error && data){ this.cache = { rows: data, at: Date.now() }; return data; }
     return [];
