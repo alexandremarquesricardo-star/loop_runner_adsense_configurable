@@ -272,11 +272,55 @@
   const lb={ modal:document.getElementById('lbModal'), close:document.getElementById('lbClose'), modeSel:document.getElementById('lbMode'), info:document.getElementById('lbInfo'), table:document.getElementById('lbTable').querySelector('tbody') };
   function loadLB(key){ try{ return JSON.parse(getLS(key,'[]')); }catch{ return []; } }
   function saveLB(key,arr){ setLS(key, JSON.stringify(arr)); }
-  function submitScore(){ const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player'; setLS('lr_name',name); const entry={ name, score: state.score|0, when: Date.now(), mode: state.dailyMode?'daily':'normal', day: todayKey() }; const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); arr.push(entry); arr.sort((a,b)=>b.score-a.score); saveLB(key, arr.slice(0,20)); }
+
+  // --- Supabase REST config (global leaderboard) ---
+  const SB_URL = 'https://zpoerliqhcywaulbthyf.supabase.co/rest/v1/scores';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpwb2VybGlxaGN5d2F1bGJ0aHlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDQxNjYsImV4cCI6MjA3Mzc4MDE2Nn0.7jjITj1H2AxWPnCeyzmMsNw3uAVACoYb_CV5rRoD65k';
+  const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' };
+
   function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
   function hideLeaderboard(){ lb.modal.classList.remove('show'); }
-  function renderLeaderboard(){ const mode=lb.modeSel.value; const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal'; const arr=loadLB(key); lb.table.innerHTML=''; lb.info.textContent = mode==='daily' ? `Date: ${todayKey()} (today)` : 'All-time local (this device)'; arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); }); if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); }}
-  function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+  async function renderLeaderboard(){
+    const mode=lb.modeSel.value;
+    const params = new URLSearchParams({ select: 'name,score,ts', order: 'score.desc,ts.asc', limit: '10' });
+
+    if(mode === 'daily'){
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // local start of day
+      const end = new Date(start.getTime() + 24*60*60*1000);
+      const isoStart = start.toISOString();
+      const isoEnd = end.toISOString();
+      params.append('ts', 'gte.'+isoStart);
+      params.append('ts', 'lt.'+isoEnd);
+      lb.info.textContent = `Date: ${todayKey()} (today)`;
+    } else {
+      lb.info.textContent = 'Worldwide (all-time)';
+    }
+
+    lb.table.innerHTML='';
+    try{
+      const res = await fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS });
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : [];
+      rows.slice(0,10).forEach((e,i)=>{
+        const tr=document.createElement('tr');
+        const when=new Date(e.ts || Date.now()).toLocaleString();
+        tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">${when}</td>`;
+        lb.table.appendChild(tr);
+      });
+      if(rows.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Be the first!</td>'; lb.table.appendChild(tr); }
+    } catch(_){
+      // Fallback: local
+      const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
+      const arr=loadLB(key);
+      lb.info.textContent += ' • offline';
+      arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); });
+      if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); }
+    }
+  }
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
   document.getElementById('lbBtn').addEventListener('click', ()=> showLeaderboard());
@@ -293,7 +337,17 @@
   }
 
   function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
-  function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); setLS('lr_daily', state.dailyBest); } else { state.best=Math.max(state.best, state.score|0); setLS('lr_best', state.best); } hydrateHUD(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; showLeaderboard(state.dailyMode?'daily':'normal'); }
+  function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); setLS('lr_daily', state.dailyBest); } else { state.best=Math.max(state.best, state.score|0); setLS('lr_best', state.best); } hydrateHUD(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; submitScore(); showLeaderboard(state.dailyMode?'daily':'normal'); }
+
+  async function submitScore(){
+    const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player';
+    setLS('lr_name',name);
+    // Non-blocking global submit
+    try{
+      const body = { name: name.slice(0,12), score: state.score|0 };
+      fetch(SB_URL, { method:'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify(body) }).catch(()=>{});
+    }catch(_){ /* ignore */ }
+  }
 
   ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
   ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
