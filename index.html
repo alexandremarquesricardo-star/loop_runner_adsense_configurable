@@ -281,73 +281,50 @@
   function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
   function hideLeaderboard(){ lb.modal.classList.remove('show'); }
 
-  // === PATCHED: robust REST fetch with separate order params and ts/created_at fallback ===
-  async function renderLeaderboard(){
-    const mode = lb.modeSel.value;
+  // === Timestamp-free Top 10 (score only) ===
+  function renderLeaderboard(){
+    const mode = lb.modeSel.value; // UI only; no date filter
 
-    // build query params for a given timestamp column
-    const buildParams = (timeCol) => {
-      const p = new URLSearchParams();
-      p.append('select', `name,score,${timeCol}`);
-      p.append('order',  'score.desc');        // primary sort
-      p.append('order',  `${timeCol}.asc`);    // tiebreaker
-      p.append('limit',  '10');
-      if (mode === 'daily') {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const end   = new Date(start.getTime() + 24*60*60*1000);
-        p.append(timeCol, 'gte.' + start.toISOString());
-        p.append(timeCol, 'lt.'  + end.toISOString());
-      }
-      return p;
-    };
-
-    const tryFetch = async (timeCol) => {
-      const res = await fetch(`${SB_URL}?${buildParams(timeCol).toString()}`, { headers: SB_HEADERS });
-      if (!res.ok) throw new Error(`REST ${res.status}`);
-      const rows = await res.json();
-      return { rows, timeCol };
-    };
+    const params = new URLSearchParams();
+    params.append('select', 'name,score');
+    params.append('order',  'score.desc');   // single sort key
+    params.append('limit',  '10');
 
     lb.table.innerHTML = '';
-    lb.info.textContent = (mode === 'daily') ? `Date: ${todayKey()} (today)` : 'Worldwide (all-time)';
+    lb.info.textContent = 'Worldwide Top 10 (score only)';
 
-    try {
-      // Try with ts first; if your table doesn't have it yet, fall back to created_at
-      let data;
-      try { data = await tryFetch('ts'); }
-      catch { data = await tryFetch('created_at'); }
-
-      const { rows, timeCol } = data;
-      rows.slice(0,10).forEach((e,i) => {
-        const when = new Date(e[timeCol] || Date.now()).toLocaleString();
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">${when}</td>`;
-        lb.table.appendChild(tr);
+    fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS })
+      .then(res => { if (!res.ok) throw new Error('REST '+res.status); return res.json(); })
+      .then(rows => {
+        rows.slice(0,10).forEach((e,i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">—</td>`;
+          lb.table.appendChild(tr);
+        });
+        if (rows.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="4" style="opacity:.7;">No scores yet. Be the first!</td>';
+          lb.table.appendChild(tr);
+        }
+      })
+      .catch(() => {
+        // Fallback: local (offline)
+        const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
+        const arr = loadLB(key);
+        lb.info.textContent += ' • offline';
+        lb.table.innerHTML = '';
+        arr.slice(0,10).forEach((e,i) => {
+          const tr = document.createElement('tr');
+          const when = new Date(e.when).toLocaleString();
+          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style=\"text-align:right;opacity:.8\">${when}</td>`;
+          lb.table.appendChild(tr);
+        });
+        if (arr.length===0){
+          const tr=document.createElement('tr');
+          tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>';
+          lb.table.appendChild(tr);
+        }
       });
-      if (rows.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="4" style="opacity:.7;">No scores yet. Be the first!</td>';
-        lb.table.appendChild(tr);
-      }
-    } catch {
-      // Fallback: local (offline or schema mismatch)
-      const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
-      const arr = loadLB(key);
-      lb.info.textContent += ' • offline';
-      lb.table.innerHTML = '';
-      arr.slice(0,10).forEach((e,i) => {
-        const tr = document.createElement('tr');
-        const when = new Date(e.when).toLocaleString();
-        tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`;
-        lb.table.appendChild(tr);
-      });
-      if (arr.length===0){
-        const tr=document.createElement('tr');
-        tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>';
-        lb.table.appendChild(tr);
-      }
-    }
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
@@ -369,14 +346,28 @@
   function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
   function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); setLS('lr_daily', state.dailyBest); } else { state.best=Math.max(state.best, state.score|0); setLS('lr_best', state.best); } hydrateHUD(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; submitScore(); showLeaderboard(state.dailyMode?'daily':'normal'); }
 
+  // === APPLY LOGGING HERE ===
   async function submitScore(){
     const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player';
     setLS('lr_name',name);
-    // Non-blocking global submit
-    try{
+    try {
       const body = { name: name.slice(0,12), score: state.score|0 };
-      fetch(SB_URL, { method:'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify(body) }).catch(()=>{});
-    }catch(_){ /* ignore */ }
+      fetch(SB_URL, {
+        method:'POST',
+        headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify(body)
+      })
+      .then(async r => {
+        if(!r.ok){
+          let txt = '';
+          try{ txt = await r.text(); }catch{}
+          console.error('Supabase insert failed', r.status, txt);
+        }
+      })
+      .catch(err => console.error('Supabase insert network error', err));
+    } catch(err) {
+      console.error('submitScore exception', err);
+    }
   }
 
   ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
