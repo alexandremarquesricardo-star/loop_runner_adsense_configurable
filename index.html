@@ -268,7 +268,7 @@
   canvas.addEventListener('pointerup',()=>{ pointer.down=false; });
   addEventListener('keydown',(e)=>{ if(e.code==='Space'){ if(!state.running) startGame(); } const amt=80; if(e.key.startsWith('Arrow')){ let dx=0,dy=0; if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt; startDashTowards(player.x+dx, player.y+dy); } });
 
-  // Leaderboard (local)
+  // Leaderboard UI handles
   const lb={ modal:document.getElementById('lbModal'), close:document.getElementById('lbClose'), modeSel:document.getElementById('lbMode'), info:document.getElementById('lbInfo'), table:document.getElementById('lbTable').querySelector('tbody') };
   function loadLB(key){ try{ return JSON.parse(getLS(key,'[]')); }catch{ return []; } }
   function saveLB(key,arr){ setLS(key, JSON.stringify(arr)); }
@@ -281,42 +281,72 @@
   function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
   function hideLeaderboard(){ lb.modal.classList.remove('show'); }
 
+  // === PATCHED: robust REST fetch with separate order params and ts/created_at fallback ===
   async function renderLeaderboard(){
-    const mode=lb.modeSel.value;
-    const params = new URLSearchParams({ select: 'name,score,ts', order: 'score.desc,ts.asc', limit: '10' });
+    const mode = lb.modeSel.value;
 
-    if(mode === 'daily'){
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // local start of day
-      const end = new Date(start.getTime() + 24*60*60*1000);
-      const isoStart = start.toISOString();
-      const isoEnd = end.toISOString();
-      params.append('ts', 'gte.'+isoStart);
-      params.append('ts', 'lt.'+isoEnd);
-      lb.info.textContent = `Date: ${todayKey()} (today)`;
-    } else {
-      lb.info.textContent = 'Worldwide (all-time)';
-    }
+    // build query params for a given timestamp column
+    const buildParams = (timeCol) => {
+      const p = new URLSearchParams();
+      p.append('select', `name,score,${timeCol}`);
+      p.append('order',  'score.desc');        // primary sort
+      p.append('order',  `${timeCol}.asc`);    // tiebreaker
+      p.append('limit',  '10');
+      if (mode === 'daily') {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const end   = new Date(start.getTime() + 24*60*60*1000);
+        p.append(timeCol, 'gte.' + start.toISOString());
+        p.append(timeCol, 'lt.'  + end.toISOString());
+      }
+      return p;
+    };
 
-    lb.table.innerHTML='';
-    try{
-      const res = await fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS });
-      const data = await res.json();
-      const rows = Array.isArray(data) ? data : [];
-      rows.slice(0,10).forEach((e,i)=>{
-        const tr=document.createElement('tr');
-        const when=new Date(e.ts || Date.now()).toLocaleString();
-        tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">${when}</td>`;
+    const tryFetch = async (timeCol) => {
+      const res = await fetch(`${SB_URL}?${buildParams(timeCol).toString()}`, { headers: SB_HEADERS });
+      if (!res.ok) throw new Error(`REST ${res.status}`);
+      const rows = await res.json();
+      return { rows, timeCol };
+    };
+
+    lb.table.innerHTML = '';
+    lb.info.textContent = (mode === 'daily') ? `Date: ${todayKey()} (today)` : 'Worldwide (all-time)';
+
+    try {
+      // Try with ts first; if your table doesn't have it yet, fall back to created_at
+      let data;
+      try { data = await tryFetch('ts'); }
+      catch { data = await tryFetch('created_at'); }
+
+      const { rows, timeCol } = data;
+      rows.slice(0,10).forEach((e,i) => {
+        const when = new Date(e[timeCol] || Date.now()).toLocaleString();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">${when}</td>`;
         lb.table.appendChild(tr);
       });
-      if(rows.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Be the first!</td>'; lb.table.appendChild(tr); }
-    } catch(_){
-      // Fallback: local
+      if (rows.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="4" style="opacity:.7;">No scores yet. Be the first!</td>';
+        lb.table.appendChild(tr);
+      }
+    } catch {
+      // Fallback: local (offline or schema mismatch)
       const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
-      const arr=loadLB(key);
+      const arr = loadLB(key);
       lb.info.textContent += ' • offline';
-      arr.slice(0,10).forEach((e,i)=>{ const tr=document.createElement('tr'); const when=new Date(e.when).toLocaleString(); tr.innerHTML=`<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`; lb.table.appendChild(tr); });
-      if(arr.length===0){ const tr=document.createElement('tr'); tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>'; lb.table.appendChild(tr); }
+      lb.table.innerHTML = '';
+      arr.slice(0,10).forEach((e,i) => {
+        const tr = document.createElement('tr');
+        const when = new Date(e.when).toLocaleString();
+        tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`;
+        lb.table.appendChild(tr);
+      });
+      if (arr.length===0){
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>';
+        lb.table.appendChild(tr);
+      }
     }
   }
 
