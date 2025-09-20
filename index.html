@@ -25,91 +25,69 @@
   <script>
     (function signalGooglefcPresent() {
       if (!window.frames['googlefcPresent']) {
-        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);} 
         document.body ? add() : setTimeout(signalGooglefcPresent,0);
       }
     })();
   </script>
 
   <style>
-    :root { --adCap: 50px; }
-    @media (min-width: 600px) { :root { --adCap: 60px; } }
-    @media (min-width: 992px) { :root { --adCap: 90px; } }
-
-    html, body {
-      height:100%;
-      margin:0;
-      overflow:hidden;                 /* 🚫 no page scroll */
-      background:#0b0f14;
-      color:#e6edf3;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial;
+    /* ========= theme (from wireframe) ========= */
+    :root{
+      --bg:#0b0b10; --fg:#eaecef; --muted:#9aa0a6; --accent:#6cf; --card:rgba(20,20,28,.85);
+      --adCap: 90px; /* cap the ad height */
     }
+    @media (max-width: 991px){ :root{ --adCap: 60px; } }
+    @media (max-width: 599px){ :root{ --adCap: 50px; } }
 
-    /* The spacer height is set dynamically via JS from the top ad wrapper height (capped). */
-    #ad-spacer { height: var(--adH, var(--adCap)); }
+    *{ box-sizing:border-box }
+    html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--fg); font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial; }
 
-    /* Canvas fills remaining viewport below the ad; prevents overflow */
-    canvas {
-      display:block;
-      width:100vw;
-      height: calc(100vh - var(--adH, var(--adCap)));
-      image-rendering: crisp-edges;
-    }
+    /* ========= Top Ad (hard-capped) ========= */
+    #ad-top-wrapper{ position:fixed; top:0; left:0; right:0; z-index:30; background:rgba(0,0,0,.15); backdrop-filter:blur(3px); border-bottom:1px dashed #2a2f3a; display:flex; justify-content:center; padding:4px 8px 0; max-height:var(--adCap); overflow:hidden; }
+    #ad-top-unit{ display:block !important; text-align:center; width:100% !important; height:var(--adCap) !important; line-height:0; }
+    #ad-spacer{ height:var(--adH, var(--adCap)); }
 
-    #ui { position: fixed; inset: 0; pointer-events: none; }
-    .hud { position:absolute; left:12px; top: calc(var(--adH, var(--adCap)) + 12px); display:flex; gap:12px; align-items:center; }
-    .pill { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; }
-    .center { position:absolute; left:50%; top:50%; transform: translate(-50%, -50%); text-align:center; }
-    .hint { opacity:.8; font-size:14px; margin-top:8px; }
-    input[type="text"] { pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none; }
+    /* ========= Canvas ========= */
+    canvas{ display:block; width:100vw; height:calc(100vh - var(--adH, var(--adCap))); image-rendering:crisp-edges; }
 
-    /* CTA buttons */
-    .cta{ position:relative; pointer-events:all; border:1px solid transparent; padding:14px 22px; border-radius:14px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; transition:transform .12s ease, filter .12s ease, box-shadow .12s ease; user-select:none; -webkit-tap-highlight-color:transparent; overflow:hidden; }
-    .cta:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
-    .cta:hover{ transform:translateY(-1px); filter:brightness(1.03); }
-    .cta:active{ transform:translateY(1px) scale(.98); }
-    .cta__icon{ font-size:18px; line-height:0; }
-    .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; box-shadow:0 6px 18px rgba(44,124,247,.35), inset 0 1px 0 rgba(255,255,255,.25); border-color:rgba(124,253,214,.25); }
-    .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; box-shadow:0 6px 18px rgba(255,122,182,.35), inset 0 1px 0 rgba(255,255,255,.25); border-color:rgba(255,210,119,.25); }
-    .cta::before{ content:""; position:absolute; inset:-30% -10% auto -30%; height:200%; width:140%; background:linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.35) 20%,rgba(255,255,255,0) 40%); transform:translateX(-120%) rotate(-20deg); transition:transform .35s ease; pointer-events:none; }
-    .cta:hover::before{ transform:translateX(40%) rotate(-20deg); }
-    .cta .ripple{ position:absolute; border-radius:999px; transform:translate(-50%,-50%); background:rgba(255,255,255,.45); mix-blend-mode:soft-light; pointer-events:none; animation:ripple .6s ease-out forwards; }
-    @keyframes ripple{ from{width:0;height:0;opacity:.55} to{width:520px;height:520px;opacity:0} }
-    .cta .spark{ position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; filter:blur(.2px); animation:pop .6s ease-out forwards; }
-    @keyframes pop{ 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0} }
+    /* ========= HUD ========= */
+    #ui{ position:fixed; inset:0; pointer-events:none; }
+    .hud{ position:absolute; left:12px; top:calc(var(--adH, var(--adCap)) + 12px); display:flex; gap:12px; align-items:center; }
+    .pill{ background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; color:#c9d1d9; }
 
-    /* Top ad: fixed, centered, and HARD-CAPPED in height. */
-    #ad-top-wrapper {
-      position: fixed;
-      top:0; left:0; right:0;
-      z-index:5;
-      background:#0b0f14;
-      padding:6px 8px 0;
-      width:100%;
-      display:flex;
-      justify-content:center;
-      max-height: var(--adCap);  /* cap height */
-      overflow: hidden;          /* clip anything taller */
-    }
-    /* Force the ad box not to exceed cap; still responsive in width */
-    #ad-top-unit {
-      display:block !important;
-      text-align:center;
-      width:100% !important;
-      height: var(--adCap) !important;  /* hard cap */
-      line-height: 0;
-    }
+    /* ========= Overlay (wireframe style) ========= */
+    #overlay{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; }
+    #overlay.visible{ display:flex; }
+    #overlayCard{ min-width:min(85%,520px); max-width:92%; border-radius:16px; padding:16px 18px; background:var(--card); box-shadow:0 10px 30px rgba(0,0,0,.35); outline:1px dashed #2e3240; }
+    #overlayTitle{ font-size:18px; margin:0 0 8px }
+    #overlayBody{ opacity:.9; margin-bottom:10px }
+    #overlayRow{ display:flex; gap:8px; flex-wrap:wrap }
 
-    /* Modal */
-    .modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:10; }
+    /* ========= Buttons ========= */
+    .btn, .cta{ pointer-events:auto; border:0; border-radius:12px; padding:.6rem .9rem; background:#1a1a22; color:#fff; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    .cta{ position:relative; border-radius:14px; font-weight:800; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; user-select:none; -webkit-tap-highlight-color:transparent; }
+    .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; border:1px solid rgba(124,253,214,.25); }
+    .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; border:1px solid rgba(255,210,119,.25); }
+
+    /* ========= Quickbar & Daily Banner ========= */
+    #quickbar{ position:fixed; left:50%; transform:translateX(-50%); bottom:8px; display:flex; gap:8px; z-index:26; }
+    #dailyBanner{ position:fixed; right:8px; bottom:8px; color:var(--muted); font-weight:600; z-index:26; background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:10px; }
+
+    /* ========= Modal (Leaderboard) ========= */
+    .modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:28; }
     .modal.show { display:flex; }
     .sheet { width:min(560px, 92vw); background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
     table { width:100%; border-collapse: collapse; }
     th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size:14px; }
+
+    /* inputs */
+    input[type="text"], select{ pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none; }
   </style>
 </head>
 <body>
+  <!-- Top Ad (hard-capped) -->
   <div id="ad-top-wrapper">
     <ins id="ad-top-unit" class="adsbygoogle"
          style="display:block; text-align:center;"
@@ -120,8 +98,10 @@
   </div>
   <div id="ad-spacer"></div>
 
+  <!-- Game Canvas -->
   <canvas id="game"></canvas>
 
+  <!-- UI / HUD -->
   <div id="ui">
     <div class="hud">
       <div id="score" class="pill">Score: 0</div>
@@ -132,18 +112,27 @@
       <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
     </div>
 
-    <div id="overlay" class="center" style="display:none">
-      <h1>Loop Runner</h1>
-      <p>Dash through enemies. Click/tap to dash toward the pointer.<br/>Chain kills to build combo. Don’t touch enemies while not dashing.</p>
-      <div class="row" style="margin:8px 0;">
-        <button id="start" class="cta cta--primary" aria-label="Play"><span class="cta__icon" aria-hidden="true">▶</span> Play</button>
-        <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span class="cta__icon" aria-hidden="true">☀</span> Daily Run</button>
+    <!-- Overlay (wireframe look, driven by game state) -->
+    <div id="overlay" class="visible" role="dialog" aria-modal="true">
+      <div id="overlayCard">
+        <h3 id="overlayTitle">Loop Runner</h3>
+        <div id="overlayBody">Dash through enemies. Click/tap to dash toward the pointer. Chain kills to build combo. Don’t touch enemies while not dashing.</div>
+        <div class="row" style="margin:8px 0;">
+          <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
+          <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
+        </div>
+        <div id="overlayRow" style="margin:8px 0 0 0;">
+          <button class="btn" id="btnResume" style="display:none">▶ Resume</button>
+          <button class="btn" id="btnPlayAgain" style="display:none">↻ Play Again</button>
+          <button class="btn" id="btnShare">📣 Share</button>
+        </div>
+        <div class="hint" style="opacity:.85; font-size:13px; margin-top:10px;">Controls: Click/Tap to dash • Space to restart • P / Esc to pause</div>
+        <div style="margin-top:10px; opacity:.9; font-size:13px;">Name: <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" /></div>
       </div>
-      <div class="hint">Controls: Click/Tap to dash • Space to restart • P to pause</div>
-      <div style="margin-top:10px; opacity:.85; font-size:13px;">Name: <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" /></div>
     </div>
   </div>
 
+  <!-- Leaderboard Modal -->
   <div id="lbModal" class="modal">
     <div class="sheet">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -159,7 +148,7 @@
             data-full-width-responsive="true"></ins>
       </div>
       <div class="row" style="margin:8px 0 12px 0; align-items:center;">
-        <select id="lbMode" style="pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none;">
+        <select id="lbMode">
           <option value="normal">Normal</option>
           <option value="daily">Daily (today)</option>
         </select>
@@ -169,19 +158,21 @@
     </div>
   </div>
 
-  <!-- Quickbar: Restart + Share -->
-  <div id="quickbar" style="position:fixed;left:50%;transform:translateX(-50%);bottom:8px;display:flex;gap:8px;z-index:6;">
-    <button id="restartBtn" class="cta cta--primary" style="pointer-events:auto;padding:10px 14px;">↻ Restart</button>
-    <button id="shareBtn" class="cta cta--secondary" style="pointer-events:auto;padding:10px 14px;">📣 Share</button>
+  <!-- Quickbar + Daily Banner -->
+  <div id="quickbar">
+    <button id="restartBtn" class="cta cta--primary" style="padding:10px 14px;">↻ Restart</button>
+    <button id="shareBtn" class="cta cta--secondary" style="padding:10px 14px;">📣 Share</button>
   </div>
+  <div id="dailyBanner">Daily Challenge</div>
 
 <script>
 (() => {
+  const $ = (sel) => document.querySelector(sel);
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   let W=0, H=0, DPR=Math.min(devicePixelRatio||1,2);
 
-  // Use viewport minus ad height to size the canvas bitmap
+  /* ====== layout sizing (ad-aware) ====== */
   function resize(){
     const spacer = document.getElementById('ad-spacer');
     const adH = (spacer && spacer.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--adH')) || 0;
@@ -195,7 +186,6 @@
   }
   addEventListener('resize', resize);
 
-  // Safe Ad init (top)
   const topIns = document.getElementById('ad-top-unit');
   function tryFillTopAd(){
     if(!topIns) return;
@@ -205,14 +195,10 @@
   }
   window.addEventListener('load', ()=>{
     let ok = tryFillTopAd();
-    if(!ok){
-      const id = setInterval(()=>{ if(tryFillTopAd()) clearInterval(id); }, 200);
-      setTimeout(()=> clearInterval(id), 5000);
-    }
-    resize(); // ensure canvas sizes after ad height settles
+    if(!ok){ const id = setInterval(()=>{ if(tryFillTopAd()) clearInterval(id); }, 200); setTimeout(()=> clearInterval(id), 5000); }
+    resize();
   });
 
-  // Auto spacer for ad height (and expose as --adH)
   const spacer = document.getElementById('ad-spacer');
   const topWrap = document.getElementById('ad-top-wrapper');
   function updateAdVars(){
@@ -221,52 +207,60 @@
     document.documentElement.style.setProperty('--adH', h+'px');
     resize();
   }
-  if('ResizeObserver' in window && topWrap){
-    new ResizeObserver(updateAdVars).observe(topWrap);
-  } else {
-    setTimeout(updateAdVars, 300);
-  }
+  if('ResizeObserver' in window && topWrap){ new ResizeObserver(updateAdVars).observe(topWrap); } else { setTimeout(updateAdVars, 300); }
 
-  // localStorage-safe helpers
+  /* ====== storage helpers ====== */
   function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
   function setLS(k, v){ try{ localStorage.setItem(k, v); }catch{} }
 
+  /* ====== state ====== */
   const state={ running:false, paused:false, score:0, combo:0, time:0,
     best:Number(getLS('lr_best', 0)), dailyBest:Number(getLS('lr_daily', 0)),
     spawnTimer:0, spawnInterval:1.1, dailyMode:false };
 
+  /* ====== UI refs ====== */
   const ui={ 
-    score:document.getElementById('score'), combo:document.getElementById('combo'),
-    best:document.getElementById('best'), daily:document.getElementById('daily'),
-    overlay:document.getElementById('overlay'),
-    start:document.getElementById('start'), dailyBtn:document.getElementById('dailyBtn'),
-    lbBtn:document.getElementById('lbBtn'), nameInput:document.getElementById('nameInput'),
+    score:$('#score'), combo:$('#combo'), best:$('#best'), daily:$('#daily'),
+    overlay:$('#overlay'),
+    ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
+    start:$('#start'), dailyBtn:$('#dailyBtn'),
+    btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'),
+    lbBtn:$('#lbBtn'), nameInput:$('#nameInput'),
+    restartBtn:$('#restartBtn'), shareBtn:$('#shareBtn'),
+    dailyBanner:$('#dailyBanner')
   };
+
   function hydrateHUD(){ ui.score.textContent='Score: 0'; ui.combo.textContent='Combo: 0'; ui.best.textContent='Best: '+state.best; ui.daily.textContent='Daily: '+state.dailyBest; }
   hydrateHUD();
+  ui.dailyBanner.textContent = 'Daily Challenge: ' + new Date().toISOString().slice(0,10);
 
-  // === Pause/Resume helpers (use the existing overlay) ===
-  const ovTitleEl = document.querySelector('#overlay h1');
-  const ovBodyEl  = document.querySelector('#overlay p');
-  const ovTitleHome = ovTitleEl ? ovTitleEl.textContent : '';
-  const ovBodyHome  = ovBodyEl  ? ovBodyEl.innerHTML   : '';
+  /* ====== Pause/Resume helpers (overlay driven) ====== */
+  function showOverlay(){ ui.overlay.classList.add('visible'); }
+  function hideOverlay(){ ui.overlay.classList.remove('visible'); }
 
-  function pauseGameUI(){
-    if (!state.running || state.paused) return;
-    state.paused = true;
-    if (ovTitleEl) ovTitleEl.textContent = 'Paused';
-    if (ovBodyEl)  ovBodyEl.innerHTML = 'Press <b>P</b> or <b>Esc</b> to resume';
-    ui.overlay.style.display = 'block';
+  function setOverlayHome(){
+    ui.ovTitle.textContent = 'Loop Runner';
+    ui.ovBody.textContent = 'Dash through enemies. Click/tap to dash toward the pointer. Chain kills to build combo. Don\'t touch enemies while not dashing.';
+    ui.btnResume.style.display = 'none';
+    ui.btnPlayAgain.style.display = 'none';
+    showOverlay();
   }
-  function resumeGameUI(){
-    if (!state.paused) return;
-    state.paused = false;
-    ui.overlay.style.display = 'none';
-    if (ovTitleEl) ovTitleEl.textContent = ovTitleHome;
-    if (ovBodyEl)  ovBodyEl.innerHTML = ovBodyHome;
+  function setOverlayPaused(){
+    ui.ovTitle.textContent = 'Paused';
+    ui.ovBody.innerHTML = 'Press <b>P</b> or <b>Esc</b> to resume';
+    ui.btnResume.style.display = '';
+    ui.btnPlayAgain.style.display = '';
+    showOverlay();
+  }
+  function setOverlayGameOver(score, best, isPB){
+    ui.ovTitle.textContent = isPB ? 'New Best!' : 'Game Over';
+    ui.ovBody.innerHTML = `Score: <b>${score}</b> • Best: <b>${best}</b>${isPB?' • 🎉':''}`;
+    ui.btnResume.style.display = 'none';
+    ui.btnPlayAgain.style.display = '';
+    showOverlay();
   }
 
-  // Seeded RNG for daily
+  /* ====== RNG ====== */
   const todayKey=()=>new Date().toISOString().slice(0,10);
   function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
   let seededRand=Math.random; let usingSeed=false;
@@ -275,17 +269,18 @@
   function rndi(a,b){ return Math.floor(rnd(a,b+1)); }
   function hashToInt(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 
-  // Audio
+  /* ====== Audio ====== */
   let audio, master;
   function initAudio(){ if(!audio){ audio=new (window.AudioContext||window.webkitAudioContext)(); master=audio.createGain(); master.gain.value=0.08; master.connect(audio.destination); } }
 
+  /* ====== Entities ====== */
   const player={ x:W/2, y:H/2, r:12, vx:0, vy:0, maxSpeed:900, friction:9, dashing:false, dashCooldown:0, dashWindup:0 };
   const enemies=[]; const particles=[];
 
   function addParticle(x,y,size=2,life=0.4){ const a=rnd(0,Math.PI*2); const sp=rnd(40,240); particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life, maxLife:life, size}); }
   function spawnEnemy(){ const m=24; const side=rndi(0,3); let x,y; if(side===0){x=rnd(-m,W+m); y=-m;} else if(side===1){x=W+m; y=rnd(-m,H+m);} else if(side===2){x=rnd(-m,W+m); y=H+m;} else {x=-m; y=rnd(-m,H+m);} const r=rnd(14,22); const speed=rnd(40,90)+Math.min(state.time*4,220); const ang=Math.atan2(player.y-y, player.x-x)+rnd(-0.5,0.5); const vx=Math.cos(ang)*speed, vy=Math.sin(ang)*speed; enemies.push({x,y,r,vx,vy,speed,ang}); }
 
-  // Input
+  /* ====== Input ====== */
   let pointer={ x:W/2, y:H/2, down:false };
   function screenToWorld(e){ const rect=canvas.getBoundingClientRect(); return { x:(e.clientX-rect.left), y:(e.clientY-rect.top) }; }
   function startDashTowards(px,py){ if(player.dashCooldown>0) return; const dx=px-player.x, dy=py-player.y; const len=Math.hypot(dx,dy)||1; const ux=dx/len, uy=dy/len; player.vx=ux*player.maxSpeed; player.vy=uy*player.maxSpeed; player.dashing=true; player.dashCooldown=0.35; player.dashWindup=0.12; for(let i=0;i<10;i++) addParticle(player.x,player.y,3,0.25); }
@@ -293,41 +288,20 @@
   canvas.addEventListener('pointermove',(e)=>{ const p=screenToWorld(e); pointer.x=p.x; pointer.y=p.y; });
   canvas.addEventListener('pointerup',()=>{ pointer.down=false; });
 
-  // Keyboard
   addEventListener('keydown',(e)=>{
     if(e.repeat) return;
-
-    // Space: start when not running
-    if(e.code==='Space'){
-      if(!state.running){ e.preventDefault(); startGame(state.dailyMode); return; }
-    }
-
-    // R: quick restart (keeps current mode)
-    if(e.key==='r' || e.key==='R'){
-      e.preventDefault(); startGame(state.dailyMode); return;
-    }
-
-    // P / Esc: toggle pause
-    if(e.key==='p' || e.key==='P' || e.key==='Escape'){
-      e.preventDefault(); if(state.running){ if(!state.paused) pauseGameUI(); else resumeGameUI(); } return;
-    }
-
-    // Arrow keys: directional dash helper
-    const amt=80;
-    if(e.key && e.key.indexOf('Arrow')===0){
-      let dx=0, dy=0;
-      if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt;
-      startDashTowards(player.x+dx, player.y+dy);
-    }
+    if(e.code==='Space'){ if(!state.running){ e.preventDefault(); startGame(state.dailyMode); return; } }
+    if(e.key==='r' || e.key==='R'){ e.preventDefault(); startGame(state.dailyMode); return; }
+    if(e.key==='p' || e.key==='P' || e.key==='Escape'){ e.preventDefault(); if(state.running){ if(!state.paused) pauseGameUI(); else resumeGameUI(); } return; }
+    const amt=80; if(e.key&&e.key.indexOf('Arrow')===0){ let dx=0, dy=0; if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt; startDashTowards(player.x+dx, player.y+dy);} 
   });
   addEventListener('blur', ()=>{ if(state.running && !state.paused) pauseGameUI(); });
 
-  // Leaderboard UI handles
-  const lb={ modal:document.getElementById('lbModal'), close:document.getElementById('lbClose'), modeSel:document.getElementById('lbMode'), info:document.getElementById('lbInfo'), table:document.getElementById('lbTable').querySelector('tbody') };
+  /* ====== Leaderboard ====== */
+  const lb={ modal:$('#lbModal'), close:$('#lbClose'), modeSel:$('#lbMode'), info:$('#lbInfo'), table:$('#lbTable').querySelector('tbody') };
   function loadLB(key){ try{ return JSON.parse(getLS(key,'[]')); }catch{ return []; } }
   function saveLB(key,arr){ setLS(key, JSON.stringify(arr)); }
 
-  // --- Supabase REST config (global leaderboard) ---
   const SB_URL = 'https://zpoerliqhcywaulbthyf.supabase.co/rest/v1/scores';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpwb2VybGlxaGN5d2F1bGJ0aHlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDQxNjYsImV4cCI6MjA3Mzc4MDE2Nn0.7jjITj1H2AxWPnCeyzmMsNw3uAVACoYb_CV5rRoD65k';
   const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' };
@@ -335,7 +309,6 @@
   function showLeaderboard(mode){ lb.modal.classList.add('show'); lb.modeSel.value = mode || (state.dailyMode?'daily':'normal'); renderLeaderboard(); maybeFillModalAd(); }
   function hideLeaderboard(){ lb.modal.classList.remove('show'); }
 
-  // === Timestamp-free Top 10 (score only) ===
   function renderLeaderboard(){
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
@@ -361,7 +334,6 @@
         }
       })
       .catch(() => {
-        // Fallback: local (offline)
         const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
@@ -379,13 +351,11 @@
         }
       });
   }
-
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
-  document.getElementById('lbBtn').addEventListener('click', ()=> showLeaderboard());
+  ui.lbBtn.addEventListener('click', ()=> showLeaderboard());
 
-  // Fill modal ad only when visible
   let modalAdFilled = false;
   function maybeFillModalAd(){
     if(modalAdFilled) return;
@@ -396,127 +366,102 @@
     else { setTimeout(maybeFillModalAd, 200); }
   }
 
-  function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
+  /* ====== Share (overlay + quickbar) ====== */
+  async function doShare(){
+    const url = location.href;
+    const text = `I just played Loop Runner and scored ${state.score|0}!`;
+    try{
+      if (navigator.share){ await navigator.share({ title:'Loop Runner', text, url }); }
+      else {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+      }
+    }catch(e){ /* user cancelled */ }
+  }
+
+  /* ====== Game control ====== */
+  function startGame(daily=false){ 
+    state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); hideOverlay(); 
+  }
   function gameOver(){
     state.running=false; state.paused=false;
     const score = state.score|0;
     let isPB = false;
-    if(state.dailyMode){
-      if(score > state.dailyBest){ state.dailyBest = score; setLS('lr_daily', state.dailyBest); isPB = true; }
-    } else {
-      if(score > state.best){ state.best = score; setLS('lr_best', state.best); isPB = true; }
-    }
+    if(state.dailyMode){ if(score > state.dailyBest){ state.dailyBest = score; setLS('lr_daily', state.dailyBest); isPB = true; } }
+    else { if(score > state.best){ state.best = score; setLS('lr_best', state.best); isPB = true; } }
     hydrateHUD();
-    const tEl = document.querySelector('#overlay h1');
-    const bEl = document.querySelector('#overlay p');
-    if (tEl) tEl.textContent = isPB ? 'New Best!' : 'Game Over';
-    if (bEl) bEl.innerHTML = `Score: <b>${score}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>${isPB?' • 🎉':''}`;
-    ui.overlay.style.display='block';
+    setOverlayGameOver(score, state.dailyMode?state.dailyBest:state.best, isPB);
     submitScore();
     showLeaderboard(state.dailyMode?'daily':'normal');
-
-    // Auto-share personal best
-    if (isPB) {
-      setTimeout(function(){ try{ doShare(); }catch(e){} }, 450);
-    }
+    if (isPB) setTimeout(()=>{ try{ doShare(); }catch{} }, 450);
   }
 
-  // === APPLY LOGGING HERE ===
+  function pauseGameUI(){ if (!state.running || state.paused) return; state.paused = true; setOverlayPaused(); }
+  function resumeGameUI(){ if (!state.paused) return; state.paused = false; hideOverlay(); }
+
   async function submitScore(){
     const name=(ui.nameInput.value||getLS('lr_name','Player')).slice(0,20).trim()||'Player';
     setLS('lr_name',name);
     try {
       const body = { name: name.slice(0,12), score: state.score|0, mode: (state.dailyMode ? 'daily' : 'normal') };
-
-      fetch(SB_URL, {
-        method:'POST',
-        headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
-        body: JSON.stringify(body)
-      })
-      .then(async r => {
-        if(!r.ok){
-          let txt = '';
-          try{ txt = await r.text(); }catch{}
-          console.error('Supabase insert failed', r.status, txt);
-        }
-      })
-      .catch(err => console.error('Supabase insert network error', err));
-    } catch(err) {
-      console.error('submitScore exception', err);
-    }
+      fetch(SB_URL, { method:'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify(body) })
+        .then(async r => { if(!r.ok){ let txt=''; try{ txt = await r.text(); }catch{} console.error('Supabase insert failed', r.status, txt); } })
+        .catch(err => console.error('Supabase insert network error', err));
+    } catch(err) { console.error('submitScore exception', err); }
   }
 
   ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
   ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
-  ui.overlay.style.display='block';
+  ui.btnResume.addEventListener('click', resumeGameUI);
+  ui.btnPlayAgain.addEventListener('click', ()=> startGame(state.dailyMode));
+  ui.btnShare.addEventListener('click', doShare);
+  ui.restartBtn.addEventListener('click', ()=> startGame(state.dailyMode));
+  ui.shareBtn.addEventListener('click', doShare);
 
+  /* ====== Loop ====== */
   let last = performance.now();
-  function loop(){ requestAnimationFrame(loop); const t=performance.now(); let dt=(t-last)/1000; last=t; if(!state.running){ render(); return; } if(state.paused){ render(); return; }
-    state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`; update(dt); render(); }
-  function update(dt){ state.spawnTimer-=dt; if(state.spawnTimer<=0){ spawnEnemy(); state.spawnTimer=state.spawnInterval; }
+  function loop(){
+    requestAnimationFrame(loop);
+    const t=performance.now(); let dt=(t-last)/1000; last=t; 
+    if(!state.running || state.paused){ render(); return; }
+    state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`; 
+    update(dt); render();
+  }
+
+  function update(dt){
+    state.spawnTimer-=dt; if(state.spawnTimer<=0){ spawnEnemy(); state.spawnTimer=state.spawnInterval; }
     if(player.dashWindup>0){ player.dashWindup-=dt; if(player.dashWindup<=0) player.dashing=false; }
     const f=Math.exp(-player.friction*dt); player.vx*=f; player.vy*=f; player.x+=player.vx*dt; player.y+=player.vy*dt; player.x=Math.max(8,Math.min(W-8,player.x)); player.y=Math.max(8,Math.min(H-8,player.y)); if(player.dashCooldown>0) player.dashCooldown-=dt;
-    for(let i=0;i<enemies.length;i++){ const e=enemies[i]; const ang=Math.atan2(player.y-e.y, player.x-e.x); e.vx=Math.cos(ang)*e.speed; e.vy=Math.sin(ang)*e.speed; e.ang = Math.atan2(e.vy, e.vx); e.x+=e.vx*dt; e.y+=e.vy*dt;
+    for(let i=0;i<enemies.length;i++){
+      const e=enemies[i];
+      const ang=Math.atan2(player.y-e.y, player.x-e.x); e.vx=Math.cos(ang)*e.speed; e.vy=Math.sin(ang)*e.speed; e.ang = Math.atan2(e.vy, e.vx); e.x+=e.vx*dt; e.y+=e.vy*dt;
       const d=Math.hypot(e.x-player.x, e.y-player.y);
-      if(d<e.r+player.r){ if(player.dashing){ enemies.splice(i,1); i--; state.combo+=1; const add = Math.floor(10*Math.pow(1.4, state.combo-1)); state.score += add; ui.combo.textContent=`Combo: ${state.combo}`; ui.score.textContent=`Score: ${state.score|0}`; for(let k=0;k<24;k++) addParticle(e.x,e.y, Math.random()*2+2, Math.random()*0.4+0.2); } else { gameOver(); break; } }
+      if(d<e.r+player.r){
+        if(player.dashing){ enemies.splice(i,1); i--; state.combo+=1; const add = Math.floor(10*Math.pow(1.4, state.combo-1)); state.score += add; ui.combo.textContent=`Combo: ${state.combo}`; ui.score.textContent=`Score: ${state.score|0}`; for(let k=0;k<24;k++) addParticle(e.x,e.y, Math.random()*2+2, Math.random()*0.4+0.2); }
+        else { gameOver(); break; }
+      }
       if(e.x<-100||e.x>W+100||e.y<-100||e.y>H+100){ enemies.splice(i,1); i--; }
     }
     for(let i=0;i<particles.length;i++){ const p=particles[i]; p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.98; p.vy*=0.98; if(p.life<=0){ particles.splice(i,1); i--; } }
   }
 
-  // ---------- Visual helpers ----------
+  /* ====== Visuals ====== */
   function clamp01(t){ return Math.max(0, Math.min(1, t)); }
   function lerp(a,b,t){ return a + (b-a)*t; }
-  function lerpColor(c1, c2, t){ // colors as [r,g,b]
-    return [ Math.round(lerp(c1[0], c2[0], t)),
-             Math.round(lerp(c1[1], c2[1], t)),
-             Math.round(lerp(c1[2], c2[2], t)) ];
-  }
+  function lerpColor(c1, c2, t){ return [ Math.round(lerp(c1[0], c2[0], t)), Math.round(lerp(c1[1], c2[1], t)), Math.round(lerp(c1[2], c2[2], t)) ]; }
   const COL_BLUE=[88,166,255], COL_YELLOW=[255,210,119], COL_RED=[255,95,95];
-  function speedToColor(speed){ // map ~40..310 to blue->yellow->red
-    const t = clamp01((speed-40)/270);
-    if(t<0.5){ const u=t/0.5; const c=lerpColor(COL_BLUE, COL_YELLOW, u); return `rgb(${c[0]},${c[1]},${c[2]})`; }
-    const u=(t-0.5)/0.5; const c=lerpColor(COL_YELLOW, COL_RED, u); return `rgb(${c[0]},${c[1]},${c[2]})`;
-  }
+  function speedToColor(speed){ const t = clamp01((speed-40)/270); if(t<0.5){ const u=t/0.5; const c=lerpColor(COL_BLUE, COL_YELLOW, u); return `rgb(${c[0]},${c[1]},${c[2]})`; } const u=(t-0.5)/0.5; const c=lerpColor(COL_YELLOW, COL_RED, u); return `rgb(${c[0]},${c[1]},${c[2]})`; }
+  function drawDot(e){ const fill = speedToColor(e.speed); ctx.save(); ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fillStyle = fill; ctx.shadowColor = fill; ctx.shadowBlur = 8; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.stroke(); ctx.restore(); }
+  function render(){ ctx.save(); ctx.clearRect(0,0,W,H); for(const p of particles){ const a=Math.max(0, Math.min(1, p.life/p.maxLife)); ctx.globalAlpha=a; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle='#8fb3ff'; ctx.fill(); ctx.globalAlpha=1; } for(const e of enemies){ drawDot(e); } ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3'; ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000'; ctx.shadowBlur = player.dashing ? 12 : 0; ctx.fill(); ctx.restore(); }
 
-  /* --- DOT RENDERER (replaces bug art) --- */
-  function drawDot(e){
-    // colored circle with subtle outline & glow based on speed
-    const fill = speedToColor(e.speed);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
-    ctx.fillStyle = fill;
-    ctx.shadowColor = fill;
-    ctx.shadowBlur = 8;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function render(){ 
-    ctx.save(); 
-    ctx.clearRect(0,0,W,H);
-    // Particles
-    for(const p of particles){ const a=Math.max(0, Math.min(1, p.life/p.maxLife)); ctx.globalAlpha=a; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle='#8fb3ff'; ctx.fill(); ctx.globalAlpha=1; }
-    // Enemies as dots
-    for(const e of enemies){ drawDot(e); }
-    // Player
-    ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
-    ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3';
-    ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000'; ctx.shadowBlur = player.dashing ? 12 : 0; ctx.fill();
-    ctx.restore();
-  }
-
-  // Modal close-click
+  /* ====== Modal close-click ====== */
   document.getElementById('lbModal').addEventListener('click', (e)=>{ if(e.target.id==='lbModal') e.currentTarget.classList.remove('show'); });
 
-  // Kick things off
+  /* ====== Boot ====== */
   resize();
   requestAnimationFrame(function loopStart(){ requestAnimationFrame(loop); });
-})(); 
+  setOverlayHome();
+})();
 </script>
 
 <script>

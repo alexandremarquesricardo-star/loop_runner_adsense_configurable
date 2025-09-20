@@ -169,6 +169,12 @@
     </div>
   </div>
 
+  <!-- Quickbar: Restart + Share -->
+  <div id="quickbar" style="position:fixed;left:50%;transform:translateX(-50%);bottom:8px;display:flex;gap:8px;z-index:6;">
+    <button id="restartBtn" class="cta cta--primary" style="pointer-events:auto;padding:10px 14px;">↻ Restart</button>
+    <button id="shareBtn" class="cta cta--secondary" style="pointer-events:auto;padding:10px 14px;">📣 Share</button>
+  </div>
+
 <script>
 (() => {
   const canvas = document.getElementById('game');
@@ -391,7 +397,29 @@
   }
 
   function startGame(daily=false){ state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); ui.overlay.style.display='none'; }
-  function gameOver(){ state.running=false; state.paused=false; if(state.dailyMode){ state.dailyBest=Math.max(state.dailyBest, state.score|0); setLS('lr_daily', state.dailyBest); } else { state.best=Math.max(state.best, state.score|0); setLS('lr_best', state.best); } hydrateHUD(); document.querySelector('#overlay h1').textContent='Game Over'; document.querySelector('#overlay p').innerHTML=`Score: <b>${state.score|0}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>`; ui.overlay.style.display='block'; submitScore(); showLeaderboard(state.dailyMode?'daily':'normal'); }
+  function gameOver(){
+    state.running=false; state.paused=false;
+    const score = state.score|0;
+    let isPB = false;
+    if(state.dailyMode){
+      if(score > state.dailyBest){ state.dailyBest = score; setLS('lr_daily', state.dailyBest); isPB = true; }
+    } else {
+      if(score > state.best){ state.best = score; setLS('lr_best', state.best); isPB = true; }
+    }
+    hydrateHUD();
+    const tEl = document.querySelector('#overlay h1');
+    const bEl = document.querySelector('#overlay p');
+    if (tEl) tEl.textContent = isPB ? 'New Best!' : 'Game Over';
+    if (bEl) bEl.innerHTML = `Score: <b>${score}</b> • Best: <b>${state.dailyMode?state.dailyBest:state.best}</b>${isPB?' • 🎉':''}`;
+    ui.overlay.style.display='block';
+    submitScore();
+    showLeaderboard(state.dailyMode?'daily':'normal');
+
+    // Auto-share personal best
+    if (isPB) {
+      setTimeout(function(){ try{ doShare(); }catch(e){} }, 450);
+    }
+  }
 
   // === APPLY LOGGING HERE ===
   async function submitScore(){
