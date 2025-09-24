@@ -493,11 +493,59 @@
   /* ====== Visuals ====== */
   function clamp01(t){ return Math.max(0, Math.min(1, t)); }
   function lerp(a,b,t){ return a + (b-a)*t; }
-  function lerpColor(c1, c2, t){ return [ Math.round(lerp(c1[0], c2[0], t)), Math.round(lerp(c1[1], c2[1], t)) ]; }
+  function lerpColor(c1, c2, t){
+    return [
+      Math.round(lerp(c1[0], c2[0], t)),
+      Math.round(lerp(c1[1], c2[1], t)),
+      Math.round(lerp(c1[2], c2[2], t))
+    ];
+  }
   const COL_BLUE=[88,166,255], COL_YELLOW=[255,210,119], COL_RED=[255,95,95];
-  function speedToColor(speed){ const t = clamp01((speed-40)/270); if(t<0.5){ const u=t/0.5; const c=lerpColor(COL_BLUE, COL_YELLOW, u); return `rgb(${c[0]},${c[1]},${c[2]})`; } const u=(t-0.5)/0.5; const c=lerpColor(COL_YELLOW, COL_RED, u); return `rgb(${c[0]},${c[1]},${c[2]})`; }
-  function drawDot(e){ const fill = speedToColor(e.speed); ctx.save(); ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fillStyle = fill; ctx.shadowColor = fill; ctx.shadowBlur = 8; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.stroke(); ctx.restore(); }
-  function render(){ ctx.save(); ctx.clearRect(0,0,W,H); for(const p of particles){ const a=Math.max(0, Math.min(1, p.life/p.maxLife)); ctx.globalAlpha=a; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fillStyle='#8fb3ff'; ctx.fill(); ctx.globalAlpha=1; } for(const e of enemies){ drawDot(e); } ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3'; ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000'; ctx.shadowBlur = player.dashing ? 12 : 0; ctx.fill(); ctx.restore(); }
+  function speedToColor(speed){
+    const t = clamp01((speed-40)/270);
+    if(t<0.5){
+      const u=t/0.5; const c=lerpColor(COL_BLUE, COL_YELLOW, u);
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    } else {
+      const u=(t-0.5)/0.5; const c=lerpColor(COL_YELLOW, COL_RED, u);
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+  }
+  function drawDot(e){
+    const fill = speedToColor(e.speed);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+    ctx.fillStyle = fill;
+    ctx.shadowColor = fill;
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.stroke();
+    ctx.restore();
+  }
+  function render(){
+    ctx.save();
+    ctx.clearRect(0,0,W,H);
+    for(const p of particles){
+      const a=Math.max(0, Math.min(1, p.life/p.maxLife));
+      ctx.globalAlpha=a;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle='#8fb3ff';
+      ctx.fill();
+      ctx.globalAlpha=1;
+    }
+    for(const e of enemies){ drawDot(e); }
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
+    ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3';
+    ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000';
+    ctx.shadowBlur = player.dashing ? 12 : 0;
+    ctx.fill();
+    ctx.restore();
+  }
 
   /* ====== Modal close-click ====== */
   document.getElementById('lbModal').addEventListener('click', (e)=>{ if(e.target.id==='lbModal') e.currentTarget.classList.remove('show'); });
