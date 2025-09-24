@@ -3,16 +3,61 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Loop Runner — playloop.run</title>
-  <meta name="description" content="Dash, chain, and climb the leaderboard. A fast, tiny browser action game." />
+
+  <!-- SEO Meta -->
+  <title>Loop Runner — Free Browser Action Game | Playloop.run</title>
+  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required." />
+  <link rel="canonical" href="https://playloop.run/">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="keywords" content="free browser game, action game, leaderboard game, reflex game, playloop, loop runner, instant play game">
+  <meta name="theme-color" content="#0b0b10">
+
+  <!-- Social / Open Graph -->
+  <meta property="og:title" content="Loop Runner — Free Browser Action Game">
+  <meta property="og:description" content="Dash, chain, and climb the leaderboard in Loop Runner. A lightning-fast browser game — free to play, no downloads.">
+  <meta property="og:url" content="https://playloop.run/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Playloop">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Loop Runner — Free Browser Action Game">
+  <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner. Free, fast-paced, and playable instantly in your browser.">
+  <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+
+  <!-- PWA / Icons -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Loop Runner",
+    "url": "https://playloop.run/",
+    "image": "https://playloop.run/looprunner-preview.png",
+    "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game you can play instantly.",
+    "inLanguage": "en",
+    "applicationCategory": "Game",
+    "operatingSystem": "Web",
+    "gamePlatform": "Browser",
+    "playMode": ["SinglePlayer"],
+    "publisher": { "@type": "Organization", "name": "Playloop" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
+  }
+  </script>
 
   <!-- Consent Mode v2 (default denied) -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
-    gtag('consent','default',{ 
+    gtag('consent','default',{
       'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
     });
   </script>
@@ -25,7 +70,7 @@
   <script>
     (function signalGooglefcPresent() {
       if (!window.frames['googlefcPresent']) {
-        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);} 
+        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
         document.body ? add() : setTimeout(signalGooglefcPresent,0);
       }
     })();
@@ -219,7 +264,7 @@
     spawnTimer:0, spawnInterval:1.1, dailyMode:false };
 
   /* ====== UI refs ====== */
-  const ui={ 
+  const ui={
     score:$('#score'), combo:$('#combo'), best:$('#best'), daily:$('#daily'),
     overlay:$('#overlay'),
     ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
@@ -380,8 +425,8 @@
   }
 
   /* ====== Game control ====== */
-  function startGame(daily=false){ 
-    state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); hideOverlay(); 
+  function startGame(daily=false){
+    state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); hideOverlay();
   }
   function gameOver(){
     state.running=false; state.paused=false;
@@ -422,9 +467,9 @@
   let last = performance.now();
   function loop(){
     requestAnimationFrame(loop);
-    const t=performance.now(); let dt=(t-last)/1000; last=t; 
+    const t=performance.now(); let dt=(t-last)/1000; last=t;
     if(!state.running || state.paused){ render(); return; }
-    state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`; 
+    state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`;
     update(dt); render();
   }
 
@@ -448,7 +493,7 @@
   /* ====== Visuals ====== */
   function clamp01(t){ return Math.max(0, Math.min(1, t)); }
   function lerp(a,b,t){ return a + (b-a)*t; }
-  function lerpColor(c1, c2, t){ return [ Math.round(lerp(c1[0], c2[0], t)), Math.round(lerp(c1[1], c2[1], t)), Math.round(lerp(c1[2], c2[2], t)) ]; }
+  function lerpColor(c1, c2, t){ return [ Math.round(lerp(c1[0], c2[0], t)), Math.round(lerp(c1[1], c2[1], t)) ]; }
   const COL_BLUE=[88,166,255], COL_YELLOW=[255,210,119], COL_RED=[255,95,95];
   function speedToColor(speed){ const t = clamp01((speed-40)/270); if(t<0.5){ const u=t/0.5; const c=lerpColor(COL_BLUE, COL_YELLOW, u); return `rgb(${c[0]},${c[1]},${c[2]})`; } const u=(t-0.5)/0.5; const c=lerpColor(COL_YELLOW, COL_RED, u); return `rgb(${c[0]},${c[1]},${c[2]})`; }
   function drawDot(e){ const fill = speedToColor(e.speed); ctx.save(); ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fillStyle = fill; ctx.shadowColor = fill; ctx.shadowBlur = 8; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.stroke(); ctx.restore(); }
