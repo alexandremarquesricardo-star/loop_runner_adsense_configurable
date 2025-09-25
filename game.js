@@ -372,13 +372,15 @@
   }
 
   function getMotivationalStatus(score) {
-    if (score >= 1000) return 'Legend';
-    if (score >= 500) return 'Champion';
-    if (score >= 300) return 'Expert';
-    if (score >= 200) return 'Skilled';
-    if (score >= 100) return 'Rising';
-    if (score >= 50) return 'Active';
-    return 'Rookie';
+    if (score >= 1000) {
+      // 🏆 Epic high score words
+      const epicWords = ['LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!', 'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'];
+      return epicWords[Math.floor(Math.random() * epicWords.length)];
+    } else {
+      // 📈 Encouraging progression words
+      const encouragingWords = ['Trying', 'Learning', 'Rookie', 'Beginner', 'Starter', 'Newbie', 'Amateur', 'Casual', 'Practice', 'Getting There'];
+      return encouragingWords[Math.floor(Math.random() * encouragingWords.length)];
+    }
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
