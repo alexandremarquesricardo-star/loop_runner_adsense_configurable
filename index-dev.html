@@ -611,12 +611,18 @@
     lb.table.innerHTML = '';
     lb.info.textContent = 'Worldwide Top 10 (score only)';
 
+   // Motivational words array
+   const motivationalWords = [
+     'LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!', 
+     'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'
+   ];
     fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS })
       .then(res => { if (!res.ok) throw new Error('REST '+res.status); return res.json(); })
       .then(rows => {
         rows.slice(0,10).forEach((e,i) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">—</td>`;
+         const motivationalWord = motivationalWords[i] || 'AMAZING!';
+         tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8;color:#88ffcc;font-weight:bold;">${motivationalWord}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -632,8 +638,8 @@
         lb.table.innerHTML = '';
         arr.slice(0,10).forEach((e,i) => {
           const tr = document.createElement('tr');
-          const when = new Date(e.when).toLocaleString();
-          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`;
+         const motivationalWord = motivationalWords[i] || 'AMAZING!';
+         tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8;color:#88ffcc;font-weight:bold;">${motivationalWord}</td>`;
           lb.table.appendChild(tr);
         });
         if (arr.length===0){
