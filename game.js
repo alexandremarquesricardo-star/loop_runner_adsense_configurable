@@ -347,6 +347,9 @@
           tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
           tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
           tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
+          const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>Local</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -359,9 +362,6 @@
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
-      }
-      )
-  }
   function getMotivationalStatus(score) {
     if (score >= 1000) {
       // 🏆 Epic high score words
