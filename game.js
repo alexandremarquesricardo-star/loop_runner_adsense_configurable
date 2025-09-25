@@ -107,6 +107,10 @@
     rechargeTimer: 0,
     rechargeInterval: 5.0, // 5 seconds per round
     isRecharging: false
+    // Recharge system
+    rechargeTimer: 0,
+    rechargeInterval: 5.0, // 5 seconds per round
+    isRecharging: false
   };
 
   /* ====== UI refs ====== */
@@ -134,6 +138,7 @@
   function updateFireIndicator() {
     const dots = ui.fireIndicator.querySelectorAll('.fire-dot');
     const rechargeProgress = state.isRecharging ? (1 - state.rechargeTimer / state.rechargeInterval) : 0;
+    const rechargeProgress = state.isRecharging ? (1 - state.rechargeTimer / state.rechargeInterval) : 0;
     
     dots.forEach((dot, i) => {
       if (i < state.fireRounds) {
@@ -146,10 +151,17 @@
         dot.classList.add('inactive');
         dot.style.opacity = 0.3 + (rechargeProgress * 0.7);
         dot.style.background = `linear-gradient(to right, #88ffcc ${rechargeProgress * 100}%, #444 ${rechargeProgress * 100}%)`;
+      } else if (state.isRecharging && i === state.fireRounds) {
+        // Show recharging dot with progress
+        dot.classList.remove('active');
+        dot.classList.add('inactive');
+        dot.style.opacity = 0.3 + (rechargeProgress * 0.7);
+        dot.style.background = `linear-gradient(to right, #88ffcc ${rechargeProgress * 100}%, #444 ${rechargeProgress * 100}%)`;
       } else {
         dot.classList.remove('active');
         dot.classList.add('inactive');
         dot.style.opacity = '1';
+        dot.style.background = '#444';
         dot.style.background = '#444';
       }
     });
@@ -399,6 +411,13 @@
     }
     
     state.fireRounds--;
+    
+    // Start recharging if we have less than max rounds
+    if(state.fireRounds < state.maxFireRounds && !state.isRecharging) {
+      state.isRecharging = true;
+      state.rechargeTimer = state.rechargeInterval;
+    }
+    
     
     // Start recharging if we have less than max rounds
     if(state.fireRounds < state.maxFireRounds && !state.isRecharging) {
@@ -748,6 +767,8 @@
     state.fireRounds = 3;
     state.rechargeTimer = 0;
     state.isRecharging = false;
+    state.rechargeTimer = 0;
+    state.isRecharging = false;
     enemies.length = 0; 
     particles.length = 0; 
     bosses.length = 0;
@@ -907,6 +928,28 @@
       }
     }
     
+    // Update recharge system
+    if(state.isRecharging && state.fireRounds < state.maxFireRounds) {
+      state.rechargeTimer -= dt;
+      if(state.rechargeTimer <= 0) {
+        state.fireRounds++;
+        console.log('Fire round recharged! Now have:', state.fireRounds);
+        
+        if(state.fireRounds < state.maxFireRounds) {
+          // Continue recharging
+          state.rechargeTimer = state.rechargeInterval;
+        } else {
+          // Fully recharged
+          state.isRecharging = false;
+          state.rechargeTimer = 0;
+        }
+        updateFireIndicator();
+      } else {
+        // Update visual progress
+        updateFireIndicator();
+      }
+    }
+    
     // Update player to follow mouse
     const dx = pointer.x - player.x;
     const dy = pointer.y - player.y;
@@ -958,6 +1001,8 @@
           state.fireRounds = state.maxFireRounds;
           state.isRecharging = false;
           state.rechargeTimer = 0;
+          state.isRecharging = false;
+          state.rechargeTimer = 0;
           updateFireIndicator();
           console.log('Fire rounds recharged!');
           
@@ -968,8 +1013,10 @@
         } else if(p.type === 'multiplier') {
           // Multiply current score by 3
           const oldScore = state.score;
+          const oldScore = state.score;
           state.score *= 3;
           ui.score.textContent = `Score: ${state.score|0}`;
+          console.log(`Score multiplied! ${oldScore|0} → ${state.score|0}`);
           console.log(`Score multiplied! ${oldScore|0} → ${state.score|0}`);
           
           // Add multiplier particles
@@ -1250,6 +1297,51 @@
     // Draw bosses
     for(const b of bosses) { 
       drawBoss(b); 
+    }
+    
+    for(const p of powerUps) {
+      const alpha = Math.max(0.3, Math.min(1, p.life / p.maxLife));
+      const pulse = 0.8 + 0.2 * Math.sin(p.pulseTime * 8);
+      const size = p.r * pulse;
+      
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size + 5, 0, Math.PI * 2);
+      if(p.type === 'recharge') {
+        ctx.fillStyle = 'rgba(136, 255, 204, 0.3)';
+        ctx.shadowColor = '#88ffcc';
+      } else {
+        ctx.fillStyle = 'rgba(255, 210, 119, 0.3)';
+        ctx.shadowColor = '#ffd277';
+      }
+      ctx.shadowBlur = 15;
+      ctx.fill();
+      
+      // Main orb
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+      if(p.type === 'recharge') {
+        ctx.fillStyle = '#88ffcc';
+      } else {
+        ctx.fillStyle = '#ffd277';
+      }
+      ctx.fill();
+      
+      // Symbol
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if(p.type === 'recharge') {
+        ctx.fillText('⚡', p.x, p.y);
+      } else {
+        ctx.fillText('x3', p.x, p.y);
+      }
+      
+      ctx.restore();
     }
     
     // Draw player
