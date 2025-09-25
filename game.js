@@ -102,7 +102,11 @@
     perfectDashes: 0,
     // Fire rounds system
     fireRounds: 3,
-    maxFireRounds: 3
+    maxFireRounds: 3,
+    // Recharge system
+    rechargeTimer: 0,
+    rechargeInterval: 5.0, // 5 seconds per round
+    isRecharging: false
   };
 
   /* ====== UI refs ====== */
@@ -129,13 +133,24 @@
 
   function updateFireIndicator() {
     const dots = ui.fireIndicator.querySelectorAll('.fire-dot');
+    const rechargeProgress = state.isRecharging ? (1 - state.rechargeTimer / state.rechargeInterval) : 0;
+    
     dots.forEach((dot, i) => {
       if (i < state.fireRounds) {
         dot.classList.add('active');
         dot.classList.remove('inactive');
+        dot.style.opacity = '1';
+      } else if (state.isRecharging && i === state.fireRounds) {
+        // Show recharging dot with progress
+        dot.classList.remove('active');
+        dot.classList.add('inactive');
+        dot.style.opacity = 0.3 + (rechargeProgress * 0.7);
+        dot.style.background = `linear-gradient(to right, #88ffcc ${rechargeProgress * 100}%, #444 ${rechargeProgress * 100}%)`;
       } else {
         dot.classList.remove('active');
         dot.classList.add('inactive');
+        dot.style.opacity = '1';
+        dot.style.background = '#444';
       }
     });
     
@@ -367,6 +382,13 @@
     }
     
     state.fireRounds--;
+    
+    // Start recharging if we have less than max rounds
+    if(state.fireRounds < state.maxFireRounds && !state.isRecharging) {
+      state.isRecharging = true;
+      state.rechargeTimer = state.rechargeInterval;
+    }
+    
     updateFireIndicator();
     console.log('Fire rounds remaining:', state.fireRounds);
     
@@ -707,6 +729,8 @@
     state.totalDashes = 0;
     state.perfectDashes = 0;
     state.fireRounds = 3;
+    state.rechargeTimer = 0;
+    state.isRecharging = false;
     enemies.length = 0; 
     particles.length = 0; 
     bosses.length = 0;
@@ -844,6 +868,28 @@
   }
 
   function update(dt) {
+    // Update recharge system
+    if(state.isRecharging && state.fireRounds < state.maxFireRounds) {
+      state.rechargeTimer -= dt;
+      if(state.rechargeTimer <= 0) {
+        state.fireRounds++;
+        console.log('Fire round recharged! Now have:', state.fireRounds);
+        
+        if(state.fireRounds < state.maxFireRounds) {
+          // Continue recharging
+          state.rechargeTimer = state.rechargeInterval;
+        } else {
+          // Fully recharged
+          state.isRecharging = false;
+          state.rechargeTimer = 0;
+        }
+        updateFireIndicator();
+      } else {
+        // Update visual progress
+        updateFireIndicator();
+      }
+    }
+    
     // Update player to follow mouse
     const dx = pointer.x - player.x;
     const dy = pointer.y - player.y;
