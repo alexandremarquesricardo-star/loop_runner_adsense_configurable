@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loop Runner Preview Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0b0b10;
+            color: #eaecef;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto;
+        }
+        
+        #preview-canvas {
+            border: 2px solid #2e3240;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0b0b10 0%, #1a1a22 100%);
+            display: block;
+            margin: 20px auto;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #2c7cf7, #7cfdd6);
+            color: #06101a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(44, 124, 247, 0.3);
+        }
+        
+        .info {
+            text-align: center;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="generatePreview()">Generate Preview</button>
+        <button onclick="downloadPreview()">Download Preview</button>
+    </div>
+    
+    <canvas id="preview-canvas" width="1200" height="630"></canvas>
+    
+    <div class="info">
+        <p>Preview dimensions: 1200x630 (optimized for social media)</p>
+        <p>Click "Generate Preview" to create the image, then "Download Preview" to save it.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function generatePreview() {
+            const W = canvas.width;
+            const H = canvas.height;
+            
+            // Clear canvas with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, W, H);
+            gradient.addColorStop(0, '#0b0b10');
+            gradient.addColorStop(0.5, '#1a1a22');
+            gradient.addColorStop(1, '#0b0b10');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, W, H);
+            
+            // Add subtle grid pattern
+            ctx.strokeStyle = 'rgba(46, 50, 64, 0.3)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < W; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = 0; y < H; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+            
+            // Draw game title
+            ctx.save();
+            ctx.font = 'bold 72px system-ui, -apple-system, Segoe UI, Roboto';
+            ctx.fillStyle = '#eaecef';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('LOOP RUNNER', W/2, H/2 - 120);
+            
+            // Add glow effect to title
+            ctx.shadowColor = '#6cf';
+            ctx.shadowBlur = 20;
+            ctx.fillText('LOOP RUNNER', W/2, H/2 - 120);
+            ctx.restore();
+            
+            // Draw subtitle
+            ctx.save();
+            ctx.font = '28px system-ui, -apple-system, Segoe UI, Roboto';
+            ctx.fillStyle = '#9aa0a6';
+            ctx.textAlign = 'center';
+            ctx.fillText('Dash • Chain • Survive', W/2, H/2 - 60);
+            ctx.restore();
+            
+            // Draw player (center)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(W/2, H/2 + 20, 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#88ffcc';
+            ctx.shadowColor = '#88ffcc';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.restore();
+            
+            // Draw enemies around player
+            const enemyPositions = [
+                { x: W/2 - 120, y: H/2 - 40, speed: 60 },
+                { x: W/2 + 100, y: H/2 + 60, speed: 120 },
+                { x: W/2 - 80, y: H/2 + 100, speed: 180 },
+                { x: W/2 + 140, y: H/2 - 80, speed: 240 },
+                { x: W/2 - 160, y: H/2 + 40, speed: 90 }
+            ];
+            
+            enemyPositions.forEach(enemy => {
+                const color = speedToColor(enemy.speed);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, 16, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            });
+            
+            // Draw particles/effects
+            for (let i = 0; i < 30; i++) {
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+                const size = Math.random() * 3 + 1;
+                const alpha = Math.random() * 0.6 + 0.2;
+                
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = '#8fb3ff';
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // Draw UI elements preview
+            drawUIPreview();
+            
+            // Add website URL
+            ctx.save();
+            ctx.font = 'bold 24px system-ui, -apple-system, Segoe UI, Roboto';
+            ctx.fillStyle = '#6cf';
+            ctx.textAlign = 'center';
+            ctx.fillText('playloop.run', W/2, H - 40);
+            ctx.restore();
+        }
+        
+        function speedToColor(speed) {
+            const COL_BLUE = [88, 166, 255];
+            const COL_YELLOW = [255, 210, 119];
+            const COL_RED = [255, 95, 95];
+            
+            const t = Math.max(0, Math.min(1, (speed - 40) / 270));
+            let color;
+            
+            if (t < 0.5) {
+                const u = t / 0.5;
+                color = lerpColor(COL_BLUE, COL_YELLOW, u);
+            } else {
+                const u = (t - 0.5) / 0.5;
+                color = lerpColor(COL_YELLOW, COL_RED, u);
+            }
+            
+            return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+        }
+        
+        function lerpColor(c1, c2, t) {
+            return [
+                Math.round(c1[0] + (c2[0] - c1[0]) * t),
+                Math.round(c1[1] + (c2[1] - c1[1]) * t),
+                Math.round(c1[2] + (c2[2] - c1[2]) * t)
+            ];
+        }
+        
+        function drawUIPreview() {
+            const W = canvas.width;
+            const H = canvas.height;
+            
+            // Draw HUD elements in corners
+            ctx.save();
+            ctx.font = '18px system-ui, -apple-system, Segoe UI, Roboto';
+            ctx.fillStyle = 'rgba(17, 24, 38, 0.9)';
+            ctx.strokeStyle = '#2e3240';
+            ctx.lineWidth = 1;
+            
+            // Score pill (top left)
+            const pillW = 120;
+            const pillH = 32;
+            ctx.beginPath();
+            ctx.roundRect(20, 20, pillW, pillH, 16);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#c9d1d9';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Score: 2847', 20 + pillW/2, 20 + pillH/2);
+            
+            // Combo pill (top left, below score)
+            ctx.fillStyle = 'rgba(17, 24, 38, 0.9)';
+            ctx.beginPath();
+            ctx.roundRect(20, 60, pillW, pillH, 16);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#c9d1d9';
+            ctx.fillText('Combo: x12', 20 + pillW/2, 60 + pillH/2);
+            
+            ctx.restore();
+        }
+        
+        function downloadPreview() {
+            const link = document.createElement('a');
+            link.download = 'looprunner-preview.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Generate preview on load
+        window.addEventListener('load', generatePreview);
+    </script>
+</body>
+</html>
