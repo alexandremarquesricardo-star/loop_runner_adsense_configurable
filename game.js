@@ -230,7 +230,7 @@
     
     // Add muzzle flash particles
     for (let i = 0; i < 8; i++) {
-      addParticle(player.x, player.y, '#ffaa00', 3, 0.3);
+      addParticle(mouse.x, mouse.y, '#ffaa00', 3, 0.3);
     }
   }
 
@@ -341,7 +341,11 @@
         rows.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
-          const timeAgo = getTimeAgo(e.created_at);
+          const timeAgo = getTimeAgo(e.when);
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
           tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
           lb.table.appendChild(tr);
         });
@@ -355,9 +359,6 @@
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
-      }
-      )
-  }
   function getMotivationalStatus(score) {
     if (score >= 1000) {
       // 🏆 Epic high score words
