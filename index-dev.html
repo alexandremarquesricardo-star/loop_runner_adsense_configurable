@@ -633,4 +633,579 @@
   }
 
   function renderLeaderboard(){
-    const
+    const mode = lb.modeSel.value;
+    const key = mode === 'daily' ? 'lr_lb_daily_' + todayKey() : 'lr_lb_normal';
+    const scores = loadLB(key);
+    
+    lb.info.textContent = mode === 'daily' ? `Today (${todayKey()})` : 'All Time';
+    
+    lb.table.innerHTML = '';
+    scores.slice(0, 20).forEach((entry, i) => {
+      const row = document.createElement('tr');
+      const isYou = entry.name === (ui.nameInput.value || 'Anonymous');
+      if(isYou) row.style.background = 'rgba(124, 253, 214, 0.1)';
+      
+      row.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${entry.name || 'Anonymous'}</td>
+        <td>${entry.score}</td>
+        <td style="text-align:right;">${isYou ? 'You' : ''}</td>
+      `;
+      lb.table.appendChild(row);
+    });
+    
+    if(scores.length === 0) {
+      const row = document.createElement('tr');
+      row.innerHTML = '<td colspan="4" style="text-align:center; opacity:0.6;">No scores yet</td>';
+      lb.table.appendChild(row);
+    }
+  }
+
+  async function submitScore(score, mode) {
+    const name = ui.nameInput.value.trim() || 'Anonymous';
+    const key = mode === 'daily' ? 'lr_lb_daily_' + todayKey() : 'lr_lb_normal';
+    
+    // Local leaderboard
+    const scores = loadLB(key);
+    scores.push({ name, score, timestamp: Date.now() });
+    scores.sort((a, b) => b.score - a.score);
+    saveLB(key, scores.slice(0, 100));
+    
+    // Online leaderboard
+    try {
+      await detectUserLocation(); // Ensure location is detected
+      
+      const payload = {
+        name: name,
+        score: score,
+        mode: mode,
+        country: userCountry || 'XX',
+        date: mode === 'daily' ? todayKey() : null
+      };
+      
+      console.log('Submitting score:', payload);
+      
+      const response = await fetch(SB_URL, {
+        method: 'POST',
+        headers: SB_HEADERS,
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Score submission failed:', response.status, errorText);
+      } else {
+        console.log('Score submitted successfully');
+      }
+    } catch(err) { 
+      console.error('submitScore exception', err); 
+    }
+  }
+
+  ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
+  ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
+  ui.btnResume.addEventListener('click', resumeGameUI);
+  ui.btnPlayAgain.addEventListener('click', ()=>{ startGame(state.dailyMode); });
+  ui.btnShare.addEventListener('click', shareScore);
+  ui.restartBtn.addEventListener('click', ()=>{ startGame(state.dailyMode); });
+  ui.shareBtn.addEventListener('click', shareScore);
+  ui.lbBtn.addEventListener('click', ()=>{ showLeaderboard(); });
+  lb.close.addEventListener('click', hideLeaderboard);
+  lb.modeSel.addEventListener('change', renderLeaderboard);
+
+  function shareScore(){
+    const text = state.dailyMode 
+      ? `I scored ${state.score} in today's Loop Runner daily challenge! Can you beat it?`
+      : `I scored ${state.score} in Loop Runner! Can you beat my score?`;
+    const url = 'https://playloop.run/';
+    
+    if(navigator.share) {
+      navigator.share({ title: 'Loop Runner', text, url }).catch(()=>{});
+    } else {
+      navigator.clipboard?.writeText(`${text} ${url}`).then(()=>{
+        // Could show a toast here
+      }).catch(()=>{});
+    }
+  }
+
+  function maybeFillModalAd(){
+    const modalIns = document.getElementById('ad-modal-unit');
+    if(!modalIns) return;
+    try { (window.adsbygoogle=window.adsbygoogle||[]).push({}); } catch(e) {}
+  }
+
+  /* ====== Game Logic ====== */
+  let lastTime = 0;
+  let fireRechargeTimer = 0;
+
+  function startGame(daily) {
+    console.log('Starting game, daily mode:', daily);
+    state.dailyMode = daily;
+    state.running = true;
+    state.paused = false;
+    state.score = 0;
+    state.combo = 0;
+    state.time = 0;
+    state.spawnTimer = 0;
+    state.spawnInterval = 1.1;
+    state.enemiesKilled = 0;
+    state.bossesKilled = 0;
+    state.totalDashes = 0;
+    state.perfectDashes = 0;
+    state.fireRounds = state.maxFireRounds;
+    fireRechargeTimer = 0;
+    
+    if(daily) setDailySeed();
+    else { usingSeed = false; seededRand = Math.random; }
+    
+    player.x = W/2;
+    player.y = H/2;
+    player.vx = 0;
+    player.vy = 0;
+    player.dashing = false;
+    player.dashCooldown = 0;
+    player.dashWindup = 0;
+    
+    enemies.length = 0;
+    particles.length = 0;
+    bosses.length = 0;
+    projectiles.length = 0;
+    powerUps.length = 0;
+    
+    initBackgroundParticles();
+    hideOverlay();
+    
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function pauseGameUI() {
+    if(!state.running) return;
+    state.paused = true;
+    setOverlayPaused();
+  }
+
+  function resumeGameUI() {
+    if(!state.running || !state.paused) return;
+    state.paused = false;
+    hideOverlay();
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function endGame() {
+    state.running = false;
+    state.paused = false;
+    
+    const currentBest = state.dailyMode ? state.dailyBest : state.best;
+    const isPB = state.score > currentBest;
+    
+    if(isPB) {
+      if(state.dailyMode) {
+        state.dailyBest = state.score;
+        setLS('lr_daily', state.score);
+      } else {
+        state.best = state.score;
+        setLS('lr_best', state.score);
+      }
+      hydrateHUD();
+    }
+    
+    submitScore(state.score, state.dailyMode ? 'daily' : 'normal');
+    setOverlayGameOver(state.score, Math.max(currentBest, state.score), isPB);
+  }
+
+  function gameLoop(currentTime) {
+    if(!state.running || state.paused) return;
+    
+    const dt = Math.min((currentTime - lastTime) / 1000, 1/30);
+    lastTime = currentTime;
+    
+    update(dt);
+    render();
+    
+    requestAnimationFrame(gameLoop);
+  }
+
+  function update(dt) {
+    state.time += dt;
+    
+    // Fire recharge system
+    fireRechargeTimer += dt;
+    if(fireRechargeTimer >= 2.0 && state.fireRounds < state.maxFireRounds) {
+      state.fireRounds++;
+      fireRechargeTimer = 0;
+      console.log('Fire round recharged! Total:', state.fireRounds);
+    }
+    
+    // Update player
+    if(player.dashCooldown > 0) player.dashCooldown -= dt;
+    if(player.dashWindup > 0) player.dashWindup -= dt;
+    else player.dashing = false;
+    
+    // Player movement towards pointer
+    if(!player.dashing) {
+      const dx = pointer.x - player.x;
+      const dy = pointer.y - player.y;
+      const dist = Math.hypot(dx, dy);
+      
+      if(dist > 5) {
+        const speed = Math.min(300, dist * 3);
+        player.vx += (dx / dist) * speed * dt * 2;
+        player.vy += (dy / dist) * speed * dt * 2;
+      }
+    }
+    
+    // Apply friction
+    player.vx *= Math.pow(0.1, dt * player.friction);
+    player.vy *= Math.pow(0.1, dt * player.friction);
+    
+    // Move player
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
+    
+    // Keep player in bounds
+    player.x = Math.max(player.r, Math.min(W - player.r, player.x));
+    player.y = Math.max(player.r, Math.min(H - player.r, player.y));
+    
+    // Spawn enemies
+    state.spawnTimer += dt;
+    if(state.spawnTimer >= state.spawnInterval) {
+      state.spawnTimer = 0;
+      state.spawnInterval = Math.max(0.3, 1.1 - state.time * 0.02);
+      
+      // Occasionally spawn boss
+      if(rnd() < 0.1 && state.time > 10) {
+        spawnBoss();
+      } else {
+        spawnEnemy();
+      }
+    }
+    
+    // Update enemies
+    for(let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      
+      // Remove if too far off screen
+      if(e.x < -100 || e.x > W + 100 || e.y < -100 || e.y > H + 100) {
+        enemies.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with player
+      const dist = Math.hypot(e.x - player.x, e.y - player.y);
+      if(dist < e.r + player.r) {
+        if(player.dashing) {
+          // Kill enemy
+          enemies.splice(i, 1);
+          state.score += 10 + state.combo;
+          state.combo++;
+          state.enemiesKilled++;
+          
+          // Particles
+          for(let j = 0; j < 8; j++) {
+            addParticle(e.x, e.y, rnd(2, 4), rnd(0.3, 0.5));
+          }
+        } else {
+          // Game over
+          endGame();
+          return;
+        }
+      }
+    }
+    
+    // Update bosses
+    for(let i = bosses.length - 1; i >= 0; i--) {
+      const b = bosses[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      
+      // Remove if too far off screen
+      if(b.x < -100 || b.x > W + 100 || b.y < -100 || b.y > H + 100) {
+        bosses.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with player
+      const dist = Math.hypot(b.x - player.x, b.y - player.y);
+      if(dist < b.r + player.r) {
+        if(player.dashing && performance.now() - b.lastHit > 200) {
+          // Damage boss
+          b.health--;
+          b.lastHit = performance.now();
+          
+          if(b.health <= 0) {
+            // Kill boss
+            bosses.splice(i, 1);
+            state.score += 50 + state.combo * 2;
+            state.combo += 3;
+            state.bossesKilled++;
+            
+            // Big particle explosion
+            for(let j = 0; j < 15; j++) {
+              addParticle(b.x, b.y, rnd(3, 6), rnd(0.4, 0.7));
+            }
+          } else {
+            // Damage particles
+            for(let j = 0; j < 5; j++) {
+              addParticle(b.x, b.y, rnd(2, 4), rnd(0.2, 0.4));
+            }
+          }
+        } else if(!player.dashing) {
+          // Game over
+          endGame();
+          return;
+        }
+      }
+    }
+    
+    // Update projectiles
+    for(let i = projectiles.length - 1; i >= 0; i--) {
+      const p = projectiles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      
+      if(p.life <= 0 || p.x < -50 || p.x > W + 50 || p.y < -50 || p.y > H + 50) {
+        projectiles.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with enemies
+      for(let j = enemies.length - 1; j >= 0; j--) {
+        const e = enemies[j];
+        const dist = Math.hypot(p.x - e.x, p.y - e.y);
+        if(dist < p.size + e.r) {
+          // Kill enemy
+          enemies.splice(j, 1);
+          projectiles.splice(i, 1);
+          state.score += 15 + state.combo;
+          state.combo++;
+          state.enemiesKilled++;
+          
+          // Particles
+          for(let k = 0; k < 6; k++) {
+            addParticle(e.x, e.y, rnd(2, 4), rnd(0.3, 0.5));
+          }
+          break;
+        }
+      }
+      
+      // Check collision with bosses
+      for(let j = bosses.length - 1; j >= 0; j--) {
+        const b = bosses[j];
+        const dist = Math.hypot(p.x - b.x, p.y - b.y);
+        if(dist < p.size + b.r) {
+          // Damage boss
+          projectiles.splice(i, 1);
+          b.health--;
+          
+          if(b.health <= 0) {
+            // Kill boss
+            bosses.splice(j, 1);
+            state.score += 60 + state.combo * 2;
+            state.combo += 4;
+            state.bossesKilled++;
+            
+            // Big particle explosion
+            for(let k = 0; k < 15; k++) {
+              addParticle(b.x, b.y, rnd(3, 6), rnd(0.4, 0.7));
+            }
+          } else {
+            // Damage particles
+            for(let k = 0; k < 5; k++) {
+              addParticle(b.x, b.y, rnd(2, 4), rnd(0.2, 0.4));
+            }
+          }
+          break;
+        }
+      }
+    }
+    
+    // Update particles
+    for(let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      p.vx *= 0.98;
+      p.vy *= 0.98;
+      
+      if(p.life <= 0) {
+        particles.splice(i, 1);
+      }
+    }
+    
+    // Update background particles
+    for(const p of backgroundParticles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      
+      // Wrap around screen
+      if(p.x < 0) p.x = W;
+      if(p.x > W) p.x = 0;
+      if(p.y < 0) p.y = H;
+      if(p.y > H) p.y = 0;
+    }
+    
+    // Update HUD
+    ui.score.textContent = `Score: ${state.score}`;
+    ui.combo.textContent = `Combo: ${state.combo}`;
+  }
+
+  function render() {
+    // Clear canvas
+    ctx.fillStyle = '#0b0b10';
+    ctx.fillRect(0, 0, W, H);
+    
+    // Draw background particles
+    for(const p of backgroundParticles) {
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    
+    // Draw cursor indicator
+    ctx.strokeStyle = '#88ffcc';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pointer.x, pointer.y, 15, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Draw chain indicator if combo > 0
+    if(state.combo > 0) {
+      ctx.strokeStyle = '#ffd277';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.r + 10 + state.combo * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    
+    // Draw enemies
+    for(const e of enemies) {
+      ctx.fillStyle = player.dashing ? '#ff6b6b' : '#ff4757';
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Enemy glow
+      ctx.shadowColor = '#ff4757';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    
+    // Draw bosses
+    for(const b of bosses) {
+      ctx.fillStyle = '#8b00ff';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Boss glow
+      ctx.shadowColor = '#8b00ff';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Health bar
+      const barWidth = 40;
+      const barHeight = 4;
+      const healthPercent = b.health / b.maxHealth;
+      
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(b.x - barWidth/2, b.y - b.r - 15, barWidth, barHeight);
+      
+      ctx.fillStyle = healthPercent > 0.5 ? '#4ade80' : healthPercent > 0.25 ? '#fbbf24' : '#ef4444';
+      ctx.fillRect(b.x - barWidth/2, b.y - b.r - 15, barWidth * healthPercent, barHeight);
+    }
+    
+    // Draw projectiles
+    for(const p of projectiles) {
+      const alpha = p.life / p.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#88ffcc';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Projectile trail
+      ctx.shadowColor = '#88ffcc';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+    
+    // Draw particles
+    for(const p of particles) {
+      const alpha = p.life / p.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#88ffcc';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    
+    // Draw player
+    const playerColor = player.dashing ? '#7cfdd6' : '#88ffcc';
+    ctx.fillStyle = playerColor;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Player glow
+    ctx.shadowColor = playerColor;
+    ctx.shadowBlur = player.dashing ? 20 : 10;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+    // Draw fire rounds indicator
+    const roundSize = 8;
+    const roundSpacing = 20;
+    const startX = 20;
+    const startY = H - 30;
+    
+    for(let i = 0; i < state.maxFireRounds; i++) {
+      ctx.fillStyle = i < state.fireRounds ? '#ffd277' : 'rgba(255, 210, 119, 0.3)';
+      ctx.beginPath();
+      ctx.arc(startX + i * roundSpacing, startY, roundSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Fire rounds label
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px system-ui';
+    ctx.fillText('Fire Rounds', startX, startY - 20);
+  }
+
+  // Initialize
+  resize();
+  setOverlayHome();
+  
+  // Load saved name
+  ui.nameInput.value = getLS('lr_name', '');
+  ui.nameInput.addEventListener('input', () => {
+    setLS('lr_name', ui.nameInput.value);
+  });
+
+})();
+</script>
+</body>
+</html>
