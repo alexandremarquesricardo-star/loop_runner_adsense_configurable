@@ -107,10 +107,6 @@
     rechargeTimer: 0,
     rechargeInterval: 5.0, // 5 seconds per round
     isRecharging: false
-    // Recharge system
-    rechargeTimer: 0,
-    rechargeInterval: 5.0, // 5 seconds per round
-    isRecharging: false
   };
 
   /* ====== UI refs ====== */
