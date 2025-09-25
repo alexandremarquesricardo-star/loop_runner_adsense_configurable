@@ -56,9 +56,14 @@
     
     try {
       console.log('Detecting user location...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch('https://ipapi.co/json/', {
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) throw new Error('Location API failed');
       
@@ -546,27 +551,40 @@
     return options[Math.floor(Math.random() * options.length)];
   }
 
+  function getRandomCountry() {
+    const countries = [
+      'US', 'UK', 'CA', 'AU', 'DE', 'FR', 'JP', 'KR', 'BR', 'MX',
+      'IT', 'ES', 'NL', 'SE', 'NO', 'DK', 'FI', 'PL', 'RU', 'IN',
+      'CN', 'SG', 'MY', 'TH', 'PH', 'ID', 'VN', 'TW', 'HK', 'NZ'
+    ];
+    return countries[Math.floor(Math.random() * countries.length)];
+  }
+
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score,country,created_at');
+    params.append('select', 'name,score,created_at');
     params.append('order', 'score.desc');
     params.append('limit', '10');
 
     lb.table.innerHTML = '';
     lb.info.textContent = 'Worldwide Top 10';
 
+    console.log('Fetching leaderboard from:', `${SB_URL}?${params.toString()}`);
+
     fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS })
       .then(res => { 
+        console.log('Leaderboard response status:', res.status);
         if (!res.ok) throw new Error('REST ' + res.status); 
         return res.json(); 
       })
       .then(rows => {
+        console.log('Leaderboard data received:', rows);
         rows.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const motivationalWord = getMotivationalWord(i + 1);
           const timeAgo = getRandomTimeAgo();
-          const country = e.country || 'XX';
+          const country = getRandomCountry(); // Use random for now since DB doesn't have country column
           
           tr.innerHTML = `
             <td>${i+1}</td>
@@ -584,7 +602,8 @@
           lb.table.appendChild(tr);
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('Leaderboard fetch failed:', error);
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
@@ -593,7 +612,7 @@
           const tr = document.createElement('tr');
           const motivationalWord = getMotivationalWord(i + 1);
           const timeAgo = getRandomTimeAgo();
-          const country = e.country || 'XX';
+          const country = getRandomCountry();
           
           tr.innerHTML = `
             <td>${i+1}</td>
@@ -726,32 +745,47 @@
     const name = (ui.nameInput.value || getLS('lr_name', 'Player')).slice(0, 20).trim() || 'Player';
     setLS('lr_name', name);
     
-    // Get user's country
-    const country = await detectUserLocation();
+    console.log('Submitting score:', state.score, 'for player:', name);
     
     try {
       const body = { 
         name: name.slice(0, 12), 
         score: state.score|0, 
-        mode: (state.dailyMode ? 'daily' : 'normal'),
-        country: country
+        mode: (state.dailyMode ? 'daily' : 'normal')
       };
+      
+      console.log('Score submission body:', body);
+      
       fetch(SB_URL, { 
         method: 'POST', 
         headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, 
         body: JSON.stringify(body) 
       })
         .then(async r => { 
+          console.log('Score submission response:', r.status);
           if(!r.ok) { 
             let txt = ''; 
             try { txt = await r.text(); } catch {} 
             console.error('Supabase insert failed', r.status, txt); 
+          } else {
+            console.log('Score submitted successfully!');
           } 
         })
         .catch(err => console.error('Supabase insert network error', err));
     } catch(err) { 
       console.error('submitScore exception', err); 
     }
+    
+    // Also save locally as backup
+    const localKey = state.dailyMode ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
+    const localScores = loadLB(localKey);
+    localScores.push({
+      name: name.slice(0, 12),
+      score: state.score|0,
+      when: new Date().toISOString()
+    });
+    localScores.sort((a, b) => b.score - a.score);
+    saveLB(localKey, localScores.slice(0, 50)); // Keep top 50 locally
   }
 
   ui.start.addEventListener('click', () => { initAudio(); startGame(false); });
