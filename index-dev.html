@@ -341,16 +341,76 @@
 
   /* ====== Audio ====== */
   let audio, master;
-  function initAudio(){ if(!audio){ audio=new (window.AudioContext||window.webkitAudioContext)(); master=audio.createGain(); master.gain.value=0.08; master.connect(audio.destination); } }
+  function initAudio(){ 
+    if(!audio){ 
+      audio=new (window.AudioContext||window.webkitAudioContext)(); 
+      master=audio.createGain(); 
+      master.gain.value=0.08; 
+      master.connect(audio.destination); 
+    } 
+  }
+  
+  // Enhanced Audio System
+  const audioSettings = { enabled: true, volume: 0.3 };
+  
+  function playTone(freq, duration, type='sine', volume=1) {
+    if (!audio || !audioSettings.enabled) return;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.connect(gain);
+    gain.connect(master);
+    osc.frequency.value = freq;
+    osc.type = type;
+    gain.gain.value = volume * audioSettings.volume;
+    gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + duration);
+    osc.start();
+    osc.stop(audio.currentTime + duration);
+  }
+  
+  function playDashSound() { playTone(440, 0.1, 'square', 0.3); }
+  function playKillSound(combo) { 
+    const freq = 220 + (combo * 50);
+    playTone(freq, 0.15, 'sawtooth', 0.4); 
+  }
+  function playComboSound(combo) {
+    for(let i = 0; i < Math.min(combo, 5); i++) {
+      setTimeout(() => playTone(440 + i * 110, 0.1, 'sine', 0.2), i * 50);
+    }
+  }
+  function playGameOverSound() { playTone(110, 0.5, 'triangle', 0.5); }
 
   /* ====== Entities ====== */
   const player={ x:W/2, y:H/2, r:12, vx:0, vy:0, maxSpeed:900, friction:9, dashing:false, dashCooldown:0, dashWindup:0 };
-  const enemies=[]; const particles=[];
+  const enemies=[]; const particles=[]; const powerups=[];
   
   // Visual effects system
   let screenShake = { x: 0, y: 0, intensity: 0, duration: 0 };
   let comboDisplay = { scale: 1, alpha: 1, text: '', timer: 0 };
   let dashTrail = [];
+  
+  // Power-up types
+  const POWERUP_TYPES = {
+    SHIELD: { color: '#88ccff', duration: 3, icon: '🛡️' },
+    SPEED: { color: '#ffcc88', duration: 2, icon: '⚡' },
+    MULTIDASH: { color: '#cc88ff', duration: 4, icon: '💫' },
+    SLOWMO: { color: '#ff88cc', duration: 2, icon: '⏰' }
+  };
+  
+  // Player power-up state
+  const playerPowers = {
+    shield: 0,
+    speed: 0,
+    multidash: 0,
+    slowmo: 0
+  };
+  
+  // Enemy types
+  const ENEMY_TYPES = {
+    NORMAL: { color: 'speed', size: 1, speed: 1, points: 10 },
+    FAST: { color: '#ff6666', size: 0.8, speed: 1.5, points: 20 },
+    BIG: { color: '#6666ff', size: 1.4, speed: 0.7, points: 30 },
+    BONUS: { color: '#ffff66', size: 1.2, speed: 1.2, points: 50 }
+  };
 
   function addParticle(x,y,size=2,life=0.4,color='#8fb3ff'){ 
     const a=rnd(0,Math.PI*2); 
@@ -388,25 +448,100 @@
     dashTrail.push({ x, y, life: 0.3, maxLife: 0.3 });
     if(dashTrail.length > 10) dashTrail.shift();
   }
-  function spawnEnemy(){ const m=24; const side=rndi(0,3); let x,y; if(side===0){x=rnd(-m,W+m); y=-m;} else if(side===1){x=W+m; y=rnd(-m,H+m);} else if(side===2){x=rnd(-m,W+m); y=H+m;} else {x=-m; y=rnd(-m,H+m);} const r=rnd(14,22); const speed=rnd(40,90)+Math.min(state.time*4,220); const ang=Math.atan2(player.y-y, player.x-x)+rnd(-0.5,0.5); const vx=Math.cos(ang)*speed, vy=Math.sin(ang)*speed; enemies.push({x,y,r,vx,vy,speed,ang}); }
+  
+  function spawnPowerup() {
+    if(powerups.length >= 2) return; // Max 2 powerups on screen
+    const types = Object.keys(POWERUP_TYPES);
+    const type = types[rndi(0, types.length - 1)];
+    const x = rnd(50, W - 50);
+    const y = rnd(50, H - 50);
+    powerups.push({ x, y, type, life: 10, maxLife: 10, collected: false });
+  }
+  
+  function spawnEnemy(){ 
+    const m=24; 
+    const side=rndi(0,3); 
+    let x,y; 
+    if(side===0){x=rnd(-m,W+m); y=-m;} 
+    else if(side===1){x=W+m; y=rnd(-m,H+m);} 
+    else if(side===2){x=rnd(-m,W+m); y=H+m;} 
+    else {x=-m; y=rnd(-m,H+m);} 
+    
+    // Determine enemy type based on score
+    let enemyType = 'NORMAL';
+    const rand = rnd(0, 100);
+    if(state.score > 500) {
+      if(rand < 10) enemyType = 'BONUS';
+      else if(rand < 30) enemyType = 'BIG';
+      else if(rand < 60) enemyType = 'FAST';
+    } else if(state.score > 200) {
+      if(rand < 20) enemyType = 'FAST';
+      else if(rand < 35) enemyType = 'BIG';
+    }
+    
+    const type = ENEMY_TYPES[enemyType];
+    const r = rnd(14, 22) * type.size;
+    const baseSpeed = rnd(40, 90) + Math.min(state.time * 4, 220);
+    const speed = baseSpeed * type.speed;
+    const ang = Math.atan2(player.y - y, player.x - x) + rnd(-0.5, 0.5);
+    const vx = Math.cos(ang) * speed;
+    const vy = Math.sin(ang) * speed;
+    
+    enemies.push({x, y, r, vx, vy, speed, ang, type: enemyType, points: type.points});
+  }
 
   /* ====== Input ====== */
   let pointer={ x:W/2, y:H/2, down:false };
   function screenToWorld(e){ const rect=canvas.getBoundingClientRect(); return { x:(e.clientX-rect.left), y:(e.clientY-rect.top) }; }
   function startDashTowards(px,py){ 
     if(player.dashCooldown>0) return; 
+    
+    // Multi-dash power-up allows multiple dashes
+    const dashCount = playerPowers.multidash > 0 ? 3 : 1;
+    
+    for(let i = 0; i < dashCount; i++) {
+      setTimeout(() => {
+        if(i === 0) {
+          const dx=px-player.x, dy=py-player.y; 
+          const len=Math.hypot(dx,dy)||1; 
+          const ux=dx/len, uy=dy/len;
+          const speedMultiplier = playerPowers.speed > 0 ? 1.5 : 1;
+          player.vx=ux*player.maxSpeed*speedMultiplier; 
+          player.vy=uy*player.maxSpeed*speedMultiplier; 
+          player.dashing=true; 
+          player.dashCooldown=0.35; 
+          player.dashWindup=0.12; 
+          addDashParticles(player.x, player.y);
+          addScreenShake(2, 0.1);
+          playDashSound();
+        } else {
+          // Additional dashes for multi-dash
+          const angle = (Math.PI * 2 / dashCount) * i;
+          const dx = Math.cos(angle) * 100;
+          const dy = Math.sin(angle) * 100;
+          addDashParticles(player.x + dx, player.y + dy);
+        }
+      }, i * 100);
+    }
+  }
+  
+  // Original single dash logic (keeping for compatibility)
+  function startDashTowardsOrig(px,py){ 
+    if(player.dashCooldown>0) return; 
     const dx=px-player.x, dy=py-player.y; 
     const len=Math.hypot(dx,dy)||1; 
     const ux=dx/len, uy=dy/len; 
-    player.vx=ux*player.maxSpeed; 
-    player.vy=uy*player.maxSpeed; 
+    const speedMultiplier = playerPowers.speed > 0 ? 1.5 : 1;
+    player.vx=ux*player.maxSpeed*speedMultiplier; 
+    player.vy=uy*player.maxSpeed*speedMultiplier; 
     player.dashing=true; 
     player.dashCooldown=0.35; 
     player.dashWindup=0.12; 
     addDashParticles(player.x, player.y);
     addScreenShake(2, 0.1);
+    playDashSound();
   }
-  canvas.addEventListener('pointerdown',(e)=>{ initAudio(); const p=screenToWorld(e); pointer.down=true; pointer.x=p.x; pointer.y=p.y; startDashTowards(pointer.x,pointer.y); });
+  canvas.addEventListener('pointerdown',(e)=>{ initAudio(); const p=screenToWorld(e); pointer.down=true; pointer.x=p.x; pointer.y=p.y; startDashTowardsOrig(pointer.x,pointer.y); });
   canvas.addEventListener('pointermove',(e)=>{ const p=screenToWorld(e); pointer.x=p.x; pointer.y=p.y; });
   canvas.addEventListener('pointerup',()=>{ pointer.down=false; });
 
@@ -415,7 +550,10 @@
     if(e.code==='Space'){ if(!state.running){ e.preventDefault(); startGame(state.dailyMode); return; } }
     if(e.key==='r' || e.key==='R'){ e.preventDefault(); startGame(state.dailyMode); return; }
     if(e.key==='p' || e.key==='P' || e.key==='Escape'){ e.preventDefault(); if(state.running){ if(!state.paused) pauseGameUI(); else resumeGameUI(); } return; }
-    const amt=80; if(e.key&&e.key.indexOf('Arrow')===0){ let dx=0, dy=0; if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt; startDashTowards(player.x+dx, player.y+dy);} 
+    const amt=80; if(e.key&&e.key.indexOf('Arrow')===0){ let dx=0, dy=0; if(e.key==='ArrowUp') dy=-amt; else if(e.key==='ArrowDown') dy=amt; else if(e.key==='ArrowLeft') dx=-amt; else if(e.key==='ArrowRight') dx=amt; startDashTowardsOrig(player.x+dx, player.y+dy);} 
+    
+    // Audio controls
+    if(e.key==='m' || e.key==='M'){ audioSettings.enabled = !audioSettings.enabled; console.log('Audio:', audioSettings.enabled ? 'ON' : 'OFF'); }
   });
   addEventListener('blur', ()=>{ if(state.running && !state.paused) pauseGameUI(); });
 
@@ -503,7 +641,12 @@
 
   /* ====== Game control ====== */
   function startGame(daily=false){
-    state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; enemies.length=0; particles.length=0; player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); hideOverlay();
+    state.running=true; state.paused=false; state.time=0; state.score=0; state.combo=0; state.spawnTimer=0; state.spawnInterval=1.1; 
+    enemies.length=0; particles.length=0; powerups.length=0; dashTrail.length=0;
+    player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.dashing=false; player.dashCooldown=0; player.dashWindup=0; 
+    // Reset power-ups
+    Object.keys(playerPowers).forEach(key => playerPowers[key] = 0);
+    hydrateHUD(); state.dailyMode=daily; usingSeed=false; if(daily) setDailySeed(); hideOverlay();
   }
   function gameOver(){
     state.running=false; state.paused=false;
@@ -514,6 +657,7 @@
     hydrateHUD();
     setOverlayGameOver(score, state.dailyMode?state.dailyBest:state.best, isPB);
     submitScore();
+    playGameOverSound();
     showLeaderboard(state.dailyMode?'daily':'normal');
     if (isPB) setTimeout(()=>{ try{ doShare(); }catch{} }, 450);
   }
@@ -548,15 +692,36 @@
 
   /* ====== Loop ====== */
   let last = performance.now();
+  let powerupSpawnTimer = 0;
+  
   function loop(){
     requestAnimationFrame(loop);
     const t=performance.now(); let dt=(t-last)/1000; last=t;
+    
+    // Apply slow-motion effect
+    if(playerPowers.slowmo > 0) dt *= 0.5;
+    
     if(!state.running || state.paused){ render(); return; }
     state.time += dt; state.score += dt*10; if(((state.score|0)%10)===0) ui.score.textContent=`Score: ${state.score|0}`;
     update(dt); render();
   }
 
   function update(dt){
+    // Update power-up timers
+    Object.keys(playerPowers).forEach(key => {
+      if(playerPowers[key] > 0) {
+        playerPowers[key] -= dt;
+        if(playerPowers[key] <= 0) playerPowers[key] = 0;
+      }
+    });
+    
+    // Spawn power-ups occasionally
+    powerupSpawnTimer -= dt;
+    if(powerupSpawnTimer <= 0 && state.score > 100) {
+      if(rnd(0, 100) < 15) spawnPowerup(); // 15% chance
+      powerupSpawnTimer = rnd(3, 8); // Reset timer
+    }
+    
     state.spawnTimer-=dt; if(state.spawnTimer<=0){ spawnEnemy(); state.spawnTimer=state.spawnInterval; }
     if(player.dashWindup>0){ player.dashWindup-=dt; if(player.dashWindup<=0) player.dashing=false; }
     
@@ -589,15 +754,35 @@
     }
     
     const f=Math.exp(-player.friction*dt); player.vx*=f; player.vy*=f; player.x+=player.vx*dt; player.y+=player.vy*dt; player.x=Math.max(8,Math.min(W-8,player.x)); player.y=Math.max(8,Math.min(H-8,player.y)); if(player.dashCooldown>0) player.dashCooldown-=dt;
+    
+    // Check power-up collection
+    for(let i = 0; i < powerups.length; i++) {
+      const p = powerups[i];
+      p.life -= dt;
+      const d = Math.hypot(p.x - player.x, p.y - player.y);
+      if(d < 25) {
+        // Collect power-up
+        playerPowers[p.type.toLowerCase()] = POWERUP_TYPES[p.type].duration;
+        addParticle(p.x, p.y, 4, 0.8, POWERUP_TYPES[p.type].color);
+        powerups.splice(i, 1);
+        i--;
+        playComboSound(2);
+      } else if(p.life <= 0) {
+        powerups.splice(i, 1);
+        i--;
+      }
+    }
+    
     for(let i=0;i<enemies.length;i++){
       const e=enemies[i];
       const ang=Math.atan2(player.y-e.y, player.x-e.x); e.vx=Math.cos(ang)*e.speed; e.vy=Math.sin(ang)*e.speed; e.ang = Math.atan2(e.vy, e.vx); e.x+=e.vx*dt; e.y+=e.vy*dt;
       const d=Math.hypot(e.x-player.x, e.y-player.y);
       if(d<e.r+player.r){
-        if(player.dashing){ 
+        if(player.dashing || playerPowers.shield > 0){ 
           enemies.splice(i,1); i--; 
           state.combo+=1; 
-          const add = Math.floor(10*Math.pow(1.4, state.combo-1)); 
+          const basePoints = e.points || 10;
+          const add = Math.floor(basePoints * Math.pow(1.4, state.combo-1)); 
           state.score += add; 
           ui.combo.textContent=`Combo: ${state.combo}`; 
           ui.score.textContent=`Score: ${state.score|0}`;
@@ -606,8 +791,16 @@
           addComboParticles(e.x, e.y, state.combo);
           addScreenShake(Math.min(state.combo * 0.5, 8), 0.15);
           updateComboDisplay(state.combo);
+          playKillSound(state.combo);
+          
+          // Trigger slow-mo on high combos
+          if(state.combo >= 5 && state.combo % 5 === 0) {
+            playerPowers.slowmo = Math.max(playerPowers.slowmo, 1.5);
+          }
         }
-        else { gameOver(); break; }
+        else if(playerPowers.shield <= 0) { 
+          gameOver(); break; 
+        }
       }
       if(e.x<-100||e.x>W+100||e.y<-100||e.y>H+100){ enemies.splice(i,1); i--; }
     }
@@ -635,8 +828,15 @@
       return `rgb(${c[0]},${c[1]},${c[2]})`;
     }
   }
+  
   function drawDot(e){
-    const fill = speedToColor(e.speed);
+    let fill;
+    if(e.type && ENEMY_TYPES[e.type] && ENEMY_TYPES[e.type].color !== 'speed') {
+      fill = ENEMY_TYPES[e.type].color;
+    } else {
+      fill = speedToColor(e.speed);
+    }
+    
     ctx.save();
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
@@ -647,8 +847,20 @@
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(0,0,0,0.45)';
     ctx.stroke();
+    
+    // Draw type indicator for special enemies
+    if(e.type && e.type !== 'NORMAL') {
+      ctx.fillStyle = '#fff';
+      ctx.font = `${e.r * 0.8}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const symbols = { FAST: '⚡', BIG: '●', BONUS: '★' };
+      ctx.fillText(symbols[e.type] || '?', e.x, e.y);
+    }
+    
     ctx.restore();
   }
+  
   function render(){
     ctx.save();
     
@@ -699,12 +911,44 @@
     
     for(const e of enemies){ drawDot(e); }
     
+    // Draw power-ups
+    for(const p of powerups) {
+      const pulse = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+      ctx.fillStyle = POWERUP_TYPES[p.type].color;
+      ctx.shadowColor = POWERUP_TYPES[p.type].color;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Draw icon
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(POWERUP_TYPES[p.type].icon, p.x, p.y);
+      ctx.restore();
+    }
+    
     // Enhanced player rendering
     ctx.beginPath();
     ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
-    ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3';
-    ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000';
-    ctx.shadowBlur = player.dashing ? 12 : 0;
+    
+    // Player color based on power-ups
+    let playerColor = '#e6edf3';
+    if(playerPowers.shield > 0) playerColor = '#88ccff';
+    else if(playerPowers.speed > 0) playerColor = '#ffcc88';
+    else if(playerPowers.multidash > 0) playerColor = '#cc88ff';
+    else if(player.dashing) playerColor = '#88ffcc';
+    
+    ctx.fillStyle = playerColor;
+    ctx.shadowColor = playerColor;
+    ctx.shadowBlur = (player.dashing || Object.values(playerPowers).some(p => p > 0)) ? 12 : 0;
     ctx.fill();
     
     // Draw dash cooldown indicator
@@ -734,6 +978,17 @@
       ctx.restore();
     }
     
+    // Draw power-up status
+    let yOffset = 20;
+    Object.keys(playerPowers).forEach(power => {
+      if(playerPowers[power] > 0) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '14px Arial';
+        ctx.fillText(`${power.toUpperCase()}: ${playerPowers[power].toFixed(1)}s`, W - 150, yOffset);
+        yOffset += 20;
+      }
+    });
+    
     // DEV MODE: Show debug info
     if(state.showDebugInfo && state.running){
       ctx.fillStyle = '#ff6b6b';
@@ -744,6 +999,8 @@
       ctx.fillText(`DEV: Spawn Timer: ${state.spawnTimer.toFixed(2)}`, 10, H - 15);
       ctx.fillText(`DEV: Dash Trail: ${dashTrail.length}`, 10, H - 75);
       ctx.fillText(`DEV: Screen Shake: ${screenShake.intensity.toFixed(1)}`, 10, H - 90);
+      ctx.fillText(`DEV: Powerups: ${powerups.length}`, 10, H - 105);
+      ctx.fillText(`DEV: Audio: ${audioSettings.enabled ? 'ON' : 'OFF'} (M to toggle)`, 10, H - 120);
     }
     
     ctx.restore();
@@ -764,6 +1021,9 @@
   console.log('- Debug grid and info display');
   console.log('- Scores not submitted to live leaderboard');
   console.log('- Visual dev mode indicators');
+  console.log('- Press M to toggle audio');
+  console.log('- Power-ups spawn after score 100');
+  console.log('- Enemy variety increases with score');
 })();
 </script>
 
