@@ -341,12 +341,13 @@
         rows.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td>${status}</td><td>${e.country || 'XX'}</td>`;
+          const timeAgo = getTimeAgo(e.created_at);
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
           const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Be the first!</td>';
+          tr.innerHTML = '<td colspan="6" style="opacity:.7;">No scores yet. Be the first!</td>';
           lb.table.appendChild(tr);
         }
       })
@@ -354,21 +355,6 @@
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
-        lb.table.innerHTML = '';
-        arr.slice(0, 10).forEach((e, i) => {
-          const tr = document.createElement('tr');
-          const status = getMotivationalStatus(e.score);
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${status}</td><td>Local</td>`;
-          lb.table.appendChild(tr);
-        });
-        if (arr.length === 0) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Play a run!</td>';
-          lb.table.appendChild(tr);
-        }
-      });
-  }
-
   function getMotivationalStatus(score) {
     if (score >= 1000) {
       // 🏆 Epic high score words

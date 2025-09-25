@@ -1,259 +1,895 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+(() => {
+  const $ = (sel) => document.querySelector(sel);
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W=0, H=0, DPR=Math.min(devicePixelRatio||1,2);
 
-  <!-- SEO Meta -->
-  <title>Loop Runner — Free Browser Action Game | Playloop.run</title>
-  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required." />
-  <link rel="canonical" href="https://playloop.run/">
-  <meta name="robots" content="index,follow,max-image-preview:large">
-  <meta name="keywords" content="free browser game, action game, leaderboard game, reflex game, playloop, loop runner, instant play game">
-  <meta name="theme-color" content="#0b0b10">
-
-  <!-- Social / Open Graph -->
-  <meta property="og:title" content="Loop Runner — Free Browser Action Game">
-  <meta property="og:description" content="Dash, chain, and climb the leaderboard in Loop Runner. A lightning-fast browser game — free to play, no downloads.">
-  <meta property="og:url" content="https://playloop.run/">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Playloop">
-  <meta property="og:locale" content="en_GB">
-  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Loop Runner — Free Browser Action Game">
-  <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner. Free, fast-paced, and playable instantly in your browser.">
-  <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
-
-  <!-- PWA / Icons -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="favicon.ico">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-  <!-- Structured Data (JSON-LD) -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "VideoGame",
-    "name": "Loop Runner",
-    "url": "https://playloop.run/",
-    "image": "https://playloop.run/looprunner-preview.png",
-    "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game you can play instantly.",
-    "inLanguage": "en",
-    "applicationCategory": "Game",
-    "operatingSystem": "Web",
-    "gamePlatform": "Browser",
-    "playMode": ["SinglePlayer"],
-    "publisher": { "@type": "Organization", "name": "Playloop" },
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
+  /* ====== layout sizing (ad-aware) ====== */
+  function resize(){
+    const spacer = document.getElementById('ad-spacer');
+    const adH = (spacer && spacer.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--adH')) || 0;
+    W = innerWidth|0;
+    H = Math.max(0, (innerHeight|0) - adH);
+    canvas.width  = Math.max(1, W*DPR);
+    canvas.height = Math.max(1, H*DPR);
+    canvas.style.width = W+'px';
+    canvas.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
   }
-  </script>
+  addEventListener('resize', resize);
 
-  <!-- Consent Mode v2 (default denied) -->
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    gtag('consent','default',{
-      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
-    });
-  </script>
+  const topIns = document.getElementById('ad-top-unit');
+  function tryFillTopAd(){
+    if(!topIns) return;
+    const w = topIns.clientWidth;
+    if(w && w > 0){ (window.adsbygoogle=window.adsbygoogle||[]).push({}); return true; }
+    return false;
+  }
+  window.addEventListener('load', ()=>{
+    let ok = tryFillTopAd();
+    if(!ok){ const id = setInterval(()=>{ if(tryFillTopAd()) clearInterval(id); }, 200); setTimeout(()=> clearInterval(id), 5000); }
+    resize();
+  });
 
-  <!-- AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+  const spacer = document.getElementById('ad-spacer');
+  const topWrap = document.getElementById('ad-top-wrapper');
+  function updateAdVars(){
+    const h = (topWrap && topWrap.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--adCap')) || 0;
+    spacer.style.height = h + 'px';
+    document.documentElement.style.setProperty('--adH', h+'px');
+    resize();
+  }
+  if('ResizeObserver' in window && topWrap){ new ResizeObserver(updateAdVars).observe(topWrap); } else { setTimeout(updateAdVars, 300); }
 
-  <!-- Funding Choices (CMP) -->
-  <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
-  <script>
-    (function signalGooglefcPresent() {
-      if (!window.frames['googlefcPresent']) {
-        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
-        document.body ? add() : setTimeout(signalGooglefcPresent,0);
+  /* ====== storage helpers ====== */
+  function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
+  function setLS(k, v){ try{ localStorage.setItem(k, v); }catch{} }
+
+  /* ====== state ====== */
+  const state = { 
+    running: false, 
+    paused: false, 
+    score: 0, 
+    combo: 0, 
+    time: 0,
+    best: Number(getLS('lr_best', 0)), 
+    dailyBest: Number(getLS('lr_daily', 0)),
+    spawnTimer: 0, 
+    spawnInterval: 1.1, 
+    dailyMode: false,
+    fireRounds: 3,
+    maxFireRounds: 3,
+    rechargeTimer: 0,
+    rechargeInterval: 5
+  };
+
+  /* ====== UI refs ====== */
+  const ui={
+    score:$('#score'), combo:$('#combo'), best:$('#best'), daily:$('#daily'),
+    fireIndicator:$('#fireIndicator'),
+    overlay:$('#overlay'),
+    ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
+    start:$('#start'), dailyBtn:$('#dailyBtn'),
+    btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'),
+    lbBtn:$('#lbBtn'), nameInput:$('#nameInput'),
+    restartBtn:$('#restartBtn'), shareBtn:$('#shareBtn'),
+    dailyBanner:$('#dailyBanner')
+  };
+
+  function updateFireIndicator() {
+    if (!ui.fireIndicator) return;
+    
+    const dots = ui.fireIndicator.querySelectorAll('.fire-dot');
+    const isEmpty = state.fireRounds === 0;
+    
+    ui.fireIndicator.classList.toggle('empty', isEmpty);
+    
+    dots.forEach((dot, i) => {
+      if (i < state.fireRounds) {
+        dot.classList.add('active');
+        dot.classList.remove('inactive');
+      } else {
+        dot.classList.remove('active');
+        dot.classList.add('inactive');
       }
-    })();
-  </script>
+    });
+  }
 
-  <style>
-    /* ========= theme (from wireframe) ========= */
-    :root{
-      --bg:#0b0b10; --fg:#eaecef; --muted:#9aa0a6; --accent:#6cf; --card:rgba(20,20,28,.85);
-      --adCap: 90px; /* cap the ad height */
+  function hydrateHUD(){ 
+    ui.score.textContent='Score: 0'; 
+    ui.combo.textContent='Combo: 0'; 
+    ui.best.textContent='Best: '+state.best; 
+    ui.daily.textContent='Daily: '+state.dailyBest;
+    updateFireIndicator();
+  }
+  hydrateHUD();
+  ui.dailyBanner.textContent = 'Daily Challenge: ' + new Date().toISOString().slice(0,10);
+
+  /* ====== Pause/Resume helpers (overlay driven) ====== */
+  function showOverlay(){ ui.overlay.classList.add('visible'); }
+  function hideOverlay(){ ui.overlay.classList.remove('visible'); }
+
+  function setOverlayHome(){
+    ui.ovTitle.textContent = 'Loop Runner';
+    ui.ovBody.textContent = 'Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!';
+    ui.btnResume.style.display = 'none';
+    ui.btnPlayAgain.style.display = 'none';
+    showOverlay();
+  }
+  function setOverlayPaused(){
+    ui.ovTitle.textContent = 'Paused';
+    ui.ovBody.innerHTML = 'Press <b>P</b> or <b>Esc</b> to resume';
+    ui.btnResume.style.display = '';
+    ui.btnPlayAgain.style.display = '';
+    showOverlay();
+  }
+  function setOverlayGameOver(score, best, isPB){
+    ui.ovTitle.textContent = isPB ? 'New Best!' : 'Game Over';
+    ui.ovBody.innerHTML = `Score: <b>${score}</b> • Best: <b>${best}</b>${isPB?' • 🎉':''}`;
+    ui.btnResume.style.display = 'none';
+    ui.btnPlayAgain.style.display = '';
+    showOverlay();
+  }
+
+  /* ====== RNG ====== */
+  const todayKey=()=>new Date().toISOString().slice(0,10);
+  function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
+  let seededRand=Math.random; let usingSeed=false;
+  function setDailySeed(){ usingSeed=true; seededRand=mulberry32(hashToInt('looprunner:'+todayKey())); }
+  function rnd(a=0,b=1){ return (usingSeed?seededRand():Math.random())*(b-a)+a; }
+  function rndi(a,b){ return Math.floor(rnd(a,b+1)); }
+  function hashToInt(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+
+  /* ====== Audio ====== */
+  let audio, master;
+  function initAudio(){ if(!audio){ audio=new (window.AudioContext||window.webkitAudioContext)(); master=audio.createGain(); master.gain.value=0.08; master.connect(audio.destination); } }
+
+  /* ====== Entities ====== */
+  const player = { x: W/2, y: H/2, r: 12, vx: 0, vy: 0, maxSpeed: 400, friction: 8 };
+  const enemies = [];
+  const bullets = [];
+  const particles = [];
+  const powerups = [];
+
+  function addParticle(x, y, color = '#8fb3ff', size = 2, life = 0.4) {
+    const a = rnd(0, Math.PI * 2);
+    const sp = rnd(40, 240);
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      life, maxLife: life, size, color
+    });
+  }
+
+  function spawnEnemy() {
+    const m = 24;
+    const side = rndi(0, 3);
+    let x, y;
+    if (side === 0) { x = rnd(-m, W + m); y = -m; }
+    else if (side === 1) { x = W + m; y = rnd(-m, H + m); }
+    else if (side === 2) { x = rnd(-m, W + m); y = H + m; }
+    else { x = -m; y = rnd(-m, H + m); }
+    
+    const r = rnd(14, 22);
+    const speed = rnd(40, 90) + Math.min(state.time * 4, 220);
+    const ang = Math.atan2(player.y - y, player.x - x) + rnd(-0.5, 0.5);
+    const vx = Math.cos(ang) * speed;
+    const vy = Math.sin(ang) * speed;
+    
+    enemies.push({ x, y, r, vx, vy, speed, ang });
+  }
+
+  function spawnPowerup() {
+    if (powerups.length > 0) return; // Only one at a time
+    
+    const margin = 50;
+    const x = rnd(margin, W - margin);
+    const y = rnd(margin, H - margin);
+    
+    const types = ['recharge', 'multiplier'];
+    const type = types[rndi(0, types.length - 1)];
+    
+    powerups.push({
+      x, y, r: 16,
+      type,
+      life: 10, // 10 seconds to collect
+      maxLife: 10,
+      pulsePhase: 0
+    });
+  }
+
+  /* ====== Input ====== */
+  let mouse = { x: W/2, y: H/2 };
+  
+  function screenToWorld(e) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: (e.clientX - rect.left), y: (e.clientY - rect.top) };
+  }
+
+  function fireBullet() {
+    if (state.fireRounds <= 0) return;
+    
+    state.fireRounds--;
+    updateFireIndicator();
+    
+    const dx = mouse.x - player.x;
+    const dy = mouse.y - player.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      vx: ux * 600,
+      vy: uy * 600,
+      r: 4,
+      life: 2
+    });
+    
+    // Add muzzle flash particles
+    for (let i = 0; i < 8; i++) {
+      addParticle(player.x, player.y, '#ffaa00', 3, 0.3);
     }
-    @media (max-width: 991px){ :root{ --adCap: 60px; } }
-    @media (max-width: 599px){ :root{ --adCap: 50px; } }
+  }
 
-    *{ box-sizing:border-box }
-    html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--fg); font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial; }
+  canvas.addEventListener('mousemove', (e) => {
+    const p = screenToWorld(e);
+    mouse.x = p.x;
+    mouse.y = p.y;
+  });
 
-    /* ========= Top Ad (hard-capped) ========= */
-    #ad-top-wrapper{ position:fixed; top:0; left:0; right:0; z-index:30; background:rgba(0,0,0,.15); backdrop-filter:blur(3px); border-bottom:1px dashed #2a2f3a; display:flex; justify-content:center; padding:4px 8px 0; max-height:var(--adCap); overflow:hidden; }
-    #ad-top-unit{ display:block !important; text-align:center; width:100% !important; height:var(--adCap) !important; line-height:0; }
-    #ad-spacer{ height:var(--adH, var(--adCap)); }
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (state.running && !state.paused) {
+      initAudio();
+      fireBullet();
+    }
+  });
 
-    /* ========= Canvas ========= */
-    canvas{ display:block; width:100vw; height:calc(100vh - var(--adH, var(--adCap))); image-rendering:crisp-edges; }
+  canvas.addEventListener('click', (e) => {
+    if (!state.running) {
+      initAudio();
+    }
+  });
 
-    /* ========= HUD ========= */
-    #ui{ position:fixed; inset:0; pointer-events:none; }
-    .hud{ position:absolute; left:12px; top:calc(var(--adH, var(--adCap)) + 12px); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .pill{ background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; color:#c9d1d9; }
+  addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (e.code === 'Space') {
+      if (!state.running) {
+        e.preventDefault();
+        startGame(state.dailyMode);
+        return;
+      }
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      startGame(state.dailyMode);
+      return;
+    }
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+      e.preventDefault();
+      if (state.running) {
+        if (!state.paused) pauseGameUI();
+        else resumeGameUI();
+      }
+      return;
+    }
+  });
 
-    /* ========= Fire indicator ========= */
-    .fire-indicator{ background:#1a1a22; border:1px solid #2e3240; padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; color:#c9d1d9; display:flex; align-items:center; gap:6px; }
-    .fire-indicator.empty{ color:#ff6b6b; border-color:#ff6b6b; }
-    .fire-dot{ width:8px; height:8px; border-radius:50%; }
-    .fire-dot.active{ background:#88ffcc; box-shadow:0 0 4px #88ffcc; }
-    .fire-dot.inactive{ background:#444; }
+  addEventListener('blur', () => {
+    if (state.running && !state.paused) pauseGameUI();
+  });
 
-    /* ========= Overlay (wireframe style) ========= */
-    #overlay{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; }
-    #overlay.visible{ display:flex; }
-    #overlayCard{ min-width:min(85%,520px); max-width:92%; border-radius:16px; padding:16px 18px; background:var(--card); box-shadow:0 10px 30px rgba(0,0,0,.35); outline:1px dashed #2e3240; }
-    #overlayTitle{ font-size:18px; margin:0 0 8px }
-    #overlayBody{ opacity:.9; margin-bottom:10px }
-    #overlayRow{ display:flex; gap:8px; flex-wrap:wrap }
+  /* ====== Leaderboard ====== */
+  const lb = {
+    modal: $('#lbModal'),
+    close: $('#lbClose'),
+    modeSel: $('#lbMode'),
+    info: $('#lbInfo'),
+    table: $('#lbTable').querySelector('tbody')
+  };
 
-    /* ========= Buttons ========= */
-    .btn, .cta{ pointer-events:auto; border:0; border-radius:12px; padding:.6rem .9rem; background:#1a1a22; color:#fff; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2); }
-    .cta{ position:relative; border-radius:14px; font-weight:800; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; user-select:none; -webkit-tap-highlight-color:transparent; }
-    .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; border:1px solid rgba(124,253,214,.25); }
-    .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; border:1px solid rgba(255,210,119,.25); }
+  function loadLB(key) {
+    try {
+      return JSON.parse(getLS(key, '[]'));
+    } catch {
+      return [];
+    }
+  }
 
-    /* ========= Enhanced UI Styles ========= */
-    .cursor-indicator{ position:absolute; width:20px; height:20px; border:2px solid #88ffcc; border-radius:50%; pointer-events:none; z-index:25; opacity:0.8; }
-    .chain-indicator{ position:absolute; border:2px dashed #ffd277; border-radius:50%; pointer-events:none; z-index:24; opacity:0.6; }
-    .boss-health{ position:absolute; background:rgba(0,0,0,0.7); border:1px solid #ff4444; border-radius:4px; padding:2px 6px; font-size:10px; color:#fff; pointer-events:none; z-index:23; }
-    .stats-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
-    .stat-item{ background:rgba(255,255,255,0.05); padding:8px; border-radius:6px; text-align:center; }
-    .stat-value{ font-size:18px; font-weight:bold; color:#88ffcc; }
-    .stat-label{ font-size:12px; opacity:0.8; }
+  function saveLB(key, arr) {
+    setLS(key, JSON.stringify(arr));
+  }
 
-    /* ========= Quickbar & Daily Banner ========= */
-    #quickbar{ position:fixed; left:50%; transform:translateX(-50%); bottom:8px; display:flex; gap:8px; z-index:26; }
-    #dailyBanner{ position:fixed; right:8px; bottom:8px; color:var(--muted); font-weight:600; z-index:26; background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:10px; }
+  const SB_URL = 'https://zpoerliqhcywaulbthyf.supabase.co/rest/v1/scores';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpwb2VybGlxaGN5d2F1bGJ0aHlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDQxNjYsImV4cCI6MjA3Mzc4MDE2Nn0.7jjITj1H2AxWPnCeyzmMsNw3uAVACoYb_CV5rRoD65k';
+  const SB_HEADERS = {
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json'
+  };
 
-    /* ========= Modal (Leaderboard) ========= */
-    .modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:28; }
-    .modal.show { display:flex; }
-    .sheet { width:min(720px, 95vw); background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size:14px; }
+  function showLeaderboard(mode) {
+    lb.modal.classList.add('show');
+    lb.modeSel.value = mode || (state.dailyMode ? 'daily' : 'normal');
+    renderLeaderboard();
+    maybeFillModalAd();
+  }
 
-    /* inputs */
-    input[type="text"], select{ pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none; }
-  </style>
-</head>
-<body>
-  <!-- Top Ad (hard-capped) -->
-  <div id="ad-top-wrapper">
-    <ins id="ad-top-unit" class="adsbygoogle"
-         style="display:block; text-align:center;"
-         data-ad-client="ca-pub-3857946786580406"
-         data-ad-slot="7067398117"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-  <div id="ad-spacer"></div>
+  function hideLeaderboard() {
+    lb.modal.classList.remove('show');
+  }
 
-  <!-- Game Canvas -->
-  <canvas id="game"></canvas>
+  function renderLeaderboard() {
+    const mode = lb.modeSel.value;
+    const params = new URLSearchParams();
+    params.append('select', 'name,score,country,created_at');
+    params.append('order', 'score.desc');
+    params.append('limit', '10');
 
-  <!-- UI / HUD -->
-  <div id="ui">
-    <div class="hud">
-      <div id="score" class="pill">Score: 0</div>
-      <div id="combo" class="pill">Combo: 0</div>
-      <div id="best" class="pill">Best: 0</div>
-      <div id="daily" class="pill">Daily: 0</div>
-      <div id="fireIndicator" class="fire-indicator">
-        <span>Fire:</span>
-        <div class="fire-dots">
-          <div class="fire-dot active"></div>
-          <div class="fire-dot active"></div>
-          <div class="fire-dot active"></div>
-        </div>
-      </div>
-      <a href="privacy.html" class="pill" style="text-decoration:none; pointer-events:auto;">Privacy</a>
-      <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
-    </div>
+    lb.table.innerHTML = '';
+    lb.info.textContent = 'Worldwide Top 10';
 
-    <!-- Overlay (wireframe look, driven by game state) -->
-    <div id="overlay" class="visible" role="dialog" aria-modal="true">
-      <div id="overlayCard">
-        <h3 id="overlayTitle">Loop Runner</h3>
-        <div id="overlayBody">Player follows your mouse cursor. <strong>Right-click to fire</strong> (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!</div>
-        <div class="row" style="margin:8px 0;">
-          <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
-          <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
-        </div>
-        <div id="overlayRow" style="margin:8px 0 0 0;">
-          <button class="btn" id="btnResume" style="display:none">▶ Resume</button>
-          <button class="btn" id="btnPlayAgain" style="display:none">↻ Play Again</button>
-          <button class="btn" id="btnShare">📣 Share</button>
-        </div>
-        <div class="hint" style="opacity:.85; font-size:13px; margin-top:10px;">Controls: Mouse to move • Right-click to fire • Space to restart • P / Esc to pause</div>
-        <div style="margin-top:10px; opacity:.9; font-size:13px;">Name: <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" /></div>
-      </div>
-    </div>
-  </div>
+    fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS })
+      .then(res => {
+        if (!res.ok) throw new Error('REST ' + res.status);
+        return res.json();
+      })
+      .then(rows => {
+        rows.slice(0, 10).forEach((e, i) => {
+          const tr = document.createElement('tr');
+          const status = getMotivationalStatus(e.score);
+          const timeAgo = getTimeAgo(e.created_at);
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:#88ffcc; font-weight:bold;">${status}</td><td style="opacity:0.8;">${timeAgo}</td><td>${e.country || 'XX'}</td>`;
+          lb.table.appendChild(tr);
+        });
+        if (rows.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="6" style="opacity:.7;">No scores yet. Be the first!</td>';
+          lb.table.appendChild(tr);
+        }
+      })
+      .catch(() => {
+        const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
+        const arr = loadLB(key);
+        lb.info.textContent += ' • offline';
+        lb.table.innerHTML = '';
+        arr.slice(0, 10).forEach((e, i) => {
+          const tr = document.createElement('tr');
+          const status = getMotivationalStatus(e.score);
+          const timeAgo = getTimeAgo(e.when);
+          lb.table.appendChild(tr);
+        });
+        if (arr.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Play a run!</td>';
+          lb.table.appendChild(tr);
+        }
+      });
+  }
 
-  <!-- Leaderboard Modal -->
-  <div id="lbModal" class="modal">
-    <div class="sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Leaderboard</h2>
-        <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
-      </div>
-      <div style="margin: 8px 0;">
-        <ins id="ad-modal-unit" class="adsbygoogle"
-            style="display:block; text-align:center;"
-            data-ad-client="ca-pub-3857946786580406"
-            data-ad-slot="7067398117"
-            data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-      </div>
-      <div class="row" style="margin:8px 0 12px 0; align-items:center;">
-        <select id="lbMode">
-          <option value="normal">Normal</option>
-          <option value="daily">Daily (today)</option>
-        </select>
-        <div id="lbInfo" style="opacity:.8; font-size:13px;"></div>
-      </div>
-      <table id="lbTable">
-        <thead>
-          <tr>
-            <th style="width:40px;">#</th>
-            <th>Name</th>
-            <th>Score</th>
-            <th>Status</th>
-            <th>When</th>
-            <th>Location</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
+  function getMotivationalStatus(score) {
+    if (score >= 1000) {
+      // 🏆 Epic high score words
+      const epicWords = ['LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!', 'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'];
+      return epicWords[Math.floor(Math.random() * epicWords.length)];
+    } else {
+      // 📈 Encouraging progression words
+      const encouragingWords = ['Trying', 'Learning', 'Rookie', 'Beginner', 'Starter', 'Newbie', 'Amateur', 'Casual', 'Practice', 'Getting There'];
+      return encouragingWords[Math.floor(Math.random() * encouragingWords.length)];
+    }
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+  }
 
-  <!-- Quickbar + Daily Banner -->
-  <div id="quickbar">
-    <button id="restartBtn" class="cta cta--primary" style="padding:10px 14px;">↻ Restart</button>
-    <button id="shareBtn" class="cta cta--secondary" style="padding:10px 14px;">📣 Share</button>
-  </div>
-  <div id="dailyBanner">Daily Challenge</div>
+  lb.close.addEventListener('click', hideLeaderboard);
+  lb.modeSel.addEventListener('change', renderLeaderboard);
+  ui.lbBtn.addEventListener('click', () => showLeaderboard());
 
-  <!-- Load the game script -->
-  <script src="game.js"></script>
+  let modalAdFilled = false;
+  function maybeFillModalAd() {
+    if (modalAdFilled) return;
+    const ins = document.getElementById('ad-modal-unit');
+    if (!ins) return;
+    const w = ins.clientWidth;
+    if (w && w > 0) {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      modalAdFilled = true;
+    } else {
+      setTimeout(maybeFillModalAd, 200);
+    }
+  }
 
-  <script>
-    // No-scroll hardening for touch devices
-    function preventScroll(e){ e.preventDefault(); }
-    window.addEventListener('touchmove', preventScroll, { passive:false });
-    window.addEventListener('wheel', preventScroll, { passive:false });
-  </script>
-</body>
-</html>
+  /* ====== Share (overlay + quickbar) ====== */
+  async function doShare() {
+    const url = location.href;
+    const text = `I just played Loop Runner and scored ${state.score | 0}!`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Loop Runner', text, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+      }
+    } catch (e) {
+      /* user cancelled */
+    }
+  }
+
+  /* ====== Game control ====== */
+  function startGame(daily = false) {
+    state.running = true;
+    state.paused = false;
+    state.time = 0;
+    state.score = 0;
+    state.combo = 0;
+    state.spawnTimer = 0;
+    state.spawnInterval = 1.1;
+    state.fireRounds = state.maxFireRounds;
+    state.rechargeTimer = 0;
+    
+    enemies.length = 0;
+    bullets.length = 0;
+    particles.length = 0;
+    powerups.length = 0;
+    
+    player.x = W / 2;
+    player.y = H / 2;
+    player.vx = 0;
+    player.vy = 0;
+    
+    hydrateHUD();
+    state.dailyMode = daily;
+    usingSeed = false;
+    if (daily) setDailySeed();
+    hideOverlay();
+  }
+
+  function gameOver() {
+    state.running = false;
+    state.paused = false;
+    const score = state.score | 0;
+    let isPB = false;
+    
+    if (state.dailyMode) {
+      if (score > state.dailyBest) {
+        state.dailyBest = score;
+        setLS('lr_daily', state.dailyBest);
+        isPB = true;
+      }
+    } else {
+      if (score > state.best) {
+        state.best = score;
+        setLS('lr_best', state.best);
+        isPB = true;
+      }
+    }
+    
+    hydrateHUD();
+    setOverlayGameOver(score, state.dailyMode ? state.dailyBest : state.best, isPB);
+    submitScore();
+    showLeaderboard(state.dailyMode ? 'daily' : 'normal');
+    
+    if (isPB) {
+      setTimeout(() => {
+        try {
+          doShare();
+        } catch {}
+      }, 450);
+    }
+  }
+
+  function pauseGameUI() {
+    if (!state.running || state.paused) return;
+    state.paused = true;
+    setOverlayPaused();
+  }
+
+  function resumeGameUI() {
+    if (!state.paused) return;
+    state.paused = false;
+    hideOverlay();
+  }
+
+  async function submitScore() {
+    const name = (ui.nameInput.value || getLS('lr_name', 'Player')).slice(0, 20).trim() || 'Player';
+    setLS('lr_name', name);
+    
+    try {
+      const body = {
+        name: name.slice(0, 12),
+        score: state.score | 0,
+        mode: (state.dailyMode ? 'daily' : 'normal'),
+        country: 'XX'
+      };
+      
+      fetch(SB_URL, {
+        method: 'POST',
+        headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify(body)
+      })
+        .then(async r => {
+          if (!r.ok) {
+            let txt = '';
+            try {
+              txt = await r.text();
+            } catch {}
+            console.error('Supabase insert failed', r.status, txt);
+          }
+        })
+        .catch(err => console.error('Supabase insert network error', err));
+    } catch (err) {
+      console.error('submitScore exception', err);
+    }
+  }
+
+  ui.start.addEventListener('click', () => {
+    initAudio();
+    startGame(false);
+  });
+  ui.dailyBtn.addEventListener('click', () => {
+    initAudio();
+    startGame(true);
+  });
+  ui.btnResume.addEventListener('click', resumeGameUI);
+  ui.btnPlayAgain.addEventListener('click', () => startGame(state.dailyMode));
+  ui.btnShare.addEventListener('click', doShare);
+  ui.restartBtn.addEventListener('click', () => startGame(state.dailyMode));
+  ui.shareBtn.addEventListener('click', doShare);
+
+  /* ====== Loop ====== */
+  let last = performance.now();
+  let powerupSpawnTimer = 0;
+
+  function loop() {
+    requestAnimationFrame(loop);
+    const t = performance.now();
+    let dt = (t - last) / 1000;
+    last = t;
+    
+    if (!state.running || state.paused) {
+      render();
+      return;
+    }
+    
+    state.time += dt;
+    state.score += dt * 10;
+    
+    if (((state.score | 0) % 10) === 0) {
+      ui.score.textContent = `Score: ${state.score | 0}`;
+    }
+
+    update(dt);
+    render();
+  }
+
+  function update(dt) {
+    // Auto-recharge fire rounds
+    if (state.fireRounds < state.maxFireRounds) {
+      state.rechargeTimer += dt;
+      if (state.rechargeTimer >= state.rechargeInterval) {
+        state.fireRounds++;
+        state.rechargeTimer = 0;
+        updateFireIndicator();
+      }
+    }
+
+    // Spawn enemies
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0) {
+      spawnEnemy();
+      state.spawnTimer = state.spawnInterval;
+    }
+
+    // Spawn power-ups
+    powerupSpawnTimer += dt;
+    if (powerupSpawnTimer >= 25 && powerups.length === 0) { // Every 25 seconds
+      spawnPowerup();
+      powerupSpawnTimer = 0;
+    }
+
+    // Update player (follows mouse)
+    const dx = mouse.x - player.x;
+    const dy = mouse.y - player.y;
+    const len = Math.hypot(dx, dy);
+    
+    if (len > 5) {
+      const ux = dx / len;
+      const uy = dy / len;
+      const speed = Math.min(len * 8, player.maxSpeed);
+      player.vx = ux * speed;
+      player.vy = uy * speed;
+    } else {
+      player.vx *= 0.9;
+      player.vy *= 0.9;
+    }
+
+    const f = Math.exp(-player.friction * dt);
+    player.vx *= f;
+    player.vy *= f;
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
+    
+    // Keep player in bounds
+    player.x = Math.max(player.r, Math.min(W - player.r, player.x));
+    player.y = Math.max(player.r, Math.min(H - player.r, player.y));
+
+    // Update bullets
+    for (let i = 0; i < bullets.length; i++) {
+      const b = bullets[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+      
+      if (b.life <= 0 || b.x < 0 || b.x > W || b.y < 0 || b.y > H) {
+        bullets.splice(i, 1);
+        i--;
+      }
+    }
+
+    // Update enemies
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      e.vx = Math.cos(ang) * e.speed;
+      e.vy = Math.sin(ang) * e.speed;
+      e.ang = Math.atan2(e.vy, e.vx);
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+
+      // Check collision with player
+      const d = Math.hypot(e.x - player.x, e.y - player.y);
+      if (d < e.r + player.r) {
+        gameOver();
+        break;
+      }
+
+      // Check collision with bullets
+      for (let j = 0; j < bullets.length; j++) {
+        const b = bullets[j];
+        const bd = Math.hypot(b.x - e.x, b.y - e.y);
+        if (bd < b.r + e.r) {
+          // Hit!
+          bullets.splice(j, 1);
+          enemies.splice(i, 1);
+          i--;
+          j--;
+          
+          state.combo += 1;
+          const add = Math.floor(10 * Math.pow(1.4, state.combo - 1));
+          state.score += add;
+          ui.combo.textContent = `Combo: ${state.combo}`;
+          ui.score.textContent = `Score: ${state.score | 0}`;
+          
+          // Add explosion particles
+          for (let k = 0; k < 12; k++) {
+            addParticle(e.x, e.y, '#ff6666', Math.random() * 3 + 2, Math.random() * 0.4 + 0.3);
+          }
+          break;
+        }
+      }
+
+      // Remove enemies that are too far away
+      if (e.x < -100 || e.x > W + 100 || e.y < -100 || e.y > H + 100) {
+        enemies.splice(i, 1);
+        i--;
+      }
+    }
+
+    // Update power-ups
+    for (let i = 0; i < powerups.length; i++) {
+      const p = powerups[i];
+      p.life -= dt;
+      p.pulsePhase += dt * 4;
+      
+      if (p.life <= 0) {
+        powerups.splice(i, 1);
+        i--;
+        continue;
+      }
+      
+      // Check collision with player
+      const d = Math.hypot(p.x - player.x, p.y - player.y);
+      if (d < p.r + player.r) {
+        // Collected!
+        if (p.type === 'recharge') {
+          state.fireRounds = state.maxFireRounds;
+          state.rechargeTimer = 0;
+          updateFireIndicator();
+          
+          // Blue particles
+          for (let k = 0; k < 20; k++) {
+            addParticle(p.x, p.y, '#88ffcc', Math.random() * 4 + 2, Math.random() * 0.6 + 0.4);
+          }
+        } else if (p.type === 'multiplier') {
+          state.score *= 3;
+          ui.score.textContent = `Score: ${state.score | 0}`;
+          
+          // Gold particles
+          for (let k = 0; k < 20; k++) {
+            addParticle(p.x, p.y, '#ffd700', Math.random() * 4 + 2, Math.random() * 0.6 + 0.4);
+          }
+        }
+        
+        powerups.splice(i, 1);
+        i--;
+      }
+    }
+
+    // Update particles
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.98;
+      p.vy *= 0.98;
+      
+      if (p.life <= 0) {
+        particles.splice(i, 1);
+        i--;
+      }
+    }
+  }
+
+  /* ====== Visuals ====== */
+  function clamp01(t) {
+    return Math.max(0, Math.min(1, t));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function lerpColor(c1, c2, t) {
+    return [
+      Math.round(lerp(c1[0], c2[0], t)),
+      Math.round(lerp(c1[1], c2[1], t)),
+      Math.round(lerp(c1[2], c2[2], t))
+    ];
+  }
+
+  const COL_BLUE = [88, 166, 255];
+  const COL_YELLOW = [255, 210, 119];
+  const COL_RED = [255, 95, 95];
+
+  function speedToColor(speed) {
+    const t = clamp01((speed - 40) / 270);
+    if (t < 0.5) {
+      const u = t / 0.5;
+      const c = lerpColor(COL_BLUE, COL_YELLOW, u);
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    } else {
+      const u = (t - 0.5) / 0.5;
+      const c = lerpColor(COL_YELLOW, COL_RED, u);
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+  }
+
+  function drawDot(e) {
+    const fill = speedToColor(e.speed);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.shadowColor = fill;
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function render() {
+    ctx.save();
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw particles
+    for (const p of particles) {
+      const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Draw enemies
+    for (const e of enemies) {
+      drawDot(e);
+    }
+
+    // Draw bullets
+    ctx.fillStyle = '#ffaa00';
+    ctx.shadowColor = '#ffaa00';
+    ctx.shadowBlur = 6;
+    for (const b of bullets) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    // Draw power-ups
+    for (const p of powerups) {
+      const pulse = 0.8 + 0.2 * Math.sin(p.pulsePhase);
+      const alpha = Math.max(0.3, p.life / p.maxLife);
+      
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      
+      if (p.type === 'recharge') {
+        // Blue recharge power-up
+        ctx.fillStyle = '#88ffcc';
+        ctx.shadowColor = '#88ffcc';
+        ctx.shadowBlur = 12 * pulse;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Lightning symbol
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡', p.x, p.y);
+      } else if (p.type === 'multiplier') {
+        // Gold multiplier power-up
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 12 * pulse;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // x3 text
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('x3', p.x, p.y);
+      }
+      
+      ctx.restore();
+    }
+
+    // Draw player
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#e6edf3';
+    ctx.shadowColor = '#88ffcc';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    
+    // Draw cursor indicator
+    ctx.save();
+    ctx.strokeStyle = '#88ffcc';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  /* ====== Modal close-click ====== */
+  document.getElementById('lbModal').addEventListener('click', (e) => {
+    if (e.target.id === 'lbModal') e.currentTarget.classList.remove('show');
+  });
+
+  /* ====== Boot ====== */
+  resize();
+  requestAnimationFrame(function loopStart() {
+    requestAnimationFrame(loop);
+  });
+  setOverlayHome();
+})();
