@@ -362,6 +362,9 @@
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
+      }
+      )
+  }
   function getMotivationalStatus(score) {
     if (score >= 1000) {
       // 🏆 Epic high score words
