@@ -522,7 +522,6 @@
   });
 
   canvas.addEventListener('pointermove',(e)=>{ 
-    if(!state.mouseMode) return;
     const p=screenToWorld(e); 
     pointer.x=p.x; 
     pointer.y=p.y; 
@@ -1132,14 +1131,15 @@
     if(state.mouseMode && state.running && !state.paused) {
       ctx.save();
       ctx.strokeStyle = '#88ffcc';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.6;
       ctx.beginPath();
-      ctx.arc(pointer.x, pointer.y, 10, 0, Math.PI * 2);
+      ctx.arc(pointer.x, pointer.y, 8, 0, Math.PI * 2);
       ctx.stroke();
       
       // Draw line from player to cursor
-      ctx.setLineDash([2, 4]);
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(player.x, player.y);
       ctx.lineTo(pointer.x, pointer.y);
