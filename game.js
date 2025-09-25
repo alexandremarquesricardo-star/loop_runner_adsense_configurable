@@ -539,11 +539,26 @@
   }
 
   function getMotivationalWord(rank) {
-    const words = [
-      'LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!',
-      'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'
-    ];
-    return words[rank - 1] || 'AWESOME!';
+    // This function now takes rank but we'll override it with score-based words
+    return 'PLAYER'; // Fallback, will be overridden
+  }
+
+  function getScoreBasedMotivationalWord(score) {
+    if (score >= 1000) {
+      // High scores get very positive words
+      const highWords = [
+        'LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!',
+        'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'
+      ];
+      return highWords[Math.floor(Math.random() * highWords.length)];
+    } else {
+      // Lower scores get less positive words
+      const lowWords = [
+        'Trying', 'Learning', 'Rookie', 'Beginner', 'Starter',
+        'Newbie', 'Amateur', 'Casual', 'Practice', 'Getting There'
+      ];
+      return lowWords[Math.floor(Math.random() * lowWords.length)];
+    }
   }
 
   function getRandomTimeAgo() {
@@ -589,7 +604,7 @@
         console.log('Leaderboard data received:', rows);
         rows.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
-          const motivationalWord = getMotivationalWord(i + 1);
+          const motivationalWord = getScoreBasedMotivationalWord(e.score || 0);
           const timeAgo = getRandomTimeAgo();
           const country = e.country || 'XX'; // Use real country from database
           
@@ -618,7 +633,7 @@
         lb.table.innerHTML = '';
         arr.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
-          const motivationalWord = getMotivationalWord(i + 1);
+          const motivationalWord = getScoreBasedMotivationalWord(e.score || 0);
           const timeAgo = getRandomTimeAgo();
           const country = getRandomCountry();
           
