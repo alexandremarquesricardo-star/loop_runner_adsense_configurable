@@ -346,14 +346,66 @@
   /* ====== Entities ====== */
   const player={ x:W/2, y:H/2, r:12, vx:0, vy:0, maxSpeed:900, friction:9, dashing:false, dashCooldown:0, dashWindup:0 };
   const enemies=[]; const particles=[];
+  
+  // Visual effects system
+  let screenShake = { x: 0, y: 0, intensity: 0, duration: 0 };
+  let comboDisplay = { scale: 1, alpha: 1, text: '', timer: 0 };
+  let dashTrail = [];
 
-  function addParticle(x,y,size=2,life=0.4){ const a=rnd(0,Math.PI*2); const sp=rnd(40,240); particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life, maxLife:life, size}); }
+  function addParticle(x,y,size=2,life=0.4,color='#8fb3ff'){ 
+    const a=rnd(0,Math.PI*2); 
+    const sp=rnd(40,240); 
+    particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life, maxLife:life, size, color}); 
+  }
+  
+  function addComboParticles(x, y, combo) {
+    const colors = ['#88ffcc', '#ffcc88', '#ff88cc', '#cc88ff', '#88ccff'];
+    const color = colors[Math.min(combo - 1, colors.length - 1)];
+    for(let i = 0; i < Math.min(combo * 3, 20); i++) {
+      addParticle(x, y, rnd(2, 5), rnd(0.3, 0.8), color);
+    }
+  }
+  
+  function addDashParticles(x, y) {
+    for(let i = 0; i < 15; i++) {
+      addParticle(x, y, rnd(1, 3), rnd(0.2, 0.4), '#88ffcc');
+    }
+  }
+  
+  function addScreenShake(intensity, duration) {
+    screenShake.intensity = Math.max(screenShake.intensity, intensity);
+    screenShake.duration = Math.max(screenShake.duration, duration);
+  }
+  
+  function updateComboDisplay(combo) {
+    comboDisplay.scale = 1.5;
+    comboDisplay.alpha = 1;
+    comboDisplay.text = `x${combo} COMBO!`;
+    comboDisplay.timer = 1.0;
+  }
+  
+  function addDashTrail(x, y) {
+    dashTrail.push({ x, y, life: 0.3, maxLife: 0.3 });
+    if(dashTrail.length > 10) dashTrail.shift();
+  }
   function spawnEnemy(){ const m=24; const side=rndi(0,3); let x,y; if(side===0){x=rnd(-m,W+m); y=-m;} else if(side===1){x=W+m; y=rnd(-m,H+m);} else if(side===2){x=rnd(-m,W+m); y=H+m;} else {x=-m; y=rnd(-m,H+m);} const r=rnd(14,22); const speed=rnd(40,90)+Math.min(state.time*4,220); const ang=Math.atan2(player.y-y, player.x-x)+rnd(-0.5,0.5); const vx=Math.cos(ang)*speed, vy=Math.sin(ang)*speed; enemies.push({x,y,r,vx,vy,speed,ang}); }
 
   /* ====== Input ====== */
   let pointer={ x:W/2, y:H/2, down:false };
   function screenToWorld(e){ const rect=canvas.getBoundingClientRect(); return { x:(e.clientX-rect.left), y:(e.clientY-rect.top) }; }
-  function startDashTowards(px,py){ if(player.dashCooldown>0) return; const dx=px-player.x, dy=py-player.y; const len=Math.hypot(dx,dy)||1; const ux=dx/len, uy=dy/len; player.vx=ux*player.maxSpeed; player.vy=uy*player.maxSpeed; player.dashing=true; player.dashCooldown=0.35; player.dashWindup=0.12; for(let i=0;i<10;i++) addParticle(player.x,player.y,3,0.25); }
+  function startDashTowards(px,py){ 
+    if(player.dashCooldown>0) return; 
+    const dx=px-player.x, dy=py-player.y; 
+    const len=Math.hypot(dx,dy)||1; 
+    const ux=dx/len, uy=dy/len; 
+    player.vx=ux*player.maxSpeed; 
+    player.vy=uy*player.maxSpeed; 
+    player.dashing=true; 
+    player.dashCooldown=0.35; 
+    player.dashWindup=0.12; 
+    addDashParticles(player.x, player.y);
+    addScreenShake(2, 0.1);
+  }
   canvas.addEventListener('pointerdown',(e)=>{ initAudio(); const p=screenToWorld(e); pointer.down=true; pointer.x=p.x; pointer.y=p.y; startDashTowards(pointer.x,pointer.y); });
   canvas.addEventListener('pointermove',(e)=>{ const p=screenToWorld(e); pointer.x=p.x; pointer.y=p.y; });
   canvas.addEventListener('pointerup',()=>{ pointer.down=false; });
@@ -507,13 +559,54 @@
   function update(dt){
     state.spawnTimer-=dt; if(state.spawnTimer<=0){ spawnEnemy(); state.spawnTimer=state.spawnInterval; }
     if(player.dashWindup>0){ player.dashWindup-=dt; if(player.dashWindup<=0) player.dashing=false; }
+    
+    // Update visual effects
+    if(screenShake.duration > 0) {
+      screenShake.duration -= dt;
+      screenShake.x = (Math.random() - 0.5) * screenShake.intensity;
+      screenShake.y = (Math.random() - 0.5) * screenShake.intensity;
+      if(screenShake.duration <= 0) {
+        screenShake.x = screenShake.y = screenShake.intensity = 0;
+      }
+    }
+    
+    if(comboDisplay.timer > 0) {
+      comboDisplay.timer -= dt;
+      comboDisplay.scale = lerp(comboDisplay.scale, 1, dt * 3);
+      comboDisplay.alpha = comboDisplay.timer / 1.0;
+    }
+    
+    // Update dash trail
+    if(player.dashing) {
+      addDashTrail(player.x, player.y);
+    }
+    for(let i = 0; i < dashTrail.length; i++) {
+      dashTrail[i].life -= dt;
+      if(dashTrail[i].life <= 0) {
+        dashTrail.splice(i, 1);
+        i--;
+      }
+    }
+    
     const f=Math.exp(-player.friction*dt); player.vx*=f; player.vy*=f; player.x+=player.vx*dt; player.y+=player.vy*dt; player.x=Math.max(8,Math.min(W-8,player.x)); player.y=Math.max(8,Math.min(H-8,player.y)); if(player.dashCooldown>0) player.dashCooldown-=dt;
     for(let i=0;i<enemies.length;i++){
       const e=enemies[i];
       const ang=Math.atan2(player.y-e.y, player.x-e.x); e.vx=Math.cos(ang)*e.speed; e.vy=Math.sin(ang)*e.speed; e.ang = Math.atan2(e.vy, e.vx); e.x+=e.vx*dt; e.y+=e.vy*dt;
       const d=Math.hypot(e.x-player.x, e.y-player.y);
       if(d<e.r+player.r){
-        if(player.dashing){ enemies.splice(i,1); i--; state.combo+=1; const add = Math.floor(10*Math.pow(1.4, state.combo-1)); state.score += add; ui.combo.textContent=`Combo: ${state.combo}`; ui.score.textContent=`Score: ${state.score|0}`; for(let k=0;k<24;k++) addParticle(e.x,e.y, Math.random()*2+2, Math.random()*0.4+0.2); }
+        if(player.dashing){ 
+          enemies.splice(i,1); i--; 
+          state.combo+=1; 
+          const add = Math.floor(10*Math.pow(1.4, state.combo-1)); 
+          state.score += add; 
+          ui.combo.textContent=`Combo: ${state.combo}`; 
+          ui.score.textContent=`Score: ${state.score|0}`;
+          
+          // Enhanced visual feedback for kills
+          addComboParticles(e.x, e.y, state.combo);
+          addScreenShake(Math.min(state.combo * 0.5, 8), 0.15);
+          updateComboDisplay(state.combo);
+        }
         else { gameOver(); break; }
       }
       if(e.x<-100||e.x>W+100||e.y<-100||e.y>H+100){ enemies.splice(i,1); i--; }
@@ -558,6 +651,10 @@
   }
   function render(){
     ctx.save();
+    
+    // Apply screen shake
+    ctx.translate(screenShake.x, screenShake.y);
+    
     ctx.clearRect(0,0,W,H);
     
     // DEV MODE: Draw debug grid
@@ -578,22 +675,64 @@
       }
     }
     
+    // Draw dash trail
+    for(const trail of dashTrail) {
+      const alpha = trail.life / trail.maxLife;
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.beginPath();
+      ctx.arc(trail.x, trail.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#88ffcc';
+      ctx.fill();
+      ctx.restore();
+    }
+    
     for(const p of particles){
       const a=Math.max(0, Math.min(1, p.life/p.maxLife));
       ctx.globalAlpha=a;
       ctx.beginPath();
       ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
-      ctx.fillStyle='#8fb3ff';
+      ctx.fillStyle=p.color || '#8fb3ff';
       ctx.fill();
       ctx.globalAlpha=1;
     }
+    
     for(const e of enemies){ drawDot(e); }
+    
+    // Enhanced player rendering
     ctx.beginPath();
     ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
     ctx.fillStyle= player.dashing ? '#88ffcc' : '#e6edf3';
     ctx.shadowColor = player.dashing ? '#88ffcc' : '#0000';
     ctx.shadowBlur = player.dashing ? 12 : 0;
     ctx.fill();
+    
+    // Draw dash cooldown indicator
+    if(player.dashCooldown > 0) {
+      const cooldownPercent = player.dashCooldown / 0.35;
+      ctx.save();
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.r + 4, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * (1 - cooldownPercent)));
+      ctx.stroke();
+      ctx.restore();
+    }
+    
+    // Draw combo display
+    if(comboDisplay.timer > 0) {
+      ctx.save();
+      ctx.globalAlpha = comboDisplay.alpha;
+      ctx.font = `bold ${16 * comboDisplay.scale}px system-ui`;
+      ctx.fillStyle = '#ffcc88';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.strokeText(comboDisplay.text, W/2, H/2 - 60);
+      ctx.fillText(comboDisplay.text, W/2, H/2 - 60);
+      ctx.restore();
+    }
     
     // DEV MODE: Show debug info
     if(state.showDebugInfo && state.running){
@@ -603,6 +742,8 @@
       ctx.fillText(`DEV: Particles: ${particles.length}`, 10, H - 45);
       ctx.fillText(`DEV: Time: ${state.time.toFixed(1)}s`, 10, H - 30);
       ctx.fillText(`DEV: Spawn Timer: ${state.spawnTimer.toFixed(2)}`, 10, H - 15);
+      ctx.fillText(`DEV: Dash Trail: ${dashTrail.length}`, 10, H - 75);
+      ctx.fillText(`DEV: Screen Shake: ${screenShake.intensity.toFixed(1)}`, 10, H - 90);
     }
     
     ctx.restore();
