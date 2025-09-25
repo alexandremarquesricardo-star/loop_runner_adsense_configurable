@@ -813,7 +813,7 @@
     submitScore();
     playGameOverSound();
     showLeaderboard(state.dailyMode?'daily':'normal');
-    if (isPB) setTimeout(()=>{ try{ doShare(); }catch{} }, 450);
+    if (isPB) setTimeout(() => { try{ doShare(); }catch(e){} }, 450);
   }
 
   function pauseGameUI(){ if (!state.running || state.paused) return; state.paused = true; setOverlayPaused(); }
