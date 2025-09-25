@@ -340,14 +340,13 @@
       .then(rows => {
         rows.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
-          const when = new Date(e.created_at).toLocaleDateString();
           const status = getMotivationalStatus(e.score);
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td>${status}</td><td>${when}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td>${status}</td><td>${e.country || 'XX'}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
           const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="6" style="opacity:.7;">No scores yet. Be the first!</td>';
+          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Be the first!</td>';
           lb.table.appendChild(tr);
         }
       })
@@ -358,14 +357,13 @@
         lb.table.innerHTML = '';
         arr.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
-          const when = new Date(e.when).toLocaleString();
           const status = getMotivationalStatus(e.score);
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${status}</td><td>${when}</td><td>Local</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${status}</td><td>Local</td>`;
           lb.table.appendChild(tr);
         });
         if (arr.length === 0) {
           const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="6" style="opacity:.7;">No scores yet. Play a run!</td>';
+          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Play a run!</td>';
           lb.table.appendChild(tr);
         }
       });
