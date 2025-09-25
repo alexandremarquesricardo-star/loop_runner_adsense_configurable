@@ -843,15 +843,6 @@
   ui.btnPlayAgain.addEventListener('click', ()=> { initAudio(); startGame(state.dailyMode); });
   ui.btnShare.addEventListener('click', doShare);
   ui.restartBtn.addEventListener('click', ()=> { initAudio(); startGame(state.dailyMode); });
-    
-    // Track stats
-    gameStats.enemiesKilled++;
-    if(state.combo > gameStats.bestCombo) {
-      gameStats.bestCombo = state.combo;
-    }
-    if(e.type === 'BOSS') {
-      gameStats.bossesKilled++;
-    }
   ui.shareBtn.addEventListener('click', doShare);
 
   /* ====== Loop ====== */
@@ -1012,26 +1003,30 @@
             // Trigger slow-mo on high combos
             if(state.combo >= 5 && state.combo % 5 === 0) {
               playerPowers.slowmo = Math.max(playerPowers.slowmo, 1.5);
+            // Enhanced visual feedback for kills
+            addComboParticles(e.x, e.y, state.combo);
+            addScreenShake(Math.min(state.combo * 0.5, 8), 0.15);
+            updateComboDisplay(state.combo);
+            playKillSound(state.combo);
+            
+            // Trigger slow-mo on high combos
+            if(state.combo >= 5 && state.combo % 5 === 0) {
+              playerPowers.slowmo = Math.max(playerPowers.slowmo, 1.5);
             }
             
             // Track stats
             gameStats.enemiesKilled++;
             if(state.combo > gameStats.bestCombo) {
               gameStats.bestCombo = state.combo;
+            }
+            if(e.type === 'BOSS') {
+              gameStats.bossesKilled++;
+            }
         }
         else if(playerPowers.shield <= 0) { 
           gameOver(); break; 
         }
       }
-      if(e.x<-100||e.x>W+100||e.y<-100||e.y>H+100){ enemies.splice(i,1); i--; }
-    }
-    for(let i=0;i<particles.length;i++){ const p=particles[i]; p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.98; p.vy*=0.98; if(p.life<=0){ particles.splice(i,1); i--; } }
-  }
-
-  /* ====== Visuals ====== */
-  function clamp01(t){ return Math.max(0, Math.min(1, t)); }
-  function lerp(a,b,t){ return a + (b-a)*t; }
-  function lerpColor(c1, c2, t){
     return [
       Math.round(lerp(c1[0], c2[0], t)),
       Math.round(lerp(c1[1], c2[1], t)),
