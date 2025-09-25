@@ -450,9 +450,13 @@
 
   function fireBurst() {
     console.log('Fire burst activated!');
-    if(state.fireRounds <= 0) return; // No rounds left
+    if(state.fireRounds <= 0) {
+      console.log('No fire rounds left!');
+      return; // No rounds left
+    }
     
     state.fireRounds--;
+    console.log('Fire rounds remaining:', state.fireRounds);
     const projectileCount = 10;
     for(let i = 0; i < projectileCount; i++) {
       const angle = (i / projectileCount) * Math.PI * 2;
@@ -873,6 +877,7 @@
           projectiles.splice(i, 1);
           state.enemiesKilled++;
           state.score += 25;
+          ui.score.textContent = `Score: ${state.score|0}`;
           for(let k = 0; k < 12; k++) addParticle(e.x, e.y, rnd(2, 4), rnd(0.3, 0.5));
           i--;
           break;
@@ -886,6 +891,8 @@
           boss.health--;
           boss.lastHit = performance.now();
           projectiles.splice(i, 1);
+          state.score += 10;
+          ui.score.textContent = `Score: ${state.score|0}`;
           for(let k = 0; k < 8; k++) addParticle(boss.x, boss.y, rnd(2, 4), rnd(0.3, 0.5));
           i--;
           break;
@@ -951,6 +958,8 @@
             ui.score.textContent = `Score: ${state.score|0}`;
             for(let k = 0; k < 40; k++) addParticle(boss.x, boss.y, rnd(3, 6), rnd(0.5, 0.8));
           } else {
+            state.score += 10;
+            ui.score.textContent = `Score: ${state.score|0}`;
             for(let k = 0; k < 15; k++) addParticle(boss.x, boss.y, rnd(2, 4), rnd(0.3, 0.5));
           }
         } else {
