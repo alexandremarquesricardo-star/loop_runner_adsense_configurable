@@ -506,7 +506,6 @@
   // Mouse controls
   canvas.addEventListener('pointerdown',(e)=>{ 
     initAudio(); 
-    if(!state.mouseMode) return;
     
     const p=screenToWorld(e); 
     pointer.down=true; 
@@ -575,7 +574,6 @@
     }
     
     // Arrow key dashing (keyboard mode)
-    if(!state.mouseMode) {
       const amt=80; 
       if(e.key&&e.key.indexOf('Arrow')===0){ 
         let dx=0, dy=0; 
@@ -585,7 +583,6 @@
         else if(e.key==='ArrowRight') dx=amt; 
         startDashTowards(player.x+dx, player.y+dy);
       }
-    }
   });
 
   addEventListener('blur', ()=>{ 
