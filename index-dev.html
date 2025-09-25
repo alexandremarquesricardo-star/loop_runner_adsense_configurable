@@ -571,45 +571,26 @@
 
   function renderLeaderboard(){
     const mode = lb.modeSel.value;
-    const params = new URLSearchParams();
-    params.append('select', 'name,score');
-    params.append('order',  'score.desc');
-    params.append('limit',  '10');
-
+    
+    // DEV MODE: Always use local scores first
     lb.table.innerHTML = '';
-    lb.info.textContent = 'Worldwide Top 10 (score only)';
-
-    fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS })
-      .then(res => { if (!res.ok) throw new Error('REST '+res.status); return res.json(); })
-      .then(rows => {
-        rows.slice(0,10).forEach((e,i) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">Live</td>`;
-          lb.table.appendChild(tr);
-        });
-        if (rows.length === 0) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="4" style="opacity:.7;">No scores yet. Be the first!</td>';
-          lb.table.appendChild(tr);
-        }
-      })
-      .catch(() => {
-        const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
-        const arr = loadLB(key);
-        lb.info.textContent = 'Local Dev Scores (offline)';
-        lb.table.innerHTML = '';
-        arr.slice(0,10).forEach((e,i) => {
-          const tr = document.createElement('tr');
-          const when = e.when ? new Date(e.when).toLocaleString() : 'Unknown';
-          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style=\"text-align:right;opacity:.8\">${when}</td>`;
-          lb.table.appendChild(tr);
-        });
-        if (arr.length===0){
-          const tr=document.createElement('tr');
-          tr.innerHTML='<td colspan="4" style="opacity:.7;">No scores yet. Play a run!</td>';
-          lb.table.appendChild(tr);
-        }
-      });
+    
+    const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
+    const arr = loadLB(key);
+    lb.info.textContent = 'Development Leaderboard (Local Scores)';
+    
+    arr.slice(0,10).forEach((e,i) => {
+      const tr = document.createElement('tr');
+      const when = e.when ? new Date(e.when).toLocaleString() : 'Unknown';
+      tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="text-align:right;opacity:.8">${when}</td>`;
+      lb.table.appendChild(tr);
+    });
+    
+    if (arr.length===0){
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td colspan="4" style="opacity:.7;">No dev scores yet. Play a game to see your scores here!</td>';
+      lb.table.appendChild(tr);
+    }
   }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
   lb.close.addEventListener('click', hideLeaderboard);
