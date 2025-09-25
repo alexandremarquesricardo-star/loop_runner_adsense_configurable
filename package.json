@@ -1,0 +1,13 @@
+{
+  "name": "loop-runner-dev",
+  "version": "1.0.0",
+  "description": "Loop Runner development server",
+  "main": "serve-dev.js",
+  "scripts": {
+    "dev": "node serve-dev.js",
+    "start": "node serve-dev.js"
+  },
+  "keywords": ["game", "browser", "javascript"],
+  "author": "Playloop",
+  "license": "MIT"
+}
