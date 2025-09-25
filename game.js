@@ -563,7 +563,7 @@
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score,created_at');
+    params.append('select', 'name,score,created_at,country');
     params.append('order', 'score.desc');
     params.append('limit', '10');
 
@@ -584,7 +584,7 @@
           const tr = document.createElement('tr');
           const motivationalWord = getMotivationalWord(i + 1);
           const timeAgo = getRandomTimeAgo();
-          const country = getRandomCountry(); // Use random for now since DB doesn't have country column
+          const country = e.country || 'XX'; // Use real country from database
           
           tr.innerHTML = `
             <td>${i+1}</td>
@@ -745,13 +745,17 @@
     const name = (ui.nameInput.value || getLS('lr_name', 'Player')).slice(0, 20).trim() || 'Player';
     setLS('lr_name', name);
     
+    // Ensure we have location before submitting
+    await detectUserLocation();
+    
     console.log('Submitting score:', state.score, 'for player:', name);
     
     try {
       const body = { 
         name: name.slice(0, 12), 
         score: state.score|0, 
-        mode: (state.dailyMode ? 'daily' : 'normal')
+        mode: (state.dailyMode ? 'daily' : 'normal'),
+        country: userCountry || 'XX'
       };
       
       console.log('Score submission body:', body);
