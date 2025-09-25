@@ -278,9 +278,7 @@
     enemiesKilled: 0, bossesKilled: 0, totalDashes: 0, perfectDashes: 0,
     // Fire rounds system
     fireRounds: 3,
-    maxFireRounds: 3,
-    fireRechargeTimer: 0,
-    fireRechargeTime: 2.0
+    maxFireRounds: 3
   };
 
   /* ====== UI refs ====== */
@@ -690,7 +688,6 @@
     
     // Reset fire rounds
     state.fireRounds = state.maxFireRounds;
-    state.fireRechargeTimer = 0;
     
     enemies.length=0; 
     particles.length=0; 
@@ -791,15 +788,6 @@
   }
 
   function update(dt){
-    // Update fire recharge
-    if(state.fireRounds < state.maxFireRounds) {
-      state.fireRechargeTimer += dt;
-      if(state.fireRechargeTimer >= state.fireRechargeTime) {
-        state.fireRounds = Math.min(state.maxFireRounds, state.fireRounds + 1);
-        state.fireRechargeTimer = 0;
-      }
-    }
-    
     // Make player follow mouse cursor smoothly
     const followSpeed = 300; // pixels per second
     const dx = pointer.x - player.x;
@@ -1162,14 +1150,6 @@
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText(`Fire: ${'●'.repeat(state.fireRounds)}${'○'.repeat(state.maxFireRounds - state.fireRounds)}`, 12, H - 30);
-      
-      if(state.fireRounds < state.maxFireRounds) {
-        const rechargePercent = state.fireRechargeTimer / state.fireRechargeTime;
-        ctx.fillStyle = '#666';
-        ctx.fillRect(12, H - 10, 100, 4);
-        ctx.fillStyle = '#88ffcc';
-        ctx.fillRect(12, H - 10, 100 * rechargePercent, 4);
-      }
       ctx.restore();
     }
     
