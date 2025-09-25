@@ -276,8 +276,11 @@
     spawnTimer:0, spawnInterval:1.1, dailyMode:false,
     // Enhanced stats
     enemiesKilled: 0, bossesKilled: 0, totalDashes: 0, perfectDashes: 0,
-    // Control mode
-    mouseMode: true
+    // Fire rounds system
+    fireRounds: 3,
+    maxFireRounds: 3,
+    fireRechargeTimer: 0,
+    fireRechargeTime: 2.0
   };
 
   /* ====== UI refs ====== */
@@ -307,7 +310,7 @@
 
   function setOverlayHome(){
     ui.ovTitle.textContent = 'Loop Runner';
-    ui.ovBody.innerHTML = 'Dash through enemies. <strong>Click/tap to dash</strong> toward the pointer. <strong>Right-click or F for fire burst</strong>. Chain kills to build combo. Don\'t touch enemies while not dashing.<br><br><em>Press C to toggle mouse/keyboard controls</em>';
+    ui.ovBody.innerHTML = 'Player follows your mouse cursor. <strong>Right-click to fire</strong> (3 rounds, recharges every 2 seconds). Chain kills to build combo. Don\'t touch enemies while not dashing.';
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
     showOverlay();
@@ -447,6 +450,9 @@
 
   function fireBurst() {
     console.log('Fire burst activated!');
+    if(state.fireRounds <= 0) return; // No rounds left
+    
+    state.fireRounds--;
     const projectileCount = 10;
     for(let i = 0; i < projectileCount; i++) {
       const angle = (i / projectileCount) * Math.PI * 2;
@@ -504,19 +510,11 @@
   }
 
   // Mouse controls
-  canvas.addEventListener('pointerdown',(e)=>{ 
-    initAudio(); 
-    
-    const p=screenToWorld(e); 
-    pointer.down=true; 
-    pointer.x=p.x; 
-    pointer.y=p.y; 
-    
+  canvas.addEventListener('pointerdown',(e)=>{
+    initAudio();
     if(e.button === 2) { // Right click
       e.preventDefault();
       fireBurst();
-    } else {
-      startDashTowards(pointer.x,pointer.y); 
     }
   });
 
@@ -537,13 +535,6 @@
   // Keyboard controls
   addEventListener('keydown',(e)=>{
     if(e.repeat) return;
-    
-    // Toggle control mode
-    if(e.key === 'c' || e.key === 'C') {
-      state.mouseMode = !state.mouseMode;
-      console.log('Control mode:', state.mouseMode ? 'Mouse' : 'Keyboard');
-      return;
-    }
     
     // Fire burst
     if(e.key === 'f' || e.key === 'F') {
@@ -573,16 +564,16 @@
       return; 
     }
     
-    // Arrow key dashing (keyboard mode)
-      const amt=80; 
-      if(e.key&&e.key.indexOf('Arrow')===0){ 
-        let dx=0, dy=0; 
-        if(e.key==='ArrowUp') dy=-amt; 
-        else if(e.key==='ArrowDown') dy=amt; 
-        else if(e.key==='ArrowLeft') dx=-amt; 
-        else if(e.key==='ArrowRight') dx=amt; 
-        startDashTowards(player.x+dx, player.y+dy);
-      }
+    // Arrow key dashing
+    const amt=80; 
+    if(e.key&&e.key.indexOf('Arrow')===0){ 
+      let dx=0, dy=0; 
+      if(e.key==='ArrowUp') dy=-amt; 
+      else if(e.key==='ArrowDown') dy=amt; 
+      else if(e.key==='ArrowLeft') dx=-amt; 
+      else if(e.key==='ArrowRight') dx=amt; 
+      startDashTowards(player.x+dx, player.y+dy);
+    }
   });
 
   addEventListener('blur', ()=>{ 
@@ -693,6 +684,10 @@
     state.totalDashes=0;
     state.perfectDashes=0;
     
+    // Reset fire rounds
+    state.fireRounds = state.maxFireRounds;
+    state.fireRechargeTimer = 0;
+    
     enemies.length=0; 
     particles.length=0; 
     bosses.length=0;
@@ -792,6 +787,33 @@
   }
 
   function update(dt){
+    // Update fire recharge
+    if(state.fireRounds < state.maxFireRounds) {
+      state.fireRechargeTimer += dt;
+      if(state.fireRechargeTimer >= state.fireRechargeTime) {
+        state.fireRounds = Math.min(state.maxFireRounds, state.fireRounds + 1);
+        state.fireRechargeTimer = 0;
+      }
+    }
+    
+    // Make player follow mouse cursor smoothly
+    const followSpeed = 300; // pixels per second
+    const dx = pointer.x - player.x;
+    const dy = pointer.y - player.y;
+    const distance = Math.hypot(dx, dy);
+    
+    if(distance > 5) { // Only move if cursor is far enough
+      const moveDistance = Math.min(followSpeed * dt, distance);
+      const ux = dx / distance;
+      const uy = dy / distance;
+      player.x += ux * moveDistance;
+      player.y += uy * moveDistance;
+    }
+    
+    // Keep player in bounds
+    player.x = Math.max(player.r, Math.min(W - player.r, player.x));
+    player.y = Math.max(player.r, Math.min(H - player.r, player.y));
+    
     // Spawn enemies
     state.spawnTimer-=dt; 
     if(state.spawnTimer<=0){ 
@@ -809,13 +831,12 @@
       player.dashWindup-=dt; 
       if(player.dashWindup<=0) player.dashing=false; 
     }
+    
+    // Apply friction to dash velocity only
     const f=Math.exp(-player.friction*dt); 
     player.vx*=f; 
     player.vy*=f; 
-    player.x+=player.vx*dt; 
-    player.y+=player.vy*dt; 
-    player.x=Math.max(8,Math.min(W-8,player.x)); 
-    player.y=Math.max(8,Math.min(H-8,player.y)); 
+    
     if(player.dashCooldown>0) player.dashCooldown-=dt;
     
     // Update background particles
@@ -1124,23 +1145,22 @@
     ctx.shadowBlur = player.dashing ? 12 : 0;
     ctx.fill();
     
-    // Draw cursor indicator (mouse mode only)
-    if(state.mouseMode && state.running && !state.paused) {
+    // Draw fire rounds indicator
+    if(state.running && !state.paused) {
       ctx.save();
-      ctx.strokeStyle = '#88ffcc';
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.6;
-      ctx.beginPath();
-      ctx.arc(pointer.x, pointer.y, 8, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.font = '16px system-ui';
+      ctx.fillStyle = state.fireRounds > 0 ? '#88ffcc' : '#ff4444';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`Fire: ${'●'.repeat(state.fireRounds)}${'○'.repeat(state.maxFireRounds - state.fireRounds)}`, 12, H - 30);
       
-      // Draw line from player to cursor
-      ctx.setLineDash([4, 4]);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(player.x, player.y);
-      ctx.lineTo(pointer.x, pointer.y);
-      ctx.stroke();
+      if(state.fireRounds < state.maxFireRounds) {
+        const rechargePercent = state.fireRechargeTimer / state.fireRechargeTime;
+        ctx.fillStyle = '#666';
+        ctx.fillRect(12, H - 10, 100, 4);
+        ctx.fillStyle = '#88ffcc';
+        ctx.fillRect(12, H - 10, 100 * rechargePercent, 4);
+      }
       ctx.restore();
     }
     
