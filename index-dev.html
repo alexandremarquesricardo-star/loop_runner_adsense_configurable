@@ -840,9 +840,9 @@
   ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
   ui.dailyBtn.addEventListener('click', ()=>{ initAudio(); startGame(true); });
   ui.btnResume.addEventListener('click', resumeGameUI);
-  ui.btnPlayAgain.addEventListener('click', ()=> startGame(state.dailyMode));
+  ui.btnPlayAgain.addEventListener('click', ()=> { initAudio(); startGame(state.dailyMode); });
   ui.btnShare.addEventListener('click', doShare);
-  ui.restartBtn.addEventListener('click', ()=> startGame(state.dailyMode));
+  ui.restartBtn.addEventListener('click', ()=> { initAudio(); startGame(state.dailyMode); });
     
     // Track stats
     gameStats.enemiesKilled++;
