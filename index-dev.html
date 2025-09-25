@@ -584,7 +584,7 @@
       .then(rows => {
         rows.slice(0,10).forEach((e,i) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">—</td>`;
+          tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name||'anon')}</td><td>${e.score|0}</td><td style="text-align:right;opacity:.8">Live</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -596,11 +596,11 @@
       .catch(() => {
         const key = mode==='daily' ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
-        lb.info.textContent += ' • offline';
+        lb.info.textContent = 'Local Dev Scores (offline)';
         lb.table.innerHTML = '';
         arr.slice(0,10).forEach((e,i) => {
           const tr = document.createElement('tr');
-          const when = new Date(e.when).toLocaleString();
+          const when = e.when ? new Date(e.when).toLocaleString() : 'Unknown';
           tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style=\"text-align:right;opacity:.8\">${when}</td>`;
           lb.table.appendChild(tr);
         });
@@ -671,7 +671,7 @@
     
     // In dev mode, don't submit to live leaderboard
     console.log('DEV MODE: Would submit score:', { name, score: state.score|0, mode: state.dailyMode ? 'daily' : 'normal' });
-    
+    // DEV MODE: Still save locally for offline leaderboard testing
     // DEV MODE: Still save locally for offline leaderboard testing
     const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
     const arr = loadLB(key);
@@ -679,6 +679,7 @@
     arr.push(entry);
     arr.sort((a,b) => b.score - a.score);
     if(arr.length > 50) arr.length = 50;
+    saveLB(key, arr);
     saveLB(key, arr);
   }
 
