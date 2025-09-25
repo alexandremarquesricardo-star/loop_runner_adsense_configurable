@@ -341,7 +341,8 @@
         rows.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const when = new Date(e.created_at).toLocaleDateString();
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td>Active</td><td>${when}</td><td>${e.country || 'XX'}</td>`;
+          const status = getMotivationalStatus(e.score);
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td>${status}</td><td>${when}</td><td>${e.country || 'XX'}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -358,7 +359,8 @@
         arr.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const when = new Date(e.when).toLocaleString();
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>Offline</td><td>${when}</td><td>Local</td>`;
+          const status = getMotivationalStatus(e.score);
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${status}</td><td>${when}</td><td>Local</td>`;
           lb.table.appendChild(tr);
         });
         if (arr.length === 0) {
@@ -369,6 +371,15 @@
       });
   }
 
+  function getMotivationalStatus(score) {
+    if (score >= 1000) return 'Legend';
+    if (score >= 500) return 'Champion';
+    if (score >= 300) return 'Expert';
+    if (score >= 200) return 'Skilled';
+    if (score >= 100) return 'Rising';
+    if (score >= 50) return 'Active';
+    return 'Rookie';
+  }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
   }
