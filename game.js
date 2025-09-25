@@ -134,7 +134,6 @@
   function updateFireIndicator() {
     const dots = ui.fireIndicator.querySelectorAll('.fire-dot');
     const rechargeProgress = state.isRecharging ? (1 - state.rechargeTimer / state.rechargeInterval) : 0;
-    const rechargeProgress = state.isRecharging ? (1 - state.rechargeTimer / state.rechargeInterval) : 0;
     
     dots.forEach((dot, i) => {
       if (i < state.fireRounds) {
