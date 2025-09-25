@@ -178,7 +178,7 @@
 
   function setOverlayHome() {
     ui.ovTitle.textContent = 'Loop Runner';
-    ui.ovBody.innerHTML = 'Player follows your mouse cursor. <strong>Right-click to fire</strong> (3 rounds, no recharge). Chain kills to build combo. Don\'t touch enemies while not dashing.';
+    ui.ovBody.innerHTML = 'Player follows your mouse cursor. <strong>Right-click to fire</strong> (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!';
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
     showOverlay();
@@ -374,6 +374,23 @@
     });
   }
 
+  function spawnPowerUp(type, x, y) {
+    powerUps.push({
+      x: x || rnd(50, W - 50),
+      y: y || rnd(50, H - 50),
+      type: type, // 'recharge' or 'multiplier'
+      r: 15,
+      life: 10.0, // 10 seconds to collect
+      maxLife: 10.0,
+      pulseTime: 0
+    });
+  }
+
+  function spawnRandomPowerUp() {
+    const types = ['recharge', 'multiplier'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    spawnPowerUp(type);
+  }
   function fireBurst() {
     console.log('Fire burst activated!');
     if(state.fireRounds <= 0) {
@@ -915,6 +932,56 @@
       spawnBoss();
     }
 
+    // Spawn power-ups occasionally
+    if(Math.random() < 0.0008 && state.time > 5) {
+      spawnRandomPowerUp();
+    }
+
+    // Update power-ups
+    for(let i = 0; i < powerUps.length; i++) {
+      const p = powerUps[i];
+      p.life -= dt;
+      p.pulseTime += dt;
+      
+      if(p.life <= 0) {
+        powerUps.splice(i, 1);
+        i--;
+        continue;
+      }
+      
+      // Check collision with player
+      const d = Math.hypot(p.x - player.x, p.y - player.y);
+      if(d < p.r + player.r) {
+        // Collected power-up!
+        if(p.type === 'recharge') {
+          // Instantly recharge all fire rounds
+          state.fireRounds = state.maxFireRounds;
+          state.isRecharging = false;
+          state.rechargeTimer = 0;
+          updateFireIndicator();
+          console.log('Fire rounds recharged!');
+          
+          // Add recharge particles
+          for(let k = 0; k < 20; k++) {
+            addParticle(p.x, p.y, rnd(2, 5), rnd(0.4, 0.8));
+          }
+        } else if(p.type === 'multiplier') {
+          // Multiply current score by 3
+          const oldScore = state.score;
+          state.score *= 3;
+          ui.score.textContent = `Score: ${state.score|0}`;
+          console.log(`Score multiplied! ${oldScore|0} → ${state.score|0}`);
+          
+          // Add multiplier particles
+          for(let k = 0; k < 30; k++) {
+            addParticle(p.x, p.y, rnd(3, 6), rnd(0.5, 1.0));
+          }
+        }
+        
+        powerUps.splice(i, 1);
+        i--;
+      }
+    }
     // Update projectiles
     for(let i = 0; i < projectiles.length; i++) {
       const p = projectiles[i];
