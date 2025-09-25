@@ -475,14 +475,15 @@
     
     // In dev mode, don't submit to live leaderboard
     console.log('DEV MODE: Would submit score:', { name, score: state.score|0, mode: state.dailyMode ? 'daily' : 'normal' });
-    return;
     
-    try {
-      const body = { name: name.slice(0,12), score: state.score|0, mode: (state.dailyMode ? 'daily' : 'normal') };
-      fetch(SB_URL, { method:'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify(body) })
-        .then(async r => { if(!r.ok){ let txt=''; try{ txt = await r.text(); }catch{} console.error('Supabase insert failed', r.status, txt); } })
-        .catch(err => console.error('Supabase insert network error', err));
-    } catch(err) { console.error('submitScore exception', err); }
+    // DEV MODE: Still save locally for offline leaderboard testing
+    const key = state.dailyMode ? ('lr_lb_daily_'+todayKey()) : 'lr_lb_normal';
+    const arr = loadLB(key);
+    const entry = { name, score: state.score|0, when: new Date().toISOString() };
+    arr.push(entry);
+    arr.sort((a,b) => b.score - a.score);
+    if(arr.length > 50) arr.length = 50;
+    saveLB(key, arr);
   }
 
   ui.start.addEventListener('click', ()=>{ initAudio(); startGame(false); });
