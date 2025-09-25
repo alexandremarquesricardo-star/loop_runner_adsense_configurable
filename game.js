@@ -563,12 +563,19 @@
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score,created_at,country');
+    params.append('select', 'name,score,created_at,country,mode');
     params.append('order', 'score.desc');
     params.append('limit', '10');
+    
+    // Filter by mode
+    if (mode === 'daily') {
+      params.append('mode', 'eq.daily');
+    } else {
+      params.append('mode', 'eq.normal');
+    }
 
     lb.table.innerHTML = '';
-    lb.info.textContent = 'Worldwide Top 10';
+    lb.info.textContent = mode === 'daily' ? 'Daily Challenge Top 10' : 'Worldwide Top 10';
 
     console.log('Fetching leaderboard from:', `${SB_URL}?${params.toString()}`);
 
@@ -604,7 +611,8 @@
       })
       .catch((error) => {
         console.error('Leaderboard fetch failed:', error);
-        const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
+        // Fallback to local storage
+        const key = mode === 'daily' ? ('lr_daily_scores_' + todayKey()) : 'lr_normal_scores';
         const arr = loadLB(key);
         lb.info.textContent += ' • offline';
         lb.table.innerHTML = '';
@@ -781,11 +789,12 @@
     }
     
     // Also save locally as backup
-    const localKey = state.dailyMode ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
+    const localKey = state.dailyMode ? ('lr_daily_scores_' + todayKey()) : 'lr_normal_scores';
     const localScores = loadLB(localKey);
     localScores.push({
       name: name.slice(0, 12),
       score: state.score|0,
+      mode: state.dailyMode ? 'daily' : 'normal',
       when: new Date().toISOString()
     });
     localScores.sort((a, b) => b.score - a.score);
