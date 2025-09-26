@@ -101,6 +101,12 @@
     ui.best.textContent='Best: '+state.best; 
     ui.daily.textContent='Daily: '+state.dailyBest;
     updateFireIndicator();
+    
+    // Load saved name into input field
+    const savedName = getLS('lr_name', '');
+    if (savedName && ui.nameInput) {
+      ui.nameInput.value = savedName;
+    }
   }
   hydrateHUD();
   ui.dailyBanner.textContent = 'Daily Challenge: ' + new Date().toISOString().slice(0,10);
@@ -213,23 +219,27 @@
     state.fireRounds--;
     updateFireIndicator();
     
-    const dx = mouse.x - player.x;
-    const dy = mouse.y - player.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const ux = dx / len;
-    const uy = dy / len;
+    // Round shooting - 8 bullets in a circle from mouse position
+    const bulletCount = 8;
+    const speed = 600;
     
-    bullets.push({
-      x: player.x,
-      y: player.y,
-      vx: ux * 600,
-      vy: uy * 600,
-      r: 4,
-      life: 2
-    });
+    for (let i = 0; i < bulletCount; i++) {
+      const angle = (i / bulletCount) * Math.PI * 2;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      
+      bullets.push({
+        x: mouse.x,
+        y: mouse.y,
+        vx: vx,
+        vy: vy,
+        r: 4,
+        life: 2
+      });
+    }
     
     // Add muzzle flash particles
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       addParticle(mouse.x, mouse.y, '#ffaa00', 3, 0.3);
     }
   }
@@ -325,7 +335,7 @@
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score,country,created_at');
+    params.append('select', 'name,score,country');
     params.append('order', 'score.desc');
     params.append('limit', '10');
 
@@ -471,14 +481,6 @@
     setOverlayGameOver(score, state.dailyMode ? state.dailyBest : state.best, isPB);
     submitScore();
     showLeaderboard(state.dailyMode ? 'daily' : 'normal');
-    
-    if (isPB) {
-      setTimeout(() => {
-        try {
-          doShare();
-        } catch {}
-      }, 450);
-    }
   }
 
   function pauseGameUI() {
@@ -494,7 +496,7 @@
   }
 
   async function submitScore() {
-    const name = (ui.nameInput.value || getLS('lr_name', 'Player')).slice(0, 20).trim() || 'Player';
+    const name = (ui.nameInput.value.trim() || getLS('lr_name', 'Player')).slice(0, 20) || 'Player';
     setLS('lr_name', name);
     
     try {
