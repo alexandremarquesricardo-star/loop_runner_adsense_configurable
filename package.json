@@ -1,0 +1,25 @@
+{
+  "name": "loop-runner",
+  "version": "1.0.0",
+  "description": "Loop Runner - Free Browser Action Game",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "game",
+    "browser-game",
+    "html5",
+    "javascript",
+    "action-game"
+  ],
+  "author": "Playloop",
+  "license": "MIT",
+  "homepage": "https://playloop.run",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/playloop/loop-runner"
+  }
+}
