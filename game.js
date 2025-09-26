@@ -266,6 +266,12 @@
 
   addEventListener('keydown', (e) => {
     if (e.repeat) return;
+    
+    // Don't handle game keys if user is typing in an input field
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    
     if (e.code === 'Space') {
       if (!state.running) {
         e.preventDefault();
@@ -273,7 +279,7 @@
         return;
       }
     }
-    if (e.key === 'r' || e.key === 'R') {
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
       e.preventDefault();
       if (state.running) {
         if (!state.paused) pauseGameUI();
@@ -330,7 +336,7 @@
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score,country');
+    params.append('select', 'name,score');
     params.append('order', 'score.desc');
     params.append('limit', '10');
 
@@ -347,7 +353,7 @@
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>Global</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -492,15 +498,14 @@
   }
 
   async function submitScore() {
-    const name = (ui.nameInput.value || '').trim() || getLS('lr_name', '') || 'Player';
+    const name = (ui.nameInput.value || getLS('lr_name', 'Player')).trim() || 'Player';
     setLS('lr_name', name);
     
     try {
       const body = {
         name: name.slice(0, 20),
         score: state.score | 0,
-        mode: (state.dailyMode ? 'daily' : 'normal'),
-        country: 'XX'
+        mode: (state.dailyMode ? 'daily' : 'normal')
       };
       
       fetch(SB_URL, {
