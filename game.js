@@ -60,12 +60,13 @@
     fireRounds: 3,
     maxFireRounds: 3,
     rechargeTimer: 0,
-    rechargeInterval: 2
+    rechargeInterval: 5
   };
 
   /* ====== UI refs ====== */
   const ui={
     score:$('#score'), combo:$('#combo'), best:$('#best'), daily:$('#daily'),
+    fireIndicator:$('#fireIndicator'),
     overlay:$('#overlay'),
     ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
     start:$('#start'), dailyBtn:$('#dailyBtn'),
@@ -75,11 +76,31 @@
     dailyBanner:$('#dailyBanner')
   };
 
+  function updateFireIndicator() {
+    if (!ui.fireIndicator) return;
+    
+    const dots = ui.fireIndicator.querySelectorAll('.fire-dot');
+    const isEmpty = state.fireRounds === 0;
+    
+    ui.fireIndicator.classList.toggle('empty', isEmpty);
+    
+    dots.forEach((dot, i) => {
+      if (i < state.fireRounds) {
+        dot.classList.add('active');
+        dot.classList.remove('inactive');
+      } else {
+        dot.classList.remove('active');
+        dot.classList.add('inactive');
+      }
+    });
+  }
+
   function hydrateHUD(){ 
     ui.score.textContent='Score: 0'; 
     ui.combo.textContent='Combo: 0'; 
     ui.best.textContent='Best: '+state.best; 
     ui.daily.textContent='Daily: '+state.dailyBest;
+    updateFireIndicator();
   }
   hydrateHUD();
   ui.dailyBanner.textContent = 'Daily Challenge: ' + new Date().toISOString().slice(0,10);
@@ -160,7 +181,7 @@
   }
 
   function spawnPowerup() {
-    if (powerups.length > 0) return;
+    if (powerups.length > 0) return; // Only one at a time
     
     const margin = 50;
     const x = rnd(margin, W - margin);
@@ -172,7 +193,7 @@
     powerups.push({
       x, y, r: 16,
       type,
-      life: 10,
+      life: 10, // 10 seconds to collect
       maxLife: 10,
       pulsePhase: 0
     });
@@ -186,29 +207,29 @@
     return { x: (e.clientX - rect.left), y: (e.clientY - rect.top) };
   }
 
-  function fireBulletBurst() {
+  function fireBullet() {
     if (state.fireRounds <= 0) return;
     
     state.fireRounds--;
+    updateFireIndicator();
     
-    // Fire 8 bullets in circular pattern from mouse position
-    const bulletCount = 8;
-    for (let i = 0; i < bulletCount; i++) {
-      const angle = (i / bulletCount) * Math.PI * 2;
-      const speed = 600;
-      
-      bullets.push({
-        x: mouse.x,
-        y: mouse.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        r: 4,
-        life: 2
-      });
-    }
+    const dx = mouse.x - player.x;
+    const dy = mouse.y - player.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
     
-    // Add muzzle flash particles at mouse position
-    for (let i = 0; i < 12; i++) {
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      vx: ux * 600,
+      vy: uy * 600,
+      r: 4,
+      life: 2
+    });
+    
+    // Add muzzle flash particles
+    for (let i = 0; i < 8; i++) {
       addParticle(mouse.x, mouse.y, '#ffaa00', 3, 0.3);
     }
   }
@@ -223,7 +244,7 @@
     e.preventDefault();
     if (state.running && !state.paused) {
       initAudio();
-      fireBulletBurst();
+      fireBullet();
     }
   });
 
@@ -301,20 +322,10 @@
     lb.modal.classList.remove('show');
   }
 
-  function getMotivationalStatus(score) {
-    if (score >= 1000) {
-      const epicWords = ['LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!', 'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'];
-      return epicWords[Math.floor(Math.random() * epicWords.length)];
-    } else {
-      const harshWords = ['Weak', 'Failing', 'Noob', 'Trash', 'Loser', 'Pathetic', 'Terrible', 'Awful', 'Useless', 'Hopeless'];
-      return harshWords[Math.floor(Math.random() * harshWords.length)];
-    }
-  }
-
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score,country');
+    params.append('select', 'name,score,country,created_at');
     params.append('order', 'score.desc');
     params.append('limit', '10');
 
@@ -331,7 +342,7 @@
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score | 0}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${e.country || 'XX'}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -343,8 +354,6 @@
       .catch(() => {
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
-        lb.info.textContent += ' • offline';
-        lb.table.innerHTML = '';
         arr.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
@@ -354,12 +363,23 @@
         });
         if (arr.length === 0) {
           const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Play a run!</td>';
+          tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Be the first!</td>';
           lb.table.appendChild(tr);
         }
+        lb.info.textContent += ' • offline';
       });
   }
-
+  function getMotivationalStatus(score) {
+    if (score >= 1000) {
+      // 🏆 Epic high score words
+      const epicWords = ['LEGEND!', 'CHAMPION!', 'MASTER!', 'HERO!', 'WARRIOR!', 'ELITE!', 'CRUSHER!', 'BEAST!', 'DOMINATOR!', 'UNSTOPPABLE!'];
+      return epicWords[Math.floor(Math.random() * epicWords.length)];
+    } else {
+      // 📈 Encouraging progression words
+      const encouragingWords = ['Trying', 'Learning', 'Rookie', 'Beginner', 'Starter', 'Newbie', 'Amateur', 'Casual', 'Practice', 'Getting There'];
+      return encouragingWords[Math.floor(Math.random() * encouragingWords.length)];
+    }
+  }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
   }
@@ -552,6 +572,7 @@
       if (state.rechargeTimer >= state.rechargeInterval) {
         state.fireRounds++;
         state.rechargeTimer = 0;
+        updateFireIndicator();
       }
     }
 
@@ -564,7 +585,7 @@
 
     // Spawn power-ups
     powerupSpawnTimer += dt;
-    if (powerupSpawnTimer >= 25 && powerups.length === 0) {
+    if (powerupSpawnTimer >= 25 && powerups.length === 0) { // Every 25 seconds
       spawnPowerup();
       powerupSpawnTimer = 0;
     }
@@ -676,6 +697,7 @@
         if (p.type === 'recharge') {
           state.fireRounds = state.maxFireRounds;
           state.rechargeTimer = 0;
+          updateFireIndicator();
           
           // Blue particles
           for (let k = 0; k < 20; k++) {
@@ -801,6 +823,7 @@
       ctx.globalAlpha = alpha;
       
       if (p.type === 'recharge') {
+        // Blue recharge power-up
         ctx.fillStyle = '#88ffcc';
         ctx.shadowColor = '#88ffcc';
         ctx.shadowBlur = 12 * pulse;
@@ -808,6 +831,7 @@
         ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2);
         ctx.fill();
         
+        // Lightning symbol
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 16px Arial';
@@ -815,6 +839,7 @@
         ctx.textBaseline = 'middle';
         ctx.fillText('⚡', p.x, p.y);
       } else if (p.type === 'multiplier') {
+        // Gold multiplier power-up
         ctx.fillStyle = '#ffd700';
         ctx.shadowColor = '#ffd700';
         ctx.shadowBlur = 12 * pulse;
@@ -822,6 +847,7 @@
         ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2);
         ctx.fill();
         
+        // x3 text
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#000000';
         ctx.font = 'bold 14px Arial';
