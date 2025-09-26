@@ -336,7 +336,7 @@
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
     const params = new URLSearchParams();
-    params.append('select', 'name,score');
+    params.append('select', 'name,score,country');
     params.append('order', 'score.desc');
     params.append('limit', '10');
 
@@ -353,7 +353,8 @@
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>Global</td>`;
+          const location = e.country && e.country !== 'XX' ? e.country : 'Unknown';
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${location}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -371,7 +372,8 @@
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>Local</td>`;
+          const location = e.country || 'Local';
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${location}</td>`;
           lb.table.appendChild(tr);
         });
         if (arr.length === 0) {
@@ -430,6 +432,44 @@
     }
   }
 
+  /* ====== Geolocation via IP ====== */
+  let userCountry = 'XX'; // Default fallback
+  
+  async function detectUserLocation() {
+    try {
+      // Try ipapi.co first (free, no key required)
+      const response = await fetch('https://ipapi.co/json/', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.country_code && data.country_code.length === 2) {
+          userCountry = data.country_code.toUpperCase();
+          return;
+        }
+      }
+    } catch (e) {
+      // Fallback to ipinfo.io
+      try {
+        const response = await fetch('https://ipinfo.io/json');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.country && data.country.length === 2) {
+            userCountry = data.country.toUpperCase();
+            return;
+          }
+        }
+      } catch (e2) {
+        // Final fallback - keep default 'XX'
+        console.log('Could not detect location, using default');
+      }
+    }
+  }
+  
+  // Detect location on page load
+  detectUserLocation();
   /* ====== Game control ====== */
   function startGame(daily = false) {
     state.running = true;
@@ -505,7 +545,8 @@
       const body = {
         name: name.slice(0, 20),
         score: state.score | 0,
-        mode: (state.dailyMode ? 'daily' : 'normal')
+        mode: (state.dailyMode ? 'daily' : 'normal'),
+        country: userCountry
       };
       
       fetch(SB_URL, {
@@ -539,7 +580,6 @@
   ui.btnResume.addEventListener('click', resumeGameUI);
   ui.btnPlayAgain.addEventListener('click', () => startGame(state.dailyMode));
   ui.btnShare.addEventListener('click', doShare);
-  ui.restartBtn.addEventListener('click', () => startGame(state.dailyMode));
   ui.shareBtn.addEventListener('click', doShare);
 
   /* ====== Loop ====== */
