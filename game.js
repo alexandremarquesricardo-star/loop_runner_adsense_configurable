@@ -275,11 +275,6 @@
     }
     if (e.key === 'r' || e.key === 'R') {
       e.preventDefault();
-      startGame(state.dailyMode);
-      return;
-    }
-    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-      e.preventDefault();
       if (state.running) {
         if (!state.paused) pauseGameUI();
         else resumeGameUI();
