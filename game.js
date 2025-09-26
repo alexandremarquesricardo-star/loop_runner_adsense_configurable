@@ -352,7 +352,7 @@
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${e.country || 'XX'}</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${e.country || 'XX'}</td>`;
           lb.table.appendChild(tr);
         });
         if (rows.length === 0) {
@@ -364,11 +364,13 @@
       .catch(() => {
         const key = mode === 'daily' ? ('lr_lb_daily_' + todayKey()) : 'lr_lb_normal';
         const arr = loadLB(key);
+        lb.info.textContent += ' • offline';
+        lb.table.innerHTML = '';
         arr.slice(0, 10).forEach((e, i) => {
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>Local</td>`;
+          tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>Local</td>`;
           lb.table.appendChild(tr);
         });
         if (arr.length === 0) {
@@ -376,7 +378,6 @@
           tr.innerHTML = '<td colspan="5" style="opacity:.7;">No scores yet. Be the first!</td>';
           lb.table.appendChild(tr);
         }
-        lb.info.textContent += ' • offline';
       });
   }
   function getMotivationalStatus(score) {
@@ -496,12 +497,12 @@
   }
 
   async function submitScore() {
-    const name = (ui.nameInput.value.trim() || getLS('lr_name', 'Player')).slice(0, 20) || 'Player';
+    const name = (ui.nameInput.value || '').trim() || getLS('lr_name', '') || 'Player';
     setLS('lr_name', name);
     
     try {
       const body = {
-        name: name.slice(0, 12),
+        name: name.slice(0, 20),
         score: state.score | 0,
         mode: (state.dailyMode ? 'daily' : 'normal'),
         country: 'XX'
