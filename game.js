@@ -372,7 +372,7 @@
           const tr = document.createElement('tr');
           const status = getMotivationalStatus(e.score);
           const statusColor = (e.score >= 1000) ? '#88ffcc' : '#ff6b6b';
-          const location = e.country || 'Local';
+          const location = 'Local';
           tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(e.name || 'anon')}</td><td>${e.score}</td><td style="color:${statusColor}; font-weight:bold;">${status}</td><td>${location}</td>`;
           lb.table.appendChild(tr);
         });
