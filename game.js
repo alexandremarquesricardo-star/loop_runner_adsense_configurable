@@ -9,7 +9,9 @@
     const spacer = document.getElementById('ad-spacer');
     const adH = (spacer && spacer.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--adH')) || 0;
     W = innerWidth|0;
-    H = Math.max(0, (innerHeight|0) - adH);
+    const nav = document.getElementById('site-nav');
+    const navH = (nav && nav.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navH')) || 0;
+    H = Math.max(0, (innerHeight|0) - adH - navH);
     canvas.width  = Math.max(1, W*DPR);
     canvas.height = Math.max(1, H*DPR);
     canvas.style.width = W+'px';
@@ -117,7 +119,7 @@
 
   function setOverlayHome(){
     ui.ovTitle.textContent = 'Loop Runner';
-    ui.ovBody.textContent = 'Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!';
+    ui.ovBody.innerHTML = 'Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!<br><span style="opacity:.9">Need help? Read the <a href=\'how-to-play.html\' style=\'color:#7cfdd6\'>How to Play</a> guide.</span>';
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
     showOverlay();
