@@ -1,79 +1,105 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>About Playloop & Loop Runner | Playloop.run</title>
-  <meta name="description" content="Learn what Playloop is, how Loop Runner was built, and what’s coming next.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About Playloop & Loop Runner</title>
+  <meta name="description" content="Who we are, what Loop Runner is about, and how we build fast, fun browser games." />
   <link rel="canonical" href="https://playloop.run/about.html">
-  <meta name="robots" content="index,follow">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
   <meta property="og:title" content="About Playloop & Loop Runner">
-  <meta property="og:description" content="Learn what Playloop is, how Loop Runner was built, and what’s coming next.">
+  <meta property="og:description" content="Who we are, what Loop Runner is about, and how we build fast, fun browser games.">
+  <meta property="og:url" content="https://playloop.run/about.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
-  <meta property="og:url" content="https://playloop.run/about.html">
-  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="About Playloop & Loop Runner">
-  <meta name="twitter:description" content="Learn what Playloop is, how Loop Runner was built, and what’s coming next.">
+  <meta name="twitter:description" content="Who we are, what Loop Runner is about, and how we build fast, fun browser games.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
-  <style>
-  body{margin:0;font:16px/1.7 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;background:#0b0b10;color:#eaecef}
-  a{color:#7cfdd6;text-decoration:none} a:hover{text-decoration:underline}
-  header,footer{max-width:960px;margin:0 auto;padding:16px 20px}
-  main{max-width:960px;margin:0 auto;padding:20px}
-  .hero{padding:28px 0;border-bottom:1px solid #232634}
-  nav a{margin-right:14px;opacity:.9}
-  footer{opacity:.75;border-top:1px solid #232634;margin-top:40px}
-</style>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebPage",
-    "name":"About Playloop & Loop Runner",
-    "url":"https://playloop.run/about.html",
-    "isPartOf":{"@type":"WebSite","name":"Playloop","url":"https://playloop.run/"}
-  }
-  </script>
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles.css">
+<!-- Consent Mode v2 (default denied) -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('consent','default',{
+    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+  });
+</script>
+<!-- AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+<!-- Funding Choices (CMP) -->
+<script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+<script>
+  (function signalGooglefcPresent() {
+    if (!window.frames['googlefcPresent']) {
+      function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+      document.body ? add() : setTimeout(signalGooglefcPresent,0);
+    }
+  })();
+</script>
+<script>
+  (function(){ 
+    var nav = document.getElementById('site-nav');
+    if(nav){
+      var h = nav.offsetHeight || 44;
+      document.documentElement.style.setProperty('--navH', h + 'px');
+      setTimeout(function(){ 
+        var h2 = nav.offsetHeight || h;
+        document.documentElement.style.setProperty('--navH', h2 + 'px');
+      }, 200);
+    }
+  })();
+</script>
 </head>
 <body>
-  <header class="hero">
-    <nav>
-      <a href="/">Home</a>
-      <a href="/how-to-play.html">How to Play</a>
-      <a href="/updates.html">Updates</a>
-      <a href="/about.html">About</a>
-      <a href="/privacy.html">Privacy</a>
-    </nav>
-    <h1 style="margin:10px 0 0">About Playloop & Loop Runner</h1>
-    <p style="margin:6px 0 0;opacity:.85">Learn what Playloop is, how Loop Runner was built, and what’s coming next.</p>
-  </header>
-  <main>
-    
-<p><strong>Playloop</strong> is a tiny browser‑game lab based around a simple idea: delightful arcade loops you can play instantly — no downloads, no paywalls, no clutter. Our first release, <em>Loop Runner</em>, is a minimalist arena where your cursor control and reaction time are everything.</p>
-<h2>What makes Loop Runner different?</h2>
-<ul>
-  <li><strong>Instant play:</strong> loads fast and runs on any modern browser.</li>
-  <li><strong>Pure skill:</strong> no gacha, no grind — just you versus the board.</li>
-  <li><strong>Daily challenge:</strong> a seeded run so every player faces the same pattern each day.</li>
-  <li><strong>Privacy‑respecting:</strong> we keep things lightweight and transparent.</li>
-</ul>
-<h2>Tech & craft</h2>
-<p>Loop Runner is hand‑coded with HTML5 canvas and modern JavaScript. We obsess over input latency, visual clarity, and feedback that feels crisp — from velocity‑tinted enemies to satisfying particle bursts. Leaderboards are powered by Supabase with row‑level security enabled for safe, anonymous submissions.</p>
-<h2>Roadmap</h2>
-<ul>
-  <li>More power‑up variety and balanced difficulty ramps</li>
-  <li>Optional accessibility tweaks (reduced effects, larger UI)</li>
-  <li>Seasonal themed dailies and friendly competitions</li>
-</ul>
-<p>Questions or ideas? Reach us via the footer links on any page.</p>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
+<div id="ad-spacer"></div>
+<main class="container">
 
-  </main>
-  <footer>
-    <p>&copy; 2025 Playloop. Built for the open web.</p>
-  </footer>
+<section class="hero">
+  <h1>About Playloop</h1>
+  <p>Playloop builds small, fast, and fair browser games. Loop Runner is our reflex-first arcade experiment: instant play, crisp controls, and transparent leaderboards.</p>
+</section>
+<section>
+  <h2>Our Principles</h2>
+  <p>We believe games should respect your time and your device. That’s why Loop Runner loads quickly, runs in any modern browser, and keeps inputs minimal yet expressive. We avoid dark patterns, obtrusive ads, and unfair mechanics.</p>
+  <p>Our roadmap focuses on performance, clarity, and community: clearer difficulty ramps, meaningful power-ups, and competitive modes like the Daily Run that put skill first.</p>
+</section>
+<section>
+  <h2>Contact</h2>
+  <p>Questions, feedback, or score issues? Email: <a href="mailto:hello@playloop.run">hello@playloop.run</a></p>
+</section>
+<section>
+  <h2>Credits</h2>
+  <ul>
+    <li>Design & Code: Playloop</li>
+    <li>Tech: HTML5 Canvas, vanilla JS</li>
+  </ul>
+</section>
+
+</main>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
+</footer>
 </body>
 </html>

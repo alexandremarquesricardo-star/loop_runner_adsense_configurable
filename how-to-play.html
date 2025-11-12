@@ -1,85 +1,125 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>How to Play Loop Runner | Playloop.run</title>
-  <meta name="description" content="Controls, tips, power‑ups, and scoring strategy for Loop Runner — the fast browser reflex game.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to Play Loop Runner — Tips, Controls & Modes</title>
+  <meta name="description" content="Master Loop Runner: controls, power-ups, scoring, Daily Run rules, and performance tips." />
   <link rel="canonical" href="https://playloop.run/how-to-play.html">
-  <meta name="robots" content="index,follow">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
-  <meta property="og:title" content="How to Play Loop Runner">
-  <meta property="og:description" content="Controls, tips, power‑ups, and scoring strategy for Loop Runner — the fast browser reflex game.">
+  <meta property="og:title" content="How to Play Loop Runner — Tips, Controls & Modes">
+  <meta property="og:description" content="Master Loop Runner: controls, power-ups, scoring, Daily Run rules, and performance tips.">
+  <meta property="og:url" content="https://playloop.run/how-to-play.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
-  <meta property="og:url" content="https://playloop.run/how-to-play.html">
-  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="How to Play Loop Runner">
-  <meta name="twitter:description" content="Controls, tips, power‑ups, and scoring strategy for Loop Runner — the fast browser reflex game.">
+  <meta name="twitter:title" content="How to Play Loop Runner — Tips, Controls & Modes">
+  <meta name="twitter:description" content="Master Loop Runner: controls, power-ups, scoring, Daily Run rules, and performance tips.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
-  <style>
-  body{margin:0;font:16px/1.7 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;background:#0b0b10;color:#eaecef}
-  a{color:#7cfdd6;text-decoration:none} a:hover{text-decoration:underline}
-  header,footer{max-width:960px;margin:0 auto;padding:16px 20px}
-  main{max-width:960px;margin:0 auto;padding:20px}
-  .hero{padding:28px 0;border-bottom:1px solid #232634}
-  nav a{margin-right:14px;opacity:.9}
-  footer{opacity:.75;border-top:1px solid #232634;margin-top:40px}
-</style>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebPage",
-    "name":"How to Play Loop Runner",
-    "url":"https://playloop.run/how-to-play.html",
-    "isPartOf":{"@type":"WebSite","name":"Playloop","url":"https://playloop.run/"}
-  }
-  </script>
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles.css">
+<!-- Consent Mode v2 (default denied) -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('consent','default',{
+    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+  });
+</script>
+<!-- AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+<!-- Funding Choices (CMP) -->
+<script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+<script>
+  (function signalGooglefcPresent() {
+    if (!window.frames['googlefcPresent']) {
+      function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+      document.body ? add() : setTimeout(signalGooglefcPresent,0);
+    }
+  })();
+</script>
+<script>
+  (function(){ 
+    var nav = document.getElementById('site-nav');
+    if(nav){
+      var h = nav.offsetHeight || 44;
+      document.documentElement.style.setProperty('--navH', h + 'px');
+      setTimeout(function(){ 
+        var h2 = nav.offsetHeight || h;
+        document.documentElement.style.setProperty('--navH', h2 + 'px');
+      }, 200);
+    }
+  })();
+</script>
 </head>
 <body>
-  <header class="hero">
-    <nav>
-      <a href="/">Home</a>
-      <a href="/how-to-play.html">How to Play</a>
-      <a href="/updates.html">Updates</a>
-      <a href="/about.html">About</a>
-      <a href="/privacy.html">Privacy</a>
-    </nav>
-    <h1 style="margin:10px 0 0">How to Play Loop Runner</h1>
-    <p style="margin:6px 0 0;opacity:.85">Controls, tips, power‑ups, and scoring strategy for Loop Runner — the fast browser reflex game.</p>
-  </header>
-  <main>
-    
-<p>Loop Runner is easy to learn and hard to master. Your runner follows the mouse cursor. Survive as long as possible, rack up combos, and climb the global leaderboard.</p>
-<h2>Controls</h2>
-<ul>
-  <li><strong>Move:</strong> move your mouse — the runner follows.</li>
-  <li><strong>Fire:</strong> right‑click to unleash a radial burst. You have 3 rounds that auto‑recharge over time.</li>
-  <li><strong>Pause:</strong> press <kbd>P</kbd> or <kbd>Esc</kbd>. Press <kbd>Space</kbd> to start a new run.</li>
-</ul>
-<h2>Power‑ups</h2>
-<ul>
-  <li><strong>Recharge (⚡):</strong> instantly restores your fire rounds.</li>
-  <li><strong>Multiplier (x3):</strong> triples your current score — cash in smartly after a strong chain.</li>
-</ul>
-<h2>Scoring & strategy</h2>
-<ol>
-  <li><strong>Keep your combo alive.</strong> Chaining eliminations increases the points you earn per hit.</li>
-  <li><strong>Use bursts reactively.</strong> Don’t spam — wait for clusters to maximize impact and safety.</li>
-  <li><strong>Control space.</strong> Herd enemies to the screen edge, then slip through gaps.</li>
-  <li><strong>Daily runs.</strong> The daily seed means every player gets the same enemy pattern on a given day. Practice, analyze, and improve.</li>
-</ol>
-<h2>FAQ</h2>
-<p><strong>Is Loop Runner free?</strong> Yes. It’s 100% free to play in your browser.</p>
-<p><strong>Do I need an account?</strong> No. You can enter a display name for leaderboards, but no signup is required.</p>
-<p><strong>Does it work on mobile?</strong> Yes, but a mouse or trackpad offers the highest precision.</p>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
+<div id="ad-spacer"></div>
+<main class="container">
 
-  </main>
-  <footer>
-    <p>&copy; 2025 Playloop. Built for the open web.</p>
-  </footer>
+<section class="hero">
+  <h1>How to Play Loop Runner</h1>
+  <p>Learn the controls, scoring system, modes, and strategies to consistently hit the leaderboard.</p>
+</section>
+<section>
+  <h2>Controls</h2>
+  <ul>
+    <li><strong>Move:</strong> Mouse cursor guides your runner.</li>
+    <li><strong>Fire:</strong> Right-click to shoot. You have 3 rounds that auto-recharge.</li>
+    <li><strong>Pause:</strong> P or Esc.</li>
+    <li><strong>Restart:</strong> Spacebar.</li>
+  </ul>
+</section>
+<section>
+  <h2>Scoring & Combos</h2>
+  <p>Each enemy destroyed adds to your score. Defeating enemies quickly chains a <strong>combo</strong> that multiplies points. Keep your chain alive by staying aggressive and accurate.</p>
+</section>
+<section>
+  <h2>Power-ups</h2>
+  <ul>
+    <li><strong>Shield:</strong> Absorbs one hit so you can keep your combo.</li>
+    <li><strong>Rapid:</strong> Temporarily increases fire rate.</li>
+    <li><strong>Magnet:</strong> Pulls pickups and boosts your sustain.</li>
+  </ul>
+</section>
+<section>
+  <h2>Game Modes</h2>
+  <ul>
+    <li><strong>Normal:</strong> Endless survival with progressive difficulty.</li>
+    <li><strong>Daily Run:</strong> Same pattern for everyone on a given day. Scores reset daily at 00:00 UTC.</li>
+  </ul>
+</section>
+<section>
+  <h2>Performance Tips</h2>
+  <ul>
+    <li>Use a mouse (desktop) for best precision.</li>
+    <li>Close background tabs to reduce stutter.</li>
+    <li>Toggle your browser’s hardware acceleration if you notice frame drops.</li>
+  </ul>
+</section>
+
+</main>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
+</footer>
 </body>
 </html>

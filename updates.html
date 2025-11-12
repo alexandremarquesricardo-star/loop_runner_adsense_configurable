@@ -1,76 +1,111 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Loop Runner Updates & Patch Notes | Playloop.run</title>
-  <meta name="description" content="See the latest changes to Loop Runner: new features, balance, and quality‑of‑life updates.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loop Runner Updates & Changelog</title>
+  <meta name="description" content="Track Loop Runner releases, improvements, and balance tweaks." />
   <link rel="canonical" href="https://playloop.run/updates.html">
-  <meta name="robots" content="index,follow">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
-  <meta property="og:title" content="Loop Runner Updates & Patch Notes">
-  <meta property="og:description" content="See the latest changes to Loop Runner: new features, balance, and quality‑of‑life updates.">
+  <meta property="og:title" content="Loop Runner Updates & Changelog">
+  <meta property="og:description" content="Track Loop Runner releases, improvements, and balance tweaks.">
+  <meta property="og:url" content="https://playloop.run/updates.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
-  <meta property="og:url" content="https://playloop.run/updates.html">
-  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Loop Runner Updates & Patch Notes">
-  <meta name="twitter:description" content="See the latest changes to Loop Runner: new features, balance, and quality‑of‑life updates.">
+  <meta name="twitter:title" content="Loop Runner Updates & Changelog">
+  <meta name="twitter:description" content="Track Loop Runner releases, improvements, and balance tweaks.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
-  <style>
-  body{margin:0;font:16px/1.7 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;background:#0b0b10;color:#eaecef}
-  a{color:#7cfdd6;text-decoration:none} a:hover{text-decoration:underline}
-  header,footer{max-width:960px;margin:0 auto;padding:16px 20px}
-  main{max-width:960px;margin:0 auto;padding:20px}
-  .hero{padding:28px 0;border-bottom:1px solid #232634}
-  nav a{margin-right:14px;opacity:.9}
-  footer{opacity:.75;border-top:1px solid #232634;margin-top:40px}
-</style>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebPage",
-    "name":"Loop Runner Updates & Patch Notes",
-    "url":"https://playloop.run/updates.html",
-    "isPartOf":{"@type":"WebSite","name":"Playloop","url":"https://playloop.run/"}
-  }
-  </script>
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles.css">
+<!-- Consent Mode v2 (default denied) -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('consent','default',{
+    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+  });
+</script>
+<!-- AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+<!-- Funding Choices (CMP) -->
+<script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+<script>
+  (function signalGooglefcPresent() {
+    if (!window.frames['googlefcPresent']) {
+      function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+      document.body ? add() : setTimeout(signalGooglefcPresent,0);
+    }
+  })();
+</script>
+<script>
+  (function(){ 
+    var nav = document.getElementById('site-nav');
+    if(nav){
+      var h = nav.offsetHeight || 44;
+      document.documentElement.style.setProperty('--navH', h + 'px');
+      setTimeout(function(){ 
+        var h2 = nav.offsetHeight || h;
+        document.documentElement.style.setProperty('--navH', h2 + 'px');
+      }, 200);
+    }
+  })();
+</script>
 </head>
 <body>
-  <header class="hero">
-    <nav>
-      <a href="/">Home</a>
-      <a href="/how-to-play.html">How to Play</a>
-      <a href="/updates.html">Updates</a>
-      <a href="/about.html">About</a>
-      <a href="/privacy.html">Privacy</a>
-    </nav>
-    <h1 style="margin:10px 0 0">Loop Runner Updates & Patch Notes</h1>
-    <p style="margin:6px 0 0;opacity:.85">See the latest changes to Loop Runner: new features, balance, and quality‑of‑life updates.</p>
-  </header>
-  <main>
-    
-<p>This page lists notable changes, balance tweaks, and quality‑of‑life improvements to Loop Runner.</p>
-<h2>Version 1.1 — Daily Mode & UX (Oct 2025)</h2>
-<ul>
-  <li>Added <strong>Daily Run</strong> with seeded RNG for shared patterns</li>
-  <li>Improved overlay usability and helpful hints</li>
-  <li>Leaderboard modal polish and offline fallback display</li>
-</ul>
-<h2>Version 1.0 — Global Launch</h2>
-<ul>
-  <li>Core survival loop with velocity‑tinted enemies</li>
-  <li>Combo scoring, particle feedback, and radial burst attack</li>
-  <li>Supabase‑backed global leaderboard</li>
-</ul>
-<p>Follow our roadmap on the <a href="/about.html">About</a> page.</p>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
+<div id="ad-spacer"></div>
+<main class="container">
 
-  </main>
-  <footer>
-    <p>&copy; 2025 Playloop. Built for the open web.</p>
-  </footer>
+<section class="hero">
+  <h1>Updates & Changelog</h1>
+  <p>Release notes and improvements for Loop Runner. Latest first.</p>
+</section>
+<article>
+  <h2>2025-11-12 — Content & Policy Pages</h2>
+  <ul>
+    <li>Added How to Play, About, Privacy, and Terms pages.</li>
+    <li>Improved accessibility, nav structure, and metadata for SEO.</li>
+    <li>Moved CSS to a shared file for faster loads.</li>
+  </ul>
+</article>
+<article>
+  <h2>2025-10-15 — Daily Run tweaks</h2>
+  <ul>
+    <li>Unified daily seed across clients; leaderboards now flag Daily vs Normal.</li>
+    <li>Adjusted combo decay to reward longer chains.</li>
+  </ul>
+</article>
+<article>
+  <h2>2025-09-22 — Balance Update</h2>
+  <ul>
+    <li>Tuned spawn curves for smoother early-game.</li>
+    <li>Small projectile speed increase and clearer hit feedback.</li>
+  </ul>
+</article>
+
+</main>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
+</footer>
 </body>
 </html>

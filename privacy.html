@@ -1,82 +1,117 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Privacy Policy | Playloop.run</title>
-  <meta name="description" content="Privacy policy for Playloop and Loop Runner — how ads and the leaderboard handle data.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — Playloop</title>
+  <meta name="description" content="Read how Playloop handles data, cookies, analytics, and ads." />
   <link rel="canonical" href="https://playloop.run/privacy.html">
-  <meta name="robots" content="index,follow">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
-  <meta property="og:title" content="Privacy Policy">
-  <meta property="og:description" content="Privacy policy for Playloop and Loop Runner — how ads and the leaderboard handle data.">
+  <meta property="og:title" content="Privacy Policy — Playloop">
+  <meta property="og:description" content="Read how Playloop handles data, cookies, analytics, and ads.">
+  <meta property="og:url" content="https://playloop.run/privacy.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
-  <meta property="og:url" content="https://playloop.run/privacy.html">
-  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Privacy Policy">
-  <meta name="twitter:description" content="Privacy policy for Playloop and Loop Runner — how ads and the leaderboard handle data.">
+  <meta name="twitter:title" content="Privacy Policy — Playloop">
+  <meta name="twitter:description" content="Read how Playloop handles data, cookies, analytics, and ads.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
-  <style>
-  body{margin:0;font:16px/1.7 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;background:#0b0b10;color:#eaecef}
-  a{color:#7cfdd6;text-decoration:none} a:hover{text-decoration:underline}
-  header,footer{max-width:960px;margin:0 auto;padding:16px 20px}
-  main{max-width:960px;margin:0 auto;padding:20px}
-  .hero{padding:28px 0;border-bottom:1px solid #232634}
-  nav a{margin-right:14px;opacity:.9}
-  footer{opacity:.75;border-top:1px solid #232634;margin-top:40px}
-</style>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"WebPage",
-    "name":"Privacy Policy",
-    "url":"https://playloop.run/privacy.html",
-    "isPartOf":{"@type":"WebSite","name":"Playloop","url":"https://playloop.run/"}
-  }
-  </script>
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/styles.css">
+<!-- Consent Mode v2 (default denied) -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('consent','default',{
+    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+  });
+</script>
+<!-- AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+<!-- Funding Choices (CMP) -->
+<script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+<script>
+  (function signalGooglefcPresent() {
+    if (!window.frames['googlefcPresent']) {
+      function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+      document.body ? add() : setTimeout(signalGooglefcPresent,0);
+    }
+  })();
+</script>
+<script>
+  (function(){ 
+    var nav = document.getElementById('site-nav');
+    if(nav){
+      var h = nav.offsetHeight || 44;
+      document.documentElement.style.setProperty('--navH', h + 'px');
+      setTimeout(function(){ 
+        var h2 = nav.offsetHeight || h;
+        document.documentElement.style.setProperty('--navH', h2 + 'px');
+      }, 200);
+    }
+  })();
+</script>
 </head>
 <body>
-  <header class="hero">
-    <nav>
-      <a href="/">Home</a>
-      <a href="/how-to-play.html">How to Play</a>
-      <a href="/updates.html">Updates</a>
-      <a href="/about.html">About</a>
-      <a href="/privacy.html">Privacy</a>
-    </nav>
-    <h1 style="margin:10px 0 0">Privacy Policy</h1>
-    <p style="margin:6px 0 0;opacity:.85">Privacy policy for Playloop and Loop Runner — how ads and the leaderboard handle data.</p>
-  </header>
-  <main>
-    
-<p>Your privacy matters. This policy explains what limited data we handle and why.</p>
-<h2>At a glance</h2>
-<ul>
-  <li>Loop Runner is free to play. We don’t sell personal data.</li>
-  <li>We use Google AdSense to show ads and Supabase to store leaderboard scores.</li>
-  <li>You can play without creating an account.</li>
-</ul>
-<h2>Advertising (Google AdSense)</h2>
-<p>We use Google AdSense. Google may use cookies or device identifiers to serve and measure ads. Where required, we display a consent message and respect your choices. Learn more about how Google uses information at <a href="https://policies.google.com/technologies/ads">policies.google.com/technologies/ads</a>.</p>
-<h2>Leaderboard</h2>
-<p>Submitting a score sends a display name (you choose it), score, mode (e.g., daily), and a coarse country code derived from your IP (e.g., “GB”). We do not request or store email addresses for this feature.</p>
-<h2>Analytics</h2>
-<p>We currently do not use Google Analytics. If this changes, we’ll update this page and request consent where required.</p>
-<h2>Data retention</h2>
-<p>Leaderboard entries may be retained for the lifetime of the game. You can request removal of a specific entry by contacting us with your display name, score, and date.</p>
-<h2>Cookies</h2>
-<p>Ads may set cookies to function. You can control cookie behavior via your browser settings and the consent prompt.</p>
-<h2>Contact</h2>
-<p>For privacy requests, contact the Playloop team at: hello@playloop.run</p>
-<p>Last updated: October 2025</p>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
+<div id="ad-spacer"></div>
+<main class="container">
 
-  </main>
-  <footer>
-    <p>&copy; 2025 Playloop. Built for the open web.</p>
-  </footer>
+<section class="hero">
+  <h1>Privacy Policy</h1>
+  <p>We keep things simple: minimal data, clear choices, and no surprise tracking.</p>
+</section>
+<section>
+  <h2>Overview</h2>
+  <p>Playloop operates the website located at <strong>playloop.run</strong>. This policy explains what information we collect, how we use it, and the choices you have.</p>
+</section>
+<section>
+  <h2>What We Collect</h2>
+  <ul>
+    <li><strong>Runtime data:</strong> basic event data needed to run the game (e.g., score submissions, mode selection, date).</li>
+    <li><strong>Ad services:</strong> Google AdSense may process device and contextual information to serve ads.</li>
+  </ul>
+</section>
+<section>
+  <h2>Cookies & Consent</h2>
+  <p>We implement Google Consent Mode with a default of “denied.” Ad and analytics storage is only enabled after you interact with the consent prompt. You can revisit choices via your browser’s site settings.</p>
+</section>
+<section>
+  <h2>Scoreboard & Names</h2>
+  <p>If you enter a display name for leaderboards, it will be shown publicly with your score. Avoid sharing personal information in your name.</p>
+</section>
+<section>
+  <h2>Your Rights</h2>
+  <p>For access or deletion requests, contact <a href="mailto:privacy@playloop.run">privacy@playloop.run</a>. We’ll respond within 30 days.</p>
+</section>
+<section>
+  <h2>Contact</h2>
+  <p>Email: <a href="mailto:privacy@playloop.run">privacy@playloop.run</a></p>
+  <p>Last updated: 2025-11-12</p>
+</section>
+
+</main>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
+</footer>
 </body>
 </html>

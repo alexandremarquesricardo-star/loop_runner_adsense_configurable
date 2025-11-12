@@ -3,18 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- SEO Meta -->
   <title>Loop Runner — Free Browser Action Game | Playloop.run</title>
   <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required." />
   <link rel="canonical" href="https://playloop.run/">
   <meta name="robots" content="index,follow,max-image-preview:large">
-  <meta name="keywords" content="free browser game, action game, leaderboard game, reflex game, playloop, loop runner, instant play game">
   <meta name="theme-color" content="#0b0b10">
-
-  <!-- Social / Open Graph -->
-  <meta property="og:title" content="Loop Runner — Free Browser Action Game">
-  <meta property="og:description" content="Dash, chain, and climb the leaderboard in Loop Runner. A lightning-fast browser game — free to play, no downloads.">
+  <meta property="og:title" content="Loop Runner — Free Browser Action Game | Playloop.run">
+  <meta property="og:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required.">
   <meta property="og:url" content="https://playloop.run/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
@@ -22,198 +17,123 @@
   <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Loop Runner — Free Browser Action Game">
-  <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner. Free, fast-paced, and playable instantly in your browser.">
+  <meta name="twitter:title" content="Loop Runner — Free Browser Action Game | Playloop.run">
+  <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
-
-  <!-- PWA / Icons -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="favicon.ico">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="keywords" content="free browser game, action game, leaderboard game, reflex game, playloop, loop runner, instant play game">
+  <link rel="preload" href="/game.js" as="script">
+  <link rel="stylesheet" href="/styles.css">
   <!-- Structured Data (JSON-LD) -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "VideoGame",
-    "name": "Loop Runner",
-    "url": "https://playloop.run/",
-    "image": "https://playloop.run/looprunner-preview.png",
-    "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game you can play instantly.",
-    "inLanguage": "en",
-    "applicationCategory": "Game",
-    "operatingSystem": "Web",
-    "gamePlatform": "Browser",
-    "playMode": ["SinglePlayer"],
-    "publisher": { "@type": "Organization", "name": "Playloop" },
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
-  }
+{"@context": "https://schema.org", "@type": "VideoGame", "name": "Loop Runner", "url": "https://playloop.run/", "image": "https://playloop.run/looprunner-preview.png", "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game you can play instantly.", "inLanguage": "en", "applicationCategory": "Game", "operatingSystem": "Web", "gamePlatform": "Browser", "playMode": ["SinglePlayer"], "publisher": {"@type": "Organization", "name": "Playloop"}, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}}
   </script>
-
-  <!-- Consent Mode v2 (default denied) -->
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){ dataLayer.push(arguments); }
-    gtag('consent','default',{
-      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
-    });
-  </script>
-
-  <!-- AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
-
-  <!-- Funding Choices (CMP) -->
-  <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
-  <script>
-    (function signalGooglefcPresent() {
-      if (!window.frames['googlefcPresent']) {
-        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
-        document.body ? add() : setTimeout(signalGooglefcPresent,0);
-      }
-    })();
-  </script>
-
-  <style>
-    /* ========= theme (from wireframe) ========= */
-    :root{
-      --bg:#0b0b10; --fg:#eaecef; --muted:#9aa0a6; --accent:#6cf; --card:rgba(20,20,28,.85);
-      --adCap: 90px; /* cap the ad height */
-      --navH: 44px; /* header nav height */
+<!-- Consent Mode v2 (default denied) -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('consent','default',{
+    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+  });
+</script>
+<!-- AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+<!-- Funding Choices (CMP) -->
+<script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+<script>
+  (function signalGooglefcPresent() {
+    if (!window.frames['googlefcPresent']) {
+      function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+      document.body ? add() : setTimeout(signalGooglefcPresent,0);
     }
-    @media (max-width: 991px){ :root{ --adCap: 60px; } }
-    @media (max-width: 599px){ :root{ --adCap: 50px; } }
-
-    *{ box-sizing:border-box }
-    html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--fg); font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial; }
-
-    /* ========= Top Ad (hard-capped) ========= */
-    #ad-top-wrapper{ position:fixed; top:0; left:0; right:0; z-index:30; background:rgba(0,0,0,.15); backdrop-filter:blur(3px); border-bottom:1px dashed #2a2f3a; display:flex; justify-content:center; padding:4px 8px 0; max-height:var(--adCap); overflow:hidden; }
-    #ad-top-unit{ display:block !important; text-align:center; width:100% !important; height:var(--adCap) !important; line-height:0; }
-    #ad-spacer{ height:var(--adH, var(--adCap)); }
-
-    /* ========= Canvas ========= */
-    canvas{ display:block; width:100vw; height:calc(100vh - var(--adH, var(--adCap)) - var(--navH, 0px)); image-rendering:crisp-edges; } image-rendering:crisp-edges; }
-
-    /* ========= HUD ========= */
-    #ui{ position:fixed; inset:0; pointer-events:none; }
-    .hud{ position:absolute; left:12px; top:calc(var(--adH, var(--adCap)) + 12px); display:flex; gap:12px; align-items:center; }
-    .pill{ background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; color:#c9d1d9; }
-
-    /* ========= Overlay (wireframe style) ========= */
-    #overlay{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; }
-    #overlay.visible{ display:flex; }
-    #overlayCard{ min-width:min(85%,520px); max-width:92%; border-radius:16px; padding:16px 18px; background:var(--card); box-shadow:0 10px 30px rgba(0,0,0,.35); outline:1px dashed #2e3240; }
-    #overlayTitle{ font-size:18px; margin:0 0 8px }
-    #overlayBody{ opacity:.9; margin-bottom:10px }
-    #overlayRow{ display:flex; gap:8px; flex-wrap:wrap }
-
-    /* ========= Buttons ========= */
-    .btn, .cta{ pointer-events:auto; border:0; border-radius:12px; padding:.6rem .9rem; background:#1a1a22; color:#fff; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2); }
-    .cta{ position:relative; border-radius:14px; font-weight:800; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; user-select:none; -webkit-tap-highlight-color:transparent; }
-    .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; border:1px solid rgba(124,253,214,.25); }
-    .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; border:1px solid rgba(255,210,119,.25); }
-
-    /* ========= Quickbar & Daily Banner ========= */
-    #quickbar{ position:fixed; left:50%; transform:translateX(-50%); bottom:8px; display:flex; gap:8px; z-index:26; }
-    #dailyBanner{ position:fixed; right:8px; bottom:8px; color:var(--muted); font-weight:600; z-index:26; background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:10px; }
-
-    /* ========= Modal (Leaderboard) ========= */
-    .modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:28; }
-    .modal.show { display:flex; }
-    .sheet { width:min(560px, 92vw); background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size:14px; }
-
-    /* inputs */
-    input[type="text"], select{ pointer-events:auto; background:#101823; border:1px solid #233146; color:#e6edf3; padding:10px 12px; border-radius:10px; outline:none; }
-  
-    /* ========= Fixed Header Nav ========= */
-    #site-nav{ position:fixed; top:var(--adH, var(--adCap)); left:0; right:0; z-index:29;
-      display:flex; gap:14px; align-items:center; justify-content:center;
-      height:var(--navH); padding:0 12px;
-      background:rgba(0,0,0,.35); backdrop-filter:blur(6px);
-      border-bottom:1px dashed #2a2f3a; }
-    #site-nav a, #site-nav .brand{ color:#e6edf3; text-decoration:none; font-weight:600; letter-spacing:.2px; }
-    #site-nav a{ opacity:.9; }
-    #site-nav a:hover{ opacity:1; text-decoration:underline; }
-    #site-nav .brand{ margin-right:8px; opacity:1; }
-    @media (max-width: 480px){ #site-nav{ gap:10px; font-size:13px; } }
-
-  </style>
+  })();
+</script>
+<script>
+  (function(){ 
+    var nav = document.getElementById('site-nav');
+    if(nav){
+      var h = nav.offsetHeight || 44;
+      document.documentElement.style.setProperty('--navH', h + 'px');
+      setTimeout(function(){ 
+        var h2 = nav.offsetHeight || h;
+        document.documentElement.style.setProperty('--navH', h2 + 'px');
+      }, 200);
+    }
+  })();
+</script>
 </head>
 <body>
   <!-- Top Ad (hard-capped) -->
-  <div id="ad-top-wrapper">
-    <ins id="ad-top-unit" class="adsbygoogle"
-         style="display:block; text-align:center;"
-         data-ad-client="ca-pub-3857946786580406"
-         data-ad-slot="7067398117"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-  <nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="how-to-play.html">How to Play</a> · <a href="updates.html">Updates</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></nav>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
 <div id="ad-spacer"></div>
-
   <!-- Game Canvas -->
-  <canvas id="game"></canvas>
-
-  <!-- SEO/Text Content -->
-  <section id="about-loop-runner" style="max-width:700px;margin:18px auto;padding:0 20px 24px;line-height:1.7;">
-    <h1 style="margin:0 0 8px;">Loop Runner — Free Reflex Browser Game</h1>
-    <p style="opacity:.9">
-      Loop Runner is a free, fast-paced browser game built by Playloop. Dash through endless waves, chain combos,
-      and climb the leaderboard. No downloads — just pure skill and reflex action directly in your browser.
-      Try the <strong>Daily Run</strong> where everyone faces the same pattern each day.
-    </p>
-  </section>
+  <main>
+    <canvas id="game" aria-label="Loop Runner gameplay canvas"></canvas>
+    <!-- SEO/Text Content -->
+    <section class="container">
+      <div class="hero">
+        <h1>Loop Runner — Free Reflex Browser Game</h1>
+        <p>
+          Loop Runner is a free, fast-paced browser game built by Playloop. Dash through endless waves, chain combos,
+          and climb the leaderboard. No downloads — just pure skill and reflex action directly in your browser.
+          Try the <strong>Daily Run</strong> where everyone faces the same pattern each day.
+        </p>
+      </div>
+      <div class="alert" role="note">
+        <strong>Tip:</strong> Right-click to fire (3 rounds, auto-recharge). Space to restart. P / Esc to pause.
+      </div>
+    </section>
+  </main>
   <noscript>
-    <section style="max-width:700px;margin:0 auto 18px;padding:0 20px;line-height:1.7;">
-      <p>Loop Runner requires JavaScript. Enable JavaScript in your browser to play this fast-paced reflex game.
-      Move your cursor to dodge enemies and right-click to fire. Aim for the global leaderboard!</p>
+    <section class="container">
+      <p>Loop Runner requires JavaScript. Enable JavaScript to play. Move your cursor to dodge and right-click to fire.</p>
     </section>
   </noscript>
-
-
   <!-- UI / HUD -->
-  <div id="ui">
+  <div id="ui" aria-live="polite">
     <div class="hud">
       <div id="score" class="pill">Score: 0</div>
       <div id="combo" class="pill">Combo: 0</div>
       <div id="best" class="pill">Best: 0</div>
       <div id="daily" class="pill">Daily: 0</div>
-      <a href="privacy.html" class="pill" style="text-decoration:none; pointer-events:auto;">Privacy</a>
+      <a href="/privacy.html" class="pill" style="text-decoration:none; pointer-events:auto;">Privacy</a>
       <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
     </div>
-
-    <!-- Overlay (wireframe look, driven by game state) -->
-    <div id="overlay" class="visible" role="dialog" aria-modal="true">
-      <div id="overlayCard">
+    <!-- Overlay -->
+    <div id="overlay" class="visible" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+      <div id="overlayCard" class="container hero" style="max-width:560px;">
         <h3 id="overlayTitle">Loop Runner</h3>
         <div id="overlayBody">Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!</div>
         <div class="row" style="margin:8px 0;">
           <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
           <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
         </div>
-        <div id="overlayRow" style="margin:8px 0 0 0;">
-          <button class="btn" id="btnResume" style="display:none">▶ Resume</button>
-          <button class="btn" id="btnPlayAgain" style="display:none">↻ Play Again</button>
-          <button class="btn" id="btnShare">📣 Share</button>
+        <div id="overlayRow" class="row" style="margin:8px 0 0 0;">
+          <button class="cta" id="btnResume" style="display:none">▶ Resume</button>
+          <button class="cta" id="btnPlayAgain" style="display:none">↻ Play Again</button>
+          <button class="cta" id="btnShare">📣 Share</button>
         </div>
-        <div class="hint" style="opacity:.85; font-size:13px; margin-top:10px;">Controls: Right-click to fire • Space to restart • P / Esc to pause</div>
+        <div class="hint" style="opacity:.85; font-size:13px;">Controls: Right-click to fire • Space to restart • P / Esc to pause</div>
         <div style="margin-top:10px; opacity:.9; font-size:13px;">Name: <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" /></div>
       </div>
     </div>
   </div>
-
   <!-- Leaderboard Modal -->
-  <div id="lbModal" class="modal">
+  <div id="lbModal" class="modal" aria-modal="true" aria-hidden="true" role="dialog" aria-labelledby="lbHeading">
     <div class="sheet">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Leaderboard</h2>
+        <h2 id="lbHeading">Leaderboard</h2>
         <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
       </div>
       <div style="margin: 8px 0;">
@@ -225,6 +145,7 @@
             data-full-width-responsive="true"></ins>
       </div>
       <div class="row" style="margin:8px 0 12px 0; align-items:center;">
+        <label for="lbMode" class="pill" style="pointer-events:auto;">Mode</label>
         <select id="lbMode">
           <option value="normal">Normal</option>
           <option value="daily">Daily (today)</option>
@@ -245,46 +166,28 @@
       </table>
     </div>
   </div>
-
   <!-- Quickbar + Daily Banner -->
-  <div id="quickbar">
+  <div id="quickbar" class="container" style="display:flex; justify-content:flex-end;">
     <button id="shareBtn" class="cta cta--secondary" style="padding:10px 14px;">📣 Share</button>
   </div>
-  <div id="dailyBanner">Daily Challenge</div>
-
+  <div id="dailyBanner" class="pill" style="position:fixed; right:8px; bottom:8px;">Daily Challenge</div>
   <!-- Load the game script -->
-  <script src="game.js"></script>
-
-<script>
-  // No-scroll hardening for touch devices
-  function preventScroll(e){ e.preventDefault(); }
-  window.addEventListener('touchmove', preventScroll, { passive:false });
-  window.addEventListener('wheel', preventScroll, { passive:false });
-</script>
-
-<footer style="text-align:center; padding:20px; opacity:.75; border-top:1px solid #232634; max-width:960px; margin:0 auto 18px;">
-  <a href="about.html">About</a> •
-  <a href="how-to-play.html">How to Play</a> •
-  <a href="updates.html">Updates</a> •
-  <a href="privacy.html">Privacy Policy</a> •
-  <a href="terms.html">Terms</a>
+  <script src="/game.js" defer></script>
+  <script>
+    (function(){
+      var locked = false;
+      function preventScroll(e){ if(locked) e.preventDefault(); }
+      window.addEventListener('touchmove', preventScroll, { passive:false });
+      window.addEventListener('wheel', preventScroll, { passive:false });
+      window.__lockScroll = function(v){ locked = !!v; };
+    })();
+  </script>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
 </footer>
-
-
-<script>
-  (function(){ 
-    var nav = document.getElementById('site-nav');
-    if(nav){
-      var h = nav.offsetHeight || 44;
-      document.documentElement.style.setProperty('--navH', h + 'px');
-      // Re-run after fonts/layout settle
-      setTimeout(function(){ 
-        var h2 = nav.offsetHeight || h;
-        document.documentElement.style.setProperty('--navH', h2 + 'px');
-      }, 200);
-    }
-  })();
-</script>
-
 </body>
 </html>
