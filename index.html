@@ -28,39 +28,45 @@
   <link rel="preload" href="/game.js" as="script">
   <link rel="stylesheet" href="/styles.css">
 
-  <!-- FIX: center overlay + lock scroll on game page -->
+  <!-- FIX: center overlay + lock scroll + allow pointer events on overlay/input -->
   <style>
-    #overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 27;
+    /* Center the start overlay */
+    #overlay{
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center; z-index:27;
+      /* IMPORTANT: enable interaction despite #ui { pointer-events:none } */
+      pointer-events:auto;
     }
-    #overlay.visible { display: flex; }
-    #overlayCard {
-      min-width: min(85%, 520px);
-      max-width: 92%;
-      border-radius: 16px;
-      padding: 16px 18px;
-      background: rgba(20,20,28,.85);
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-      outline: 1px dashed #2e3240;
+    #overlay.visible{ display:flex; }
+
+    /* Keep the wireframe card styling even if not in styles.css */
+    #overlayCard{
+      min-width:min(85%,520px); max-width:92%;
+      border-radius:16px; padding:16px 18px;
+      background:rgba(20,20,28,.85);
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      outline:1px dashed #2e3240;
+      /* Also allow clicks inside the card */
+      pointer-events:auto;
     }
-    body.game { overflow: hidden; }
+
+    /* Ensure form controls are typeable */
+    #overlay input, #overlay select, #overlay button { pointer-events:auto; }
+
+    /* Lock page scrolling only on the game page */
+    body.game { overflow:hidden; }
   </style>
 
+  <!-- Structured Data (JSON-LD) -->
   <script type="application/ld+json">
 {"@context": "https://schema.org", "@type": "VideoGame", "name": "Loop Runner", "url": "https://playloop.run/", "image": "https://playloop.run/looprunner-preview.png", "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game you can play instantly.", "inLanguage": "en", "applicationCategory": "Game", "operatingSystem": "Web", "gamePlatform": "Browser", "playMode": ["SinglePlayer"], "publisher": {"@type": "Organization", "name": "Playloop"}, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}}
   </script>
 
+  <!-- Consent / Ads / CMP (unchanged) -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
-    gtag('consent','default',{
-      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
-    });
+    gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
   </script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
   <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
@@ -88,6 +94,7 @@
 </head>
 
 <body class="game">
+  <!-- Top Ad (hard-capped) -->
   <div id="ad-top-wrapper" role="region" aria-label="Advertisement">
     <ins id="ad-top-unit" class="adsbygoogle"
          style="display:block; text-align:center;"
@@ -99,8 +106,10 @@
   <nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
   <div id="ad-spacer"></div>
 
+  <!-- Game Canvas -->
   <main>
     <canvas id="game" aria-label="Loop Runner gameplay canvas"></canvas>
+    <!-- SEO/Text Content -->
     <section class="container">
       <div class="hero">
         <h1>Loop Runner — Free Reflex Browser Game</h1>
@@ -122,6 +131,7 @@
     </section>
   </noscript>
 
+  <!-- UI / HUD -->
   <div id="ui" aria-live="polite">
     <div class="hud">
       <div id="score" class="pill">Score: 0</div>
@@ -132,6 +142,7 @@
       <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
     </div>
 
+    <!-- Overlay -->
     <div id="overlay" class="visible" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
       <div id="overlayCard" class="container hero" style="max-width:560px;">
         <h3 id="overlayTitle">Loop Runner</h3>
@@ -146,13 +157,15 @@
           <button class="cta" id="btnShare">📣 Share</button>
         </div>
         <div class="hint" style="opacity:.85; font-size:13px;">Controls: Right-click to fire • Space to restart • P / Esc to pause</div>
-        <div style="margin-top:10px; opacity:.9; font-size:13px;">Name:
-          <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" />
+        <div style="margin-top:10px; opacity:.9; font-size:13px;">
+          Name:
+          <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" autocomplete="nickname" inputmode="text" />
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Leaderboard Modal -->
   <div id="lbModal" class="modal" aria-modal="true" aria-hidden="true" role="dialog" aria-labelledby="lbHeading">
     <div class="sheet">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -190,23 +203,28 @@
     </div>
   </div>
 
+  <!-- Quickbar + Daily Banner -->
   <div id="quickbar" class="container" style="display:flex; justify-content:flex-end;">
     <button id="shareBtn" class="cta cta--secondary" style="padding:10px 14px;">📣 Share</button>
   </div>
   <div id="dailyBanner" class="pill" style="position:fixed; right:8px; bottom:8px;">Daily Challenge</div>
 
+  <!-- Game logic -->
   <script src="/game.js" defer></script>
 
-  <!-- ✅ FIX: Working Name field sync + local save -->
+  <!-- Name field: sync with game + persist -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const nameInput = document.getElementById('nameInput');
+
+    // Restore saved name
     const savedName = localStorage.getItem('playerName');
     if (savedName && nameInput) {
       nameInput.value = savedName;
       window.playerName = savedName;
     }
 
+    // Live sync
     if (nameInput) {
       nameInput.addEventListener('input', (e) => {
         const name = e.target.value.trim();
@@ -215,6 +233,7 @@
       });
     }
 
+    // Ensure name is set at start
     const startBtn = document.getElementById('start');
     const dailyBtn = document.getElementById('dailyBtn');
     [startBtn, dailyBtn].forEach(btn => {
@@ -228,6 +247,7 @@
   });
   </script>
 
+  <!-- No-scroll helper -->
   <script>
     (function(){
       var locked = false;
