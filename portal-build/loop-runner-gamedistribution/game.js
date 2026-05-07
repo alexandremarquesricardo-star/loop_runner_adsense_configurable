@@ -4,14 +4,10 @@
   const ctx = canvas.getContext('2d');
   let W=0, H=0, DPR=Math.min(devicePixelRatio||1,2);
 
-  /* ====== layout sizing (ad-aware) ====== */
+  /* ====== layout sizing (full viewport — portal build has no top banner / nav) ====== */
   function resize(){
-    const spacer = document.getElementById('ad-spacer');
-    const adH = (spacer && spacer.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--adH')) || 0;
     W = innerWidth|0;
-    const nav = document.getElementById('site-nav');
-    const navH = (nav && nav.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navH')) || 0;
-    H = Math.max(0, (innerHeight|0) - adH - navH);
+    H = Math.max(0, innerHeight|0);
     canvas.width  = Math.max(1, W*DPR);
     canvas.height = Math.max(1, H*DPR);
     canvas.style.width = W+'px';
@@ -19,47 +15,7 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
   }
   addEventListener('resize', resize);
-
-  const topIns = document.getElementById('ad-top-unit');
-  const spacer = document.getElementById('ad-spacer');
-  const topWrap = document.getElementById('ad-top-wrapper');
-
-  function tryFillTopAd(){
-    if(!topIns) return;
-    const w = topIns.clientWidth;
-    if(w && w > 0){ (window.adsbygoogle=window.adsbygoogle||[]).push({}); return true; }
-    return false;
-  }
-  window.addEventListener('load', ()=>{
-    let ok = tryFillTopAd();
-    if(!ok){ const id = setInterval(()=>{ if(tryFillTopAd()) clearInterval(id); }, 200); setTimeout(()=> clearInterval(id), 5000); }
-    resize();
-  });
-
-  // Detect whether the AdSense slot actually filled. If not, collapse the wrapper
-  // entirely so localhost (or any unfilled view) gets the full game canvas.
-  function isAdFilled(){
-    if (!topIns) return false;
-    if (topIns.getAttribute('data-ad-status') === 'filled') return true;
-    const iframe = topIns.querySelector('iframe');
-    return !!(iframe && iframe.offsetHeight > 1);
-  }
-  function updateAdVars(){
-    if (!topWrap || !spacer) return;
-    const filled = isAdFilled();
-    topWrap.classList.toggle('has-ad', filled);
-    const h = filled ? topWrap.offsetHeight : 0;
-    spacer.style.height = h + 'px';
-    document.documentElement.style.setProperty('--adH', h + 'px');
-    resize();
-  }
-  if('ResizeObserver' in window && topWrap){ new ResizeObserver(updateAdVars).observe(topWrap); } else { setTimeout(updateAdVars, 300); }
-  // Re-check fill state for a few seconds in case the ad arrives late.
-  let adChecks = 0;
-  const adCheckId = setInterval(() => {
-    updateAdVars();
-    if (++adChecks > 25) clearInterval(adCheckId); // ~10s @ 400ms
-  }, 400);
+  window.addEventListener('load', resize);
 
   /* ====== storage helpers ====== */
   function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
@@ -1211,7 +1167,6 @@
     lb.modal.classList.add('show');
     lb.modeSel.value = mode || (state.dailyMode ? 'daily' : 'normal');
     renderLeaderboard();
-    maybeFillModalAd();
   }
 
   function hideLeaderboard() {
@@ -1319,20 +1274,6 @@
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
   ui.lbBtn.addEventListener('click', () => showLeaderboard());
-
-  let modalAdFilled = false;
-  function maybeFillModalAd() {
-    if (modalAdFilled) return;
-    const ins = document.getElementById('ad-modal-unit');
-    if (!ins) return;
-    const w = ins.clientWidth;
-    if (w && w > 0) {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-      modalAdFilled = true;
-    } else {
-      setTimeout(maybeFillModalAd, 200);
-    }
-  }
 
   /* ====== Share (overlay + quickbar) ====== */
   async function doShare() {
@@ -1472,7 +1413,6 @@
     hydrateHUD();
     const flavor = getEndOfRunFlavor(score, state.combo, state.time, isPB);
     setOverlayGameOver(score, state.dailyMode ? state.dailyBest : state.best, isPB, flavor);
-    incrementRunsCompleted();
     submitScore();
     showLeaderboard(state.dailyMode ? 'daily' : 'normal');
   }
@@ -1488,6 +1428,10 @@
     state.paused = false;
     hideOverlay();
   }
+
+  // GameDistribution SDK hooks (called from GD_OPTIONS.onEvent in index.html)
+  window.__lrPauseForAd = pauseGameUI;
+  window.__lrResumeForAd = resumeGameUI;
 
   async function submitScore() {
     const name = (ui.nameInput.value || getLS('lr_name', 'Player')).trim() || 'Player';
@@ -1521,60 +1465,6 @@
     }
   }
 
-  /* ====== Between-runs interstitial (AdSense) ======
-   * Triggers on Play Again only — never on first Play / Daily Run start.
-   * Conditions: ≥2 runs completed, ≥150s since last interstitial, every 3rd run.
-   * 5s countdown gates Continue button so the ad has time to fill + view.
-   */
-  const INTERSTITIAL_MIN_INTERVAL_MS = 150000;
-  const INTERSTITIAL_COUNTDOWN_S = 5;
-  const interstitialEl = document.getElementById('interstitial');
-  const interstitialContinueBtn = document.getElementById('interstitialContinue');
-
-  function incrementRunsCompleted() {
-    const n = (Number(getLS('lr_runs_completed', 0)) || 0) + 1;
-    setLS('lr_runs_completed', n);
-  }
-
-  function shouldShowInterstitial() {
-    if (!interstitialEl || !interstitialContinueBtn) return false;
-    const runs = Number(getLS('lr_runs_completed', 0)) || 0;
-    const lastTs = Number(getLS('lr_last_interstitial', 0)) || 0;
-    return runs >= 2 && (Date.now() - lastTs) >= INTERSTITIAL_MIN_INTERVAL_MS && runs % 3 === 0;
-  }
-
-  function showInterstitial(onClose) {
-    let remaining = INTERSTITIAL_COUNTDOWN_S;
-    interstitialContinueBtn.disabled = true;
-    interstitialContinueBtn.textContent = `Continue (${remaining})`;
-    interstitialEl.classList.add('show');
-    interstitialEl.setAttribute('aria-hidden', 'false');
-    setLS('lr_last_interstitial', Date.now());
-
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
-
-    const tickId = setInterval(() => {
-      remaining--;
-      if (remaining > 0) {
-        interstitialContinueBtn.textContent = `Continue (${remaining})`;
-      } else {
-        clearInterval(tickId);
-        interstitialContinueBtn.disabled = false;
-        interstitialContinueBtn.textContent = 'Continue';
-      }
-    }, 1000);
-
-    const handleContinue = () => {
-      if (interstitialContinueBtn.disabled) return;
-      clearInterval(tickId);
-      interstitialEl.classList.remove('show');
-      interstitialEl.setAttribute('aria-hidden', 'true');
-      interstitialContinueBtn.removeEventListener('click', handleContinue);
-      onClose();
-    };
-    interstitialContinueBtn.addEventListener('click', handleContinue);
-  }
-
   ui.start.addEventListener('click', () => {
     initAudio();
     startGame(false);
@@ -1585,11 +1475,12 @@
   });
   ui.btnResume.addEventListener('click', resumeGameUI);
   ui.btnPlayAgain.addEventListener('click', () => {
-    if (shouldShowInterstitial()) {
-      showInterstitial(() => startGame(state.dailyMode));
-    } else {
-      startGame(state.dailyMode);
-    }
+    try {
+      if (typeof gdsdk !== 'undefined' && typeof gdsdk.showAd === 'function') {
+        gdsdk.showAd();
+      }
+    } catch (e) { console.warn('GD showAd error', e); }
+    startGame(state.dailyMode);
   });
   ui.btnShare.addEventListener('click', doShare);
   ui.shareBtn.addEventListener('click', doShare);

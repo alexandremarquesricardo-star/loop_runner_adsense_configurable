@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Loop Runner</title>
+  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a fast-paced reflex action game." />
+  <meta name="theme-color" content="#0b0b10">
+  <link rel="icon" href="./favicon.ico">
+  <link rel="preload" href="./game.js" as="script">
+  <link rel="stylesheet" href="./styles.css">
+
+  <style>
+    /* Center the start overlay */
+    #overlay{
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center; z-index:27;
+      pointer-events:auto;
+    }
+    #overlay.visible{ display:flex; }
+
+    #overlayCard{
+      min-width:min(85%,520px); max-width:92%;
+      border-radius:16px; padding:16px 18px;
+      background:rgba(20,20,28,.85);
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      outline:1px dashed #2e3240;
+      pointer-events:auto;
+    }
+
+    #overlay input, #overlay select, #overlay button { pointer-events:auto; }
+
+    body.game { overflow:hidden; }
+  </style>
+
+  <!-- GameDistribution HTML5 SDK -->
+  <script>
+  window["GD_OPTIONS"] = {
+    "gameId": "1e3481e8b34246b089f9591075150f3c",
+    "onEvent": function(event) {
+      switch (event.name) {
+        case "SDK_GAME_PAUSE":
+          if (window.__lrPauseForAd) window.__lrPauseForAd();
+          break;
+        case "SDK_GAME_START":
+          if (window.__lrResumeForAd) window.__lrResumeForAd();
+          break;
+      }
+    }
+  };
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = 'https://html5.api.gamedistribution.com/main.min.js';
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'gamedistribution-jssdk'));
+  </script>
+</head>
+
+<body class="game">
+  <!-- Game Canvas -->
+  <main>
+    <canvas id="game" aria-label="Loop Runner gameplay canvas"></canvas>
+  </main>
+
+  <noscript>
+    <p style="color:#fff; padding:20px;">Loop Runner requires JavaScript. Enable JavaScript to play.</p>
+  </noscript>
+
+  <!-- UI / HUD -->
+  <div id="ui" aria-live="polite">
+    <div class="hud">
+      <div id="score" class="pill">Score: 0</div>
+      <div id="combo" class="pill">Combo: 0</div>
+      <div id="best" class="pill">Best: 0</div>
+      <div id="daily" class="pill">Daily: 0</div>
+      <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" class="visible" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+      <div id="overlayCard" class="container hero" style="max-width:560px;">
+        <h3 id="overlayTitle">Loop Runner</h3>
+        <div id="overlayBody">Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!</div>
+        <div class="row" style="margin:8px 0;">
+          <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
+          <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
+        </div>
+        <div id="overlayRow" class="row" style="margin:8px 0 0 0;">
+          <button class="cta" id="btnResume" style="display:none">▶ Resume</button>
+          <button class="cta" id="btnPlayAgain" style="display:none">↻ Play Again</button>
+          <button class="cta" id="btnShare">📣 Share</button>
+        </div>
+        <div class="hint" style="opacity:.85; font-size:13px;">Controls: Right-click to fire • Space to restart • P / Esc to pause</div>
+        <div style="margin-top:10px; opacity:.9; font-size:13px;">
+          Name:
+          <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:220px;" autocomplete="nickname" inputmode="text" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Modal -->
+  <div id="lbModal" class="modal" aria-modal="true" aria-hidden="true" role="dialog" aria-labelledby="lbHeading">
+    <div class="sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 id="lbHeading">Leaderboard</h2>
+        <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
+      </div>
+      <div class="row" style="margin:8px 0 12px 0; align-items:center;">
+        <label for="lbMode" class="pill" style="pointer-events:auto;">Mode</label>
+        <select id="lbMode">
+          <option value="normal">Normal</option>
+          <option value="daily">Daily (today)</option>
+        </select>
+        <div id="lbInfo" style="opacity:.8; font-size:13px;"></div>
+      </div>
+      <div id="lbUserBest" style="display:none; margin:0 0 12px 0; padding:10px 14px; background:rgba(108,207,255,.08); border:1px solid rgba(108,207,255,.25); border-radius:12px; font-size:14px;">
+        <strong>Your best:</strong> <span id="lbUserScore">—</span><span id="lbUserRank" style="opacity:.85; margin-left:8px;"></span>
+      </div>
+      <table id="lbTable">
+        <thead>
+          <tr>
+            <th style="width:56px;">#</th>
+            <th>Name</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Quickbar -->
+  <div id="quickbar" class="container" style="display:flex; justify-content:flex-end;">
+    <button id="shareBtn" class="cta cta--secondary" style="padding:10px 14px;">📣 Share</button>
+  </div>
+  <div id="dailyBanner" class="pill" style="position:fixed; right:8px; bottom:8px;">Daily Challenge</div>
+
+  <!-- Game logic -->
+  <script src="./game.js" defer></script>
+
+  <!-- Name field: live persistence (game.js reads lr_name on init and on submit) -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const nameInput = document.getElementById('nameInput');
+    if (!nameInput) return;
+
+    nameInput.addEventListener('input', (e) => {
+      const name = e.target.value.trim();
+      if (name) localStorage.setItem('lr_name', name);
+    });
+  });
+  </script>
+
+  <!-- No-scroll helper -->
+  <script>
+    (function(){
+      var locked = false;
+      function preventScroll(e){ if(locked) e.preventDefault(); }
+      window.addEventListener('touchmove', preventScroll, { passive:false });
+      window.addEventListener('wheel', preventScroll, { passive:false });
+      window.__lockScroll = function(v){ locked = !!v; };
+    })();
+  </script>
+</body>
+</html>
