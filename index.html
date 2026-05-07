@@ -95,6 +95,7 @@
 
 <body class="game">
   <!-- Top Ad (strictly capped horizontal banner; collapses when unfilled) -->
+  <!-- AdSense placement: TOP_BANNER (replace data-ad-slot with a dedicated slot for per-placement reporting) -->
   <div id="ad-top-wrapper" role="region" aria-label="Advertisement">
     <ins id="ad-top-unit" class="adsbygoogle"
          style="display:block; text-align:center;"
@@ -165,6 +166,23 @@
     </div>
   </div>
 
+  <!-- Between-runs Interstitial -->
+  <!-- AdSense placement: INTERSTITIAL (replace data-ad-slot with a dedicated slot for per-placement reporting) -->
+  <div id="interstitial" class="interstitial" aria-hidden="true" role="dialog" aria-labelledby="interstitialTitle">
+    <div class="interstitial-sheet">
+      <div id="interstitialTitle" class="interstitial-title">Quick break before your next run</div>
+      <div class="interstitial-ad-wrap">
+        <ins id="ad-interstitial-unit" class="adsbygoogle"
+             style="display:block; text-align:center; min-height:250px;"
+             data-ad-client="ca-pub-3857946786580406"
+             data-ad-slot="7067398117"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+      <button id="interstitialContinue" class="cta cta--primary" disabled>Continue (5)</button>
+    </div>
+  </div>
+
   <!-- Leaderboard Modal -->
   <div id="lbModal" class="modal" aria-modal="true" aria-hidden="true" role="dialog" aria-labelledby="lbHeading">
     <div class="sheet">
@@ -172,6 +190,7 @@
         <h2 id="lbHeading">Leaderboard</h2>
         <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
       </div>
+      <!-- AdSense placement: LEADERBOARD_MODAL (replace data-ad-slot with a dedicated slot for per-placement reporting) -->
       <div style="margin: 8px 0;">
         <ins id="ad-modal-unit" class="adsbygoogle"
             style="display:block; text-align:center; min-height:0;"
@@ -187,6 +206,9 @@
           <option value="daily">Daily (today)</option>
         </select>
         <div id="lbInfo" style="opacity:.8; font-size:13px;"></div>
+      </div>
+      <div id="lbUserBest" style="display:none; margin:0 0 12px 0; padding:10px 14px; background:rgba(108,207,255,.08); border:1px solid rgba(108,207,255,.25); border-radius:12px; font-size:14px;">
+        <strong>Your best:</strong> <span id="lbUserScore">—</span><span id="lbUserRank" style="opacity:.85; margin-left:8px;"></span>
       </div>
       <table id="lbTable">
         <thead>
@@ -212,37 +234,15 @@
   <!-- Game logic -->
   <script src="/game.js" defer></script>
 
-  <!-- Name field: sync with game + persist -->
+  <!-- Name field: live persistence (game.js reads lr_name on init and on submit) -->
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const nameInput = document.getElementById('nameInput');
+    if (!nameInput) return;
 
-    // Restore saved name
-    const savedName = localStorage.getItem('playerName');
-    if (savedName && nameInput) {
-      nameInput.value = savedName;
-      window.playerName = savedName;
-    }
-
-    // Live sync
-    if (nameInput) {
-      nameInput.addEventListener('input', (e) => {
-        const name = e.target.value.trim();
-        window.playerName = name;
-        localStorage.setItem('playerName', name);
-      });
-    }
-
-    // Ensure name is set at start
-    const startBtn = document.getElementById('start');
-    const dailyBtn = document.getElementById('dailyBtn');
-    [startBtn, dailyBtn].forEach(btn => {
-      if (!btn) return;
-      btn.addEventListener('click', () => {
-        const name = nameInput?.value.trim() || 'Player';
-        window.playerName = name;
-        localStorage.setItem('playerName', name);
-      });
+    nameInput.addEventListener('input', (e) => {
+      const name = e.target.value.trim();
+      if (name) localStorage.setItem('lr_name', name);
     });
   });
   </script>

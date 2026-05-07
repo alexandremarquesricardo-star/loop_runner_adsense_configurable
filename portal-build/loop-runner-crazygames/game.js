@@ -4,14 +4,10 @@
   const ctx = canvas.getContext('2d');
   let W=0, H=0, DPR=Math.min(devicePixelRatio||1,2);
 
-  /* ====== layout sizing (ad-aware) ====== */
+  /* ====== layout sizing (full viewport — portal build has no top banner / nav) ====== */
   function resize(){
-    const spacer = document.getElementById('ad-spacer');
-    const adH = (spacer && spacer.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--adH')) || 0;
     W = innerWidth|0;
-    const nav = document.getElementById('site-nav');
-    const navH = (nav && nav.offsetHeight) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navH')) || 0;
-    H = Math.max(0, (innerHeight|0) - adH - navH);
+    H = Math.max(0, innerHeight|0);
     canvas.width  = Math.max(1, W*DPR);
     canvas.height = Math.max(1, H*DPR);
     canvas.style.width = W+'px';
@@ -19,47 +15,7 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
   }
   addEventListener('resize', resize);
-
-  const topIns = document.getElementById('ad-top-unit');
-  const spacer = document.getElementById('ad-spacer');
-  const topWrap = document.getElementById('ad-top-wrapper');
-
-  function tryFillTopAd(){
-    if(!topIns) return;
-    const w = topIns.clientWidth;
-    if(w && w > 0){ (window.adsbygoogle=window.adsbygoogle||[]).push({}); return true; }
-    return false;
-  }
-  window.addEventListener('load', ()=>{
-    let ok = tryFillTopAd();
-    if(!ok){ const id = setInterval(()=>{ if(tryFillTopAd()) clearInterval(id); }, 200); setTimeout(()=> clearInterval(id), 5000); }
-    resize();
-  });
-
-  // Detect whether the AdSense slot actually filled. If not, collapse the wrapper
-  // entirely so localhost (or any unfilled view) gets the full game canvas.
-  function isAdFilled(){
-    if (!topIns) return false;
-    if (topIns.getAttribute('data-ad-status') === 'filled') return true;
-    const iframe = topIns.querySelector('iframe');
-    return !!(iframe && iframe.offsetHeight > 1);
-  }
-  function updateAdVars(){
-    if (!topWrap || !spacer) return;
-    const filled = isAdFilled();
-    topWrap.classList.toggle('has-ad', filled);
-    const h = filled ? topWrap.offsetHeight : 0;
-    spacer.style.height = h + 'px';
-    document.documentElement.style.setProperty('--adH', h + 'px');
-    resize();
-  }
-  if('ResizeObserver' in window && topWrap){ new ResizeObserver(updateAdVars).observe(topWrap); } else { setTimeout(updateAdVars, 300); }
-  // Re-check fill state for a few seconds in case the ad arrives late.
-  let adChecks = 0;
-  const adCheckId = setInterval(() => {
-    updateAdVars();
-    if (++adChecks > 25) clearInterval(adCheckId); // ~10s @ 400ms
-  }, 400);
+  window.addEventListener('load', resize);
 
   /* ====== storage helpers ====== */
   function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
@@ -1211,7 +1167,6 @@
     lb.modal.classList.add('show');
     lb.modeSel.value = mode || (state.dailyMode ? 'daily' : 'normal');
     renderLeaderboard();
-    maybeFillModalAd();
   }
 
   function hideLeaderboard() {
@@ -1319,20 +1274,6 @@
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
   ui.lbBtn.addEventListener('click', () => showLeaderboard());
-
-  let modalAdFilled = false;
-  function maybeFillModalAd() {
-    if (modalAdFilled) return;
-    const ins = document.getElementById('ad-modal-unit');
-    if (!ins) return;
-    const w = ins.clientWidth;
-    if (w && w > 0) {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-      modalAdFilled = true;
-    } else {
-      setTimeout(maybeFillModalAd, 200);
-    }
-  }
 
   /* ====== Share (overlay + quickbar) ====== */
   async function doShare() {
