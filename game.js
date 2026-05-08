@@ -369,6 +369,11 @@
       _tone({ type:'triangle', freq: 1760, freq2: 1320, dur: 0.10, gain: 0.10 });
       _tone({ type:'square',   freq:  880, freq2:  660, dur: 0.08, gain: 0.05 });
     },
+    emptyClick() {
+      // Dry dud: short low-frequency thunk (no tone, just a muted noise click)
+      _tone({ type:'square', freq: 120, freq2: 60, dur: 0.05, gain: 0.07 });
+      _noiseBurst({ dur: 0.04, gain: 0.04, filterFreq: 600 });
+    },
     splitterPop() {
       // Wet pop: two-stage bass thump
       _tone({ type:'sine',     freq: 220, freq2:  80, dur: 0.16, gain: 0.18 });
@@ -1078,7 +1083,14 @@
   }
 
   function fireBullet() {
-    if (state.fireRounds <= 0) return;
+    if (state.fireRounds <= 0) {
+      // Empty-click feedback — flash the next-recharging slot red and play a dud SFX.
+      // Without this, hitting fire on an empty mag is silent and feels broken.
+      state.emptyFlash = 0.25;
+      sfx.emptyClick();
+      addShake(1.2);
+      return;
+    }
     const fx = player.x;
     const fy = player.y;
 
@@ -1393,6 +1405,17 @@
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
   if (lb.scopeSel) lb.scopeSel.addEventListener('change', renderLeaderboard);
+
+  // In-game pause button — same target as the Esc/P key, but tappable for mobile
+  const pauseBtnEl = document.getElementById('pauseBtn');
+  if (pauseBtnEl) {
+    pauseBtnEl.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!state.running) return;
+      if (state.paused) resumeGameUI(); else pauseGameUI();
+    });
+  }
   ui.lbBtn.addEventListener('click', () => showLeaderboard());
 
   let modalAdFilled = false;
@@ -1754,6 +1777,7 @@
 
     state.time += dt;
     state.score += dt * 10;
+    if (state.emptyFlash > 0) state.emptyFlash = Math.max(0, state.emptyFlash - dt);
 
     // Theme cycle — every THEME_DURATION seconds, advance to the next era
     state.themeTimer += dt;
@@ -4436,20 +4460,25 @@
         ctx.fill();
         ctx.shadowBlur = 0;
       } else if (i === filled) {
-        // Recharging round — empty ring + arc showing progress
-        ctx.strokeStyle = 'rgba(255,204,102,0.25)';
-        ctx.lineWidth = 1.5;
+        // Recharging round — empty ring + arc showing progress.
+        // Empty-fire flash: tints this slot red briefly when player tried to fire on cooldown.
+        const flashing = (state.emptyFlash || 0) > 0 && filled === 0;
+        const ringCol = flashing ? `rgba(255, 80, 80, ${0.4 + state.emptyFlash * 2})` : 'rgba(255,204,102,0.25)';
+        ctx.strokeStyle = ringCol;
+        ctx.lineWidth = flashing ? 2 : 1.5;
+        if (flashing) { ctx.shadowColor = '#ff5050'; ctx.shadowBlur = 10; }
         ctx.beginPath();
         ctx.arc(x, y, dotR, 0, Math.PI * 2);
         ctx.stroke();
+        if (flashing) ctx.shadowBlur = 0;
 
         const progress = state.rechargeInterval > 0
           ? Math.min(1, state.rechargeTimer / state.rechargeInterval)
           : 0;
         if (progress > 0) {
-          ctx.strokeStyle = '#ffcc66';
+          ctx.strokeStyle = flashing ? '#ff8080' : '#ffcc66';
           ctx.lineWidth = 2;
-          ctx.shadowColor = '#ffcc66';
+          ctx.shadowColor = flashing ? '#ff5050' : '#ffcc66';
           ctx.shadowBlur = 6;
           ctx.beginPath();
           ctx.arc(x, y, dotR, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
