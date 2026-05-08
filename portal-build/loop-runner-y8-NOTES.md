@@ -5,14 +5,23 @@ build folder** so it can never accidentally leak into a submitted ZIP.
 
 ## Y8's monetization angle (why this build differs from CrazyGames)
 
-Y8 explicitly allows publishers to use their own AdSense via
-**AdSense for Platforms (AFP)**. This means:
-- AdSense scripts STAY in this build (unlike CrazyGames where they were
-  stripped out)
-- Funding Choices CMP STAYS in this build
+CrazyGames mandates stripping AdSense (their SDK serves ads). Y8 has been
+historically more lenient about devs keeping their own AdSense scripts
+inside the iframe — though this depends on Y8's current developer
+agreement, which can change. So this build keeps AdSense in the bundle:
+- AdSense scripts STAY (will fire if Y8 doesn't block them)
+- Funding Choices CMP STAYS
 - All three ad slots STAY (top banner, leaderboard modal, interstitial)
-- Revenue: full pub-id payout (typically a higher share than the standard
-  portal split)
+
+If Y8 blocks the AdSense scripts (likely — they typically want their own
+ad network to render), the bundle gracefully falls back to no-ad rendering
+and you collect Y8's revshare instead. If Y8 allows them, you collect full
+pub-id payout. Either way, keeping the scripts in costs nothing.
+
+NOTE: I previously called this "AdSense for Platforms (AFP)" — that was
+incorrect. AFP is a distinct Google partner program for platforms (like
+Y8 itself), NOT for individual game devs hosted on a platform. There is
+no "enable AFP" toggle in your AdSense console.
 
 ## What was stripped vs the live `playloop.run/index.html`
 - Site nav (`<nav id="site-nav">`) — Y8 wraps the page chrome
@@ -34,23 +43,27 @@ Y8 explicitly allows publishers to use their own AdSense via
 - Timeout-hardened fetch helper (5s on Supabase, 3s on geo)
 - Boss waves, theme cycle (every 3 min), personal history chart, live ticker
 
-## Pre-flight checklist (Y8 + AFP)
+## Pre-flight checklist (Y8 submission)
 
-**You must do this before submitting** — most of these are dashboard-only:
+There is no "enable AFP" toggle. The actual flow:
 
-1. Sign in to AdSense console at https://www.google.com/adsense/
-2. Find "Sites" → enable **AdSense for Platforms** for the
-   `loop-runner` (or whatever Y8 hosts this at) URL/domain. Wait for
-   approval (typically 1–3 business days).
-3. Once approved, AFP will start serving ads on Y8 with your pub-id.
-4. (Optional but recommended) Create dedicated slots in AdSense for the
-   three placements:
-   - `LOOPRUNNER_Y8_TOP_BANNER`
-   - `LOOPRUNNER_Y8_LEADERBOARD_MODAL`
-   - `LOOPRUNNER_Y8_INTERSTITIAL`
-   And swap the three `data-ad-slot="7067398117"` values in
+1. Create a developer account at https://www.y8.com/upload
+2. Upload the ZIP (recipe below)
+3. Read whatever monetization section appears in Y8's developer
+   dashboard / developer agreement at upload time. That tells you
+   which of these is true for your account:
+   - Y8 strips your AdSense and serves their own ads (most common) →
+     you accept their revshare. Bundle's AdSense becomes a no-op,
+     no harm.
+   - Y8 allows your AdSense to fire (less common) → your existing
+     pub-id collects normally.
+   - Y8 offers a separate monetization program (network/MCN) you opt
+     into during upload.
+4. (Optional) Create dedicated slots in AdSense for the three
+   placements (`TOP_BANNER`, `LEADERBOARD_MODAL`, `INTERSTITIAL`) and
+   swap the three `data-ad-slot="7067398117"` values in
    `portal-build/loop-runner-y8/index.html`. This gives per-placement
-   revenue reporting.
+   revenue reporting if your AdSense does end up firing on Y8.
 
 ## Local smoke-test
 
