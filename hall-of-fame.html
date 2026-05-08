@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hall of Fame — Loop Runner Daily Run Podiums</title>
+  <meta name="description" content="Daily Run podium archive — top 3 finishers from past Daily Runs in Loop Runner, going back through history." />
+  <link rel="canonical" href="https://playloop.run/hall-of-fame.html">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#0b0b10">
+  <meta property="og:title" content="Hall of Fame — Loop Runner Daily Run Podiums">
+  <meta property="og:description" content="Daily Run podium archive — top 3 finishers from past Daily Runs in Loop Runner.">
+  <meta property="og:url" content="https://playloop.run/hall-of-fame.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Playloop">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hall of Fame — Loop Runner Daily Run Podiums">
+  <meta name="twitter:description" content="Daily Run podium archive — top 3 finishers from past Daily Runs in Loop Runner.">
+  <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+
+  <!-- Consent Mode v2 (default denied) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent','default',{
+      'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'
+    });
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+  <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+  <script>
+    (function signalGooglefcPresent() {
+      if (!window.frames['googlefcPresent']) {
+        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+        document.body ? add() : setTimeout(signalGooglefcPresent,0);
+      }
+    })();
+  </script>
+
+  <style>
+    /* Page-specific layout for the podium archive */
+    .hof-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+      margin-top: 18px;
+    }
+    @media (min-width: 720px) { .hof-grid { grid-template-columns: 1fr 1fr; } }
+    .hof-card {
+      background: rgba(20,20,28,.72);
+      border: 1px solid #2e3240;
+      border-radius: 14px;
+      padding: 14px 16px;
+      transition: border-color .2s ease;
+    }
+    .hof-card:hover { border-color: #4a4f60; }
+    .hof-card .date {
+      font-size: 13px; opacity: .75; margin-bottom: 6px;
+      letter-spacing: .3px; text-transform: uppercase;
+    }
+    .hof-card .today { color: #88ffcc; font-weight: 700; }
+    .hof-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.08);
+    }
+    .hof-row:last-child { border-bottom: 0; }
+    .hof-medal {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .hof-medal.gold   { background: linear-gradient(135deg,#ffd700,#b8860b); color:#1a1300; box-shadow:0 0 12px rgba(255,215,0,.4); }
+    .hof-medal.silver { background: linear-gradient(135deg,#d0d0d8,#8a8a96); color:#1a1c20; box-shadow:0 0 8px rgba(208,208,216,.3); }
+    .hof-medal.bronze { background: linear-gradient(135deg,#cd7f32,#8b4513); color:#1a0d05; box-shadow:0 0 8px rgba(205,127,50,.3); }
+    .hof-name { flex: 1; font-weight: 600; }
+    .hof-loc  { opacity: .6; font-size: 12px; margin-left: 6px; }
+    .hof-score { font-variant-numeric: tabular-nums; font-weight: 700; color: #c9d1d9; }
+    .hof-empty {
+      opacity: .5; font-size: 13px; padding: 8px 0;
+    }
+    .hof-loading { opacity: .6; padding: 24px; text-align: center; }
+    .hof-error { opacity: .8; padding: 18px; text-align: center; color: #ff6b6b; }
+    .hof-summary { margin: 8px 0 0 0; opacity: .8; font-size: 13px; }
+  </style>
+</head>
+
+<body>
+  <!-- Top Ad -->
+  <!-- AdSense placement: TOP_BANNER -->
+  <div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+    <ins class="adsbygoogle"
+         style="display:block; text-align:center;"
+         data-ad-client="ca-pub-3857946786580406"
+         data-ad-slot="7067398117"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+  </div>
+
+  <nav id="site-nav">
+    <span class="brand">Playloop</span> ·
+    <a href="/">Home</a> ·
+    <a href="/how-to-play.html">How to Play</a> ·
+    <a href="/hall-of-fame.html">Hall of Fame</a> ·
+    <a href="/updates.html">Updates</a> ·
+    <a href="/about.html">About</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a>
+  </nav>
+  <div id="ad-spacer"></div>
+
+  <main>
+    <section class="container">
+      <div class="hero">
+        <h1>Hall of Fame</h1>
+        <p>
+          A rolling archive of Loop Runner's <strong>Daily Run</strong> podiums. Each day, every player races
+          the same seed — same enemy patterns, same pickups, same timing — so scores are directly comparable.
+          The top three finishers from each completed day are recorded here.
+        </p>
+        <p class="hof-summary" id="hofSummary">Loading podiums…</p>
+      </div>
+
+      <div id="hofGrid" class="hof-grid">
+        <div class="hof-loading">Fetching past Daily Runs…</div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <a href="/" class="cta cta--primary">▶ Play Today's Daily Run</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a href="/about.html">About</a> •
+    <a href="/how-to-play.html">How to Play</a> •
+    <a href="/hall-of-fame.html">Hall of Fame</a> •
+    <a href="/updates.html">Updates</a> •
+    <a href="/privacy.html">Privacy Policy</a> •
+    <a href="/terms.html">Terms</a>
+  </footer>
+
+  <script>
+    /* ====== Hall of Fame fetch + render ======
+     * Pulls recent Daily Run scores from Supabase, groups by submission date,
+     * picks top 3 per day, renders newest-first. Pure client-side — no
+     * scheduled job needed. fetchWithTimeout-style abort in case the host hangs.
+     */
+    const SB_URL = 'https://azaqjxovkewurgbecizs.supabase.co/rest/v1/scores';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YXFqeG92a2V3dXJnYmVjaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNzAxNzAsImV4cCI6MjA2MTk0NjE3MH0.JMjXtiomb2qhiCoGo9JgDPqTKWWPGQSoOH34F-5b6SQ';
+    const SB_HEADERS = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+
+    function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeoutMs);
+      return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(id));
+    }
+
+    function dateKey(iso) {
+      // Group by UTC date so all submissions on the same daily seed land in the same bucket.
+      const d = new Date(iso);
+      return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    }
+
+    function prettyDate(key) {
+      const today = new Date().toISOString().slice(0, 10);
+      const d = new Date(key + 'T00:00:00Z');
+      const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      const human = d.toLocaleDateString(undefined, opts);
+      return key === today ? '<span class="today">TODAY</span> · ' + human : human;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
+
+    async function loadHallOfFame() {
+      const grid = document.getElementById('hofGrid');
+      const summary = document.getElementById('hofSummary');
+      try {
+        const params = new URLSearchParams();
+        params.append('select', 'name,score,country,created_at');
+        params.append('mode', 'eq.daily');
+        params.append('order', 'created_at.desc');
+        params.append('limit', '500'); // pulls up to ~500 most recent daily submissions; group client-side
+
+        const r = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 8000);
+        if (!r.ok) throw new Error('REST ' + r.status);
+        const rows = await r.json();
+
+        if (!rows.length) {
+          grid.innerHTML = '<div class="hof-empty">No Daily Run scores yet. Be the first to set a podium!</div>';
+          summary.textContent = '';
+          return;
+        }
+
+        // Bucket by submission date, keep top 3 score per bucket
+        const byDate = new Map();
+        for (const row of rows) {
+          const key = dateKey(row.created_at);
+          if (!byDate.has(key)) byDate.set(key, []);
+          byDate.get(key).push(row);
+        }
+        const buckets = [...byDate.entries()]
+          .map(([k, list]) => {
+            list.sort((a, b) => b.score - a.score);
+            return { key: k, top: list.slice(0, 3) };
+          })
+          .sort((a, b) => b.key.localeCompare(a.key)); // newest first
+
+        const totalDays = buckets.length;
+        const totalSubs = rows.length;
+        summary.textContent = `${totalDays} ${totalDays === 1 ? 'day' : 'days'} archived · ${totalSubs} Daily Run scores`;
+
+        const medals = ['gold', 'silver', 'bronze'];
+        grid.innerHTML = buckets.map(b => {
+          const isToday = b.key === new Date().toISOString().slice(0, 10);
+          const rowsHtml = b.top.map((entry, i) => {
+            const country = entry.country && entry.country !== 'XX' ? entry.country : '';
+            return `
+              <div class="hof-row">
+                <span class="hof-medal ${medals[i]}">${i + 1}</span>
+                <span class="hof-name">${escapeHtml(entry.name || 'anon')}${country ? `<span class="hof-loc">${escapeHtml(country)}</span>` : ''}</span>
+                <span class="hof-score">${Number(entry.score).toLocaleString()}</span>
+              </div>`;
+          }).join('');
+          // Pad with empty rows if fewer than 3 (so card heights are consistent)
+          const padHtml = Array.from({ length: 3 - b.top.length }, (_, idx) => {
+            const i = b.top.length + idx;
+            return `
+              <div class="hof-row">
+                <span class="hof-medal ${medals[i]}" style="opacity:.3;">${i + 1}</span>
+                <span class="hof-name" style="opacity:.4;">—</span>
+                <span class="hof-score" style="opacity:.4;">—</span>
+              </div>`;
+          }).join('');
+          return `
+            <div class="hof-card">
+              <div class="date">${prettyDate(b.key)}</div>
+              ${rowsHtml}${padHtml}
+            </div>`;
+        }).join('');
+      } catch (err) {
+        console.error('Hall of Fame fetch failed:', err);
+        grid.innerHTML = '<div class="hof-error">Couldn\'t load podiums right now. Try again in a minute.</div>';
+        summary.textContent = '';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadHallOfFame);
+  </script>
+</body>
+</html>
