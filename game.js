@@ -813,7 +813,7 @@
       params.append('limit', '100');
       // Filter by mode for fairer comparison
       params.append('mode', `eq.${state.dailyMode ? 'daily' : 'normal'}`);
-      const r = await fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS });
+      const r = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 5000);
       if (r.ok) {
         const rows = await r.json();
         runFlags.topScores = rows.map(x => x.score | 0).filter(s => s > 0);
@@ -1263,7 +1263,7 @@
     lb.table.innerHTML = '<tr><td colspan="5" style="opacity:.5; text-align:center; padding:18px;">Loading…</td></tr>';
     lb.info.textContent = 'Worldwide Top 10';
 
-    fetch(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS })
+    fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 5000)
       .then(res => {
         if (!res.ok) throw new Error('REST ' + res.status);
         return res.json();
@@ -1309,10 +1309,10 @@
       const rankParams = new URLSearchParams();
       rankParams.append('select', 'id');
       rankParams.append('score', `gt.${userBestVal}`);
-      fetch(`${SB_URL}?${rankParams.toString()}`, {
+      fetchWithTimeout(`${SB_URL}?${rankParams.toString()}`, {
         method: 'HEAD',
         headers: { ...SB_HEADERS, 'Prefer': 'count=exact', 'Range': '0-0' }
-      })
+      }, 5000)
         .then(r => {
           const range = r.headers.get('content-range');
           if (!range) return;
@@ -1373,17 +1373,29 @@
     }
   }
 
+  /* ====== Network helper ======
+   * fetch() with a hard timeout via AbortController. Without this, a fetch can hang
+   * indefinitely if the host blocks the request silently (no error, just no response) —
+   * which makes the game look broken to portal reviewers on QA networks.
+   */
+  function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(id));
+  }
+
   /* ====== Geolocation via IP ====== */
   let userCountry = 'XX'; // Default fallback
-  
+
   async function detectUserLocation() {
     try {
-      // Try ipapi.co first (free, no key required)
-      const response = await fetch('https://ipapi.co/json/', {
+      // Try ipapi.co first (free, no key required) — short timeout so a blocked host
+      // doesn't leave userCountry stuck on 'XX' for the whole session via a hung fetch.
+      const response = await fetchWithTimeout('https://ipapi.co/json/', {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
-      });
-      
+      }, 3000);
+
       if (response.ok) {
         const data = await response.json();
         if (data.country_code && data.country_code.length === 2) {
@@ -1394,7 +1406,7 @@
     } catch (e) {
       // Fallback to ipinfo.io
       try {
-        const response = await fetch('https://ipinfo.io/json');
+        const response = await fetchWithTimeout('https://ipinfo.io/json', {}, 3000);
         if (response.ok) {
           const data = await response.json();
           if (data.country && data.country.length === 2) {
@@ -1404,7 +1416,6 @@
         }
       } catch (e2) {
         // Final fallback - keep default 'XX'
-        console.log('Could not detect location, using default');
       }
     }
   }
