@@ -90,6 +90,9 @@
     themeIdx: 0,
     themeTimer: 0,
     themeCyclesCompleted: 0, // # of full revolutions through all themes
+    // Game-over canvas freeze — keep rendering for ~1.5s after death so the burst finishes,
+    // then stop entirely so the GPU doesn't keep redrawing under the leaderboard modal.
+    deathFreezeTimer: 0,
   };
 
   /* ====== Theme system — visual era rotates every 3 min ====== */
@@ -1457,6 +1460,7 @@
     state.themeIdx = 0;
     state.themeTimer = 0;
     state.themeCyclesCompleted = 0;
+    state.deathFreezeTimer = 0;
 
     player.x = W / 2;
     player.y = H / 2;
@@ -1474,6 +1478,7 @@
   function gameOver() {
     state.running = false;
     state.paused = false;
+    state.deathFreezeTimer = 1.5; // play out the burst, then freeze the canvas
     document.body.classList.remove('playing');
     const score = state.score | 0;
     let isPB = false;
@@ -1627,7 +1632,42 @@
     let dt = Math.min(0.05, (t - last) / 1000);
     last = t;
 
-    if (!state.running || state.paused) {
+    // Game-over freeze: let the death VFX finish for ~1.5s, then stop redrawing
+    // entirely. The canvas keeps the last frame statically (browsers don't auto-clear),
+    // so the GPU goes idle under the leaderboard modal instead of redrawing 60fps.
+    if (!state.running) {
+      if (state.deathFreezeTimer > 0) {
+        state.deathFreezeTimer = Math.max(0, state.deathFreezeTimer - dt);
+        // Keep updating particles/shards/flashes/shockwaves so the death burst plays out
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.98; p.vy *= 0.98;
+          if (p.life <= 0) { particles.splice(i, 1); i--; }
+        }
+        for (let i = 0; i < shards.length; i++) {
+          const s = shards[i];
+          s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= 0.96; s.vy *= 0.96; s.rot += s.vrot * dt;
+          if (s.life <= 0) { shards.splice(i, 1); i--; }
+        }
+        for (let i = 0; i < flashes.length; i++) {
+          const f = flashes[i];
+          f.life -= dt; f.r = f.maxR * (1 - f.life / f.maxLife);
+          if (f.life <= 0) { flashes.splice(i, 1); i--; }
+        }
+        for (let i = 0; i < shockwaves.length; i++) {
+          const s = shockwaves[i];
+          s.life -= dt; s.r += (s.maxR - s.r) * 6 * dt;
+          if (s.life <= 0) { shockwaves.splice(i, 1); i--; }
+        }
+        if (effects.shake > 0) effects.shake = Math.max(0, effects.shake - effects.shake * 8 * dt - 0.05);
+        if (effects.flash > 0) effects.flash = Math.max(0, effects.flash - effects.flash * 6 * dt - 0.01);
+        render();
+      }
+      // After freeze window expires we skip render entirely — the canvas holds its last frame
+      // and the leaderboard modal sits cleanly on top with no GPU churn underneath.
+      return;
+    }
+    if (state.paused) {
       render();
       return;
     }
@@ -3254,49 +3294,43 @@
       return;
     }
     if (e.type === 'swarmer') {
-      // Bat — small with flapping wings
+      // Bat — simpler 4-vertex wings, single shadow pass (spawns in waves so per-bat cost matters)
       const flap = Math.sin(e.age * 18);
       const heading = Math.atan2(e.vy || 0.001, e.vx || 0.001);
       ctx.save();
       ctx.translate(e.x, e.y); ctx.rotate(heading);
-      ctx.shadowColor = '#aa3366'; ctx.shadowBlur = 8;
-      // Wings (flapping membrane)
+      ctx.shadowColor = '#aa3366'; ctx.shadowBlur = 5;
       ctx.fillStyle = '#2a0a1a'; ctx.strokeStyle = '#aa3366'; ctx.lineWidth = 1.2;
       const wingY = r * (0.55 + flap * 0.40);
+      // Top wing
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(-r * 0.35,  wingY);
-      ctx.lineTo(-r * 0.55,  wingY * 0.5);
-      ctx.lineTo(-r * 0.85,  wingY * 0.7);
-      ctx.lineTo(-r * 0.65,  wingY * 0.20);
-      ctx.lineTo(-r * 0.95,  wingY * 0.10);
-      ctx.lineTo(-r * 0.30,  r * 0.10);
+      ctx.lineTo(-r * 0.30,  wingY);
+      ctx.lineTo(-r * 0.85,  wingY * 0.30);
+      ctx.lineTo(-r * 0.30,  r * 0.05);
       ctx.closePath(); ctx.fill(); ctx.stroke();
+      // Bottom wing
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(-r * 0.35, -wingY);
-      ctx.lineTo(-r * 0.55, -wingY * 0.5);
-      ctx.lineTo(-r * 0.85, -wingY * 0.7);
-      ctx.lineTo(-r * 0.65, -wingY * 0.20);
-      ctx.lineTo(-r * 0.95, -wingY * 0.10);
-      ctx.lineTo(-r * 0.30, -r * 0.10);
+      ctx.lineTo(-r * 0.30, -wingY);
+      ctx.lineTo(-r * 0.85, -wingY * 0.30);
+      ctx.lineTo(-r * 0.30, -r * 0.05);
       ctx.closePath(); ctx.fill(); ctx.stroke();
-      // Body + head
+      // Body
       ctx.fillStyle = '#3a0a14';
       ctx.beginPath(); ctx.ellipse(0, 0, r * 0.45, r * 0.30, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      // Pointed ears
-      ctx.fillStyle = '#3a0a14';
+      // Two ears in one path (less state churn)
       ctx.beginPath();
       ctx.moveTo( r * 0.35, -r * 0.20); ctx.lineTo( r * 0.30, -r * 0.50); ctx.lineTo( r * 0.20, -r * 0.20);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath();
       ctx.moveTo( r * 0.35,  r * 0.20); ctx.lineTo( r * 0.30,  r * 0.50); ctx.lineTo( r * 0.20,  r * 0.20);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      // Glowing red eyes
-      ctx.shadowColor = '#ff2200'; ctx.shadowBlur = 6;
+      ctx.fill(); ctx.stroke();
+      // Eyes — solid red dots, no extra shadow pass
+      ctx.shadowBlur = 0;
       ctx.fillStyle = '#ff4422';
-      ctx.beginPath(); ctx.arc(r * 0.30, -r * 0.10, r * 0.05, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(r * 0.30,  r * 0.10, r * 0.05, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(r * 0.30, -r * 0.10, r * 0.05, 0, Math.PI * 2);
+      ctx.arc(r * 0.30,  r * 0.10, r * 0.05, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
       return;
     }
@@ -3336,12 +3370,12 @@
       drawOrbiterBarrel(e, r, '#ddccff');
       return;
     }
-    // Grunt — Skull, slow rotation
+    // Grunt — Skull. One shadow pass total. Most-spawned enemy, every cycle counts.
     const fill = speedToColor(e.speed);
     ctx.save();
     ctx.translate(e.x, e.y);
     ctx.rotate(e.age * 0.5);
-    ctx.shadowColor = fill; ctx.shadowBlur = 10;
+    ctx.shadowColor = fill; ctx.shadowBlur = 6;
     // Cranium
     ctx.fillStyle = '#e8e0d4'; ctx.strokeStyle = '#3a3028'; ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -3353,15 +3387,15 @@
     ctx.lineTo(-r * 0.40, r * 0.55);
     ctx.lineTo(-r * 0.65, r * 0.50);
     ctx.closePath(); ctx.fill(); ctx.stroke();
-    // Eye sockets — glowing
-    ctx.shadowColor = fill; ctx.shadowBlur = 8;
-    ctx.fillStyle = fill;
+    // Drop shadow blur for the rest — cheap interior details
+    ctx.shadowBlur = 0;
+    // Eye sockets (no glow pass — just dark holes with bright pupil)
+    ctx.fillStyle = '#1a1410';
     ctx.beginPath(); ctx.arc(-r * 0.35, -r * 0.15, r * 0.20, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc( r * 0.35, -r * 0.15, r * 0.20, 0, Math.PI * 2); ctx.fill();
-    // Inner pupils
-    ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(-r * 0.35, -r * 0.15, r * 0.07, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc( r * 0.35, -r * 0.15, r * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = fill;
+    ctx.beginPath(); ctx.arc(-r * 0.35, -r * 0.15, r * 0.10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc( r * 0.35, -r * 0.15, r * 0.10, 0, Math.PI * 2); ctx.fill();
     // Nose triangle
     ctx.fillStyle = '#3a3028';
     ctx.beginPath();
@@ -3369,14 +3403,14 @@
     ctx.lineTo(-r * 0.08, r * 0.30);
     ctx.lineTo( r * 0.08, r * 0.30);
     ctx.closePath(); ctx.fill();
-    // Teeth (vertical lines on lower jaw)
+    // Teeth — single path with all 5 strokes (one beginPath/stroke instead of 5)
     ctx.strokeStyle = '#3a3028'; ctx.lineWidth = 1;
+    ctx.beginPath();
     for (let i = -2; i <= 2; i++) {
-      ctx.beginPath();
       ctx.moveTo(i * r * 0.13, r * 0.55);
       ctx.lineTo(i * r * 0.13, r * 0.85);
-      ctx.stroke();
     }
+    ctx.stroke();
     ctx.restore();
   }
   /* ====== MYTHICAL theme ====== */
@@ -3672,30 +3706,25 @@
     }
     if (e.type === 'charger') {
       drawChargerAimLine(e);
-      let head = '#ffcc44', edge = '#ffe066', glow = '#ffcc44', glowBlur = 14;
-      if (e.chargeState === 'aim')       { head = '#ff8866'; edge = '#ffaa66'; glow = '#ff8866'; glowBlur = 24; }
-      else if (e.chargeState === 'dash') { head = '#ff3300'; edge = '#ffaa44'; glow = '#ff3300'; glowBlur = 30; }
+      let head = '#ffcc44', edge = '#ffe066', glow = '#ffcc44', glowBlur = 8;
+      if (e.chargeState === 'aim')       { head = '#ff8866'; edge = '#ffaa66'; glow = '#ff8866'; glowBlur = 16; }
+      else if (e.chargeState === 'dash') { head = '#ff3300'; edge = '#ffaa44'; glow = '#ff3300'; glowBlur = 22; }
       const heading = (e.chargeState === 'aim' || e.chargeState === 'dash') ? e.aimAng : Math.atan2(e.vy, e.vx);
       ctx.save();
       ctx.translate(e.x, e.y); ctx.rotate(heading);
-      // Comet tail — long fading stripe behind
-      ctx.shadowColor = glow; ctx.shadowBlur = glowBlur;
-      const grad = ctx.createLinearGradient(0, 0, -r * 2.5, 0);
-      grad.addColorStop(0, edge);
-      grad.addColorStop(0.5, 'rgba(255,200,80,0.4)');
-      grad.addColorStop(1, 'rgba(255,200,80,0)');
-      ctx.fillStyle = grad;
+      // Comet tail — solid additive triangle (no per-frame gradient alloc)
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = 'rgba(255,200,80,0.45)';
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.30);
-      ctx.lineTo(-r * 2.2, -r * 0.10);
-      ctx.lineTo(-r * 2.5,  0);
-      ctx.lineTo(-r * 2.2,  r * 0.10);
+      ctx.lineTo(-r * 2.5, 0);
       ctx.lineTo(0,  r * 0.30);
       ctx.closePath(); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
       // Comet head — bright core
+      ctx.shadowColor = glow; ctx.shadowBlur = glowBlur;
       ctx.fillStyle = head; ctx.strokeStyle = edge; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      // Inner hot core
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#ffffff';
       ctx.beginPath(); ctx.arc(0, 0, r * 0.25, 0, Math.PI * 2); ctx.fill();
@@ -3730,23 +3759,21 @@
       return;
     }
     if (e.type === 'swarmer') {
-      // Meteor — small rock with fiery trail
+      // Meteor — small rock with fiery trail (solid additive triangle, no per-frame gradient)
       const heading = Math.atan2(e.vy || 0.001, e.vx || 0.001);
       ctx.save();
       ctx.translate(e.x, e.y); ctx.rotate(heading);
-      ctx.shadowColor = '#ff8844'; ctx.shadowBlur = 14;
       // Trail
-      const grad = ctx.createLinearGradient(0, 0, -r * 1.5, 0);
-      grad.addColorStop(0, 'rgba(255,200,80,0.85)');
-      grad.addColorStop(1, 'rgba(255,80,40,0)');
-      ctx.fillStyle = grad;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = 'rgba(255,180,70,0.55)';
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.40);
       ctx.lineTo(-r * 1.5, 0);
       ctx.lineTo(0, r * 0.40);
       ctx.closePath(); ctx.fill();
-      // Rocky body — irregular polygon
-      ctx.shadowBlur = 0;
+      ctx.globalCompositeOperation = 'source-over';
+      // Rocky body
+      ctx.shadowColor = '#ff8844'; ctx.shadowBlur = 6;
       ctx.fillStyle = '#5a4030'; ctx.strokeStyle = '#2a1810'; ctx.lineWidth = 1.2;
       ctx.beginPath();
       const pts = [[0.5, -0.3], [0.3, -0.5], [-0.2, -0.4], [-0.4, -0.1], [-0.3, 0.3], [0.1, 0.5], [0.45, 0.25], [0.55, -0.05]];
@@ -3754,7 +3781,7 @@
         if (i === 0) ctx.moveTo(r * px, r * py); else ctx.lineTo(r * px, r * py);
       });
       ctx.closePath(); ctx.fill(); ctx.stroke();
-      // Crater highlights
+      ctx.shadowBlur = 0;
       ctx.fillStyle = '#3a2820';
       ctx.beginPath(); ctx.arc(r * 0.10, r * 0.05, r * 0.10, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.20, r * 0.08, 0, Math.PI * 2); ctx.fill();
@@ -3809,31 +3836,23 @@
       drawOrbiterBarrel(e, r, '#ddccaa');
       return;
     }
-    // Grunt — Asteroid (irregular polygon with craters)
+    // Grunt — Asteroid (irregular polygon with craters). Lower blur — this is the most-spawned enemy.
     const fill = speedToColor(e.speed);
     ctx.save();
     ctx.translate(e.x, e.y);
     ctx.rotate(e.age * 0.4);
-    ctx.shadowColor = fill; ctx.shadowBlur = 10;
-    ctx.fillStyle = '#5a4a3a'; ctx.strokeStyle = '#2a1810'; ctx.lineWidth = 1.4;
+    ctx.shadowColor = fill; ctx.shadowBlur = 6;
+    ctx.fillStyle = '#5a4a3a'; ctx.strokeStyle = fill; ctx.lineWidth = 1.4;
     ctx.beginPath();
     const pts = [[1.0, -0.2], [0.7, -0.7], [0.0, -0.95], [-0.7, -0.65], [-1.05, -0.05], [-0.85, 0.55], [-0.30, 1.0], [0.45, 0.85], [0.95, 0.40]];
     pts.forEach(([px, py], i) => {
       if (i === 0) ctx.moveTo(r * px, r * py); else ctx.lineTo(r * px, r * py);
     });
     ctx.closePath(); ctx.fill(); ctx.stroke();
-    // Craters
+    // Craters (no blur)
     ctx.shadowBlur = 0; ctx.fillStyle = '#3a2820';
     ctx.beginPath(); ctx.arc( r * 0.10, -r * 0.15, r * 0.18, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(-r * 0.40,  r * 0.30, r * 0.14, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc( r * 0.40,  r * 0.45, r * 0.10, 0, Math.PI * 2); ctx.fill();
-    // Speed-tinted edge highlight
-    ctx.strokeStyle = fill; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(r * 0.95, r * 0.40);
-    ctx.lineTo(r * 1.0, -r * 0.2);
-    ctx.lineTo(r * 0.7, -r * 0.7);
-    ctx.stroke();
     ctx.restore();
   }
   /* ====== GLITCH theme — datamoshed shapes with RGB shifts ====== */
