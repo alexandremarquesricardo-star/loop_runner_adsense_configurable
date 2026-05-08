@@ -175,6 +175,7 @@
     scoreMilestones: new Set(),
     rankTiersHit: new Set(),
     comboMilestones: new Set(),
+    bossesSpawned: new Set(),   // score thresholds at which we already spawned a boss this run
     firedLame: new Set(),       // which lame triggers already fired this run
     topScores: [],
     firstSeen: new Set(),       // enemy types encountered this run (for one-shot banner)
@@ -569,6 +570,45 @@
     { rank:   1, text: '#1 WORLDWIDE',        tier: 'epic'  },
   ];
 
+  /* ====== Boss waves ======
+   * At each score threshold, spawn a single tougher enemy with multi-HP,
+   * larger radius, and a dramatic intro banner. Bosses use existing enemy
+   * AI (charger/shielder/orbiter) so behavior is familiar — just chunkier.
+   */
+  const BOSS_THRESHOLDS = [
+    { score:  5000, hp:  8, name: 'BOSS' },
+    { score: 15000, hp: 12, name: 'BOSS' },
+    { score: 30000, hp: 18, name: 'FINAL BOSS' },
+  ];
+  function spawnBoss(cfg) {
+    const types = ['charger', 'shielder', 'orbiter'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    spawnSingleEnemy(type);
+    const e = enemies[enemies.length - 1];
+    if (!e) return;
+    e.r *= 2.4;
+    e.hp = cfg.hp;
+    e.maxHp = cfg.hp;
+    e.scoreMul = (e.scoreMul || 1) * 6;
+    e.isBoss = true;
+    // Slow them down a touch so they don't insta-overwhelm at 2.4x scale
+    e.vx *= 0.55; e.vy *= 0.55;
+    if (e.dashSpeed) e.dashSpeed *= 0.7;
+    pushBanner(cfg.name + ' WAVE INCOMING', 'epic', 3.0);
+    addFlash(0.4, '255,80,80');
+    addShake(15);
+    addShockwave(e.x, e.y, '#ff4422', 220, 0.7, 6);
+  }
+  function maybeSpawnBoss() {
+    const score = state.score | 0;
+    for (const cfg of BOSS_THRESHOLDS) {
+      if (score >= cfg.score && !runFlags.bossesSpawned.has(cfg.score)) {
+        runFlags.bossesSpawned.add(cfg.score);
+        spawnBoss(cfg);
+      }
+    }
+  }
+
   function checkRecordTriggers() {
     const score = state.score | 0;
 
@@ -579,6 +619,8 @@
         pushBanner(m.text, m.tier);
       }
     }
+
+    maybeSpawnBoss();
 
     // Personal best (using snapshot from run-start)
     const pbToBeat = state.dailyMode ? runFlags.dailyPbAtStart : runFlags.pbAtStart;
@@ -1456,6 +1498,7 @@
     runFlags.scoreMilestones.clear();
     runFlags.rankTiersHit.clear();
     runFlags.comboMilestones.clear();
+    runFlags.bossesSpawned.clear();
     runFlags.firstSeen.clear();
     runFlags.firedLame.clear();
     fetchTopScoresForFlags();
@@ -1824,6 +1867,7 @@
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
       e.age += dt;
+      if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt);
 
       // ── Per-type movement ────────────────────────────────────────────────
       if (e.type === 'charger') {
@@ -1980,6 +2024,26 @@
           bullets.splice(j, 1);
           j--;
         }
+
+        // Damage layer: most enemies are 1-HP so this branches the same as before.
+        // Bosses spawn with hp > 1 and survive multiple hits with feedback VFX.
+        e.hp = (e.hp || 1) - 1;
+        if (e.hp > 0) {
+          // Non-lethal hit — sparkle, brief tint flash, knockback nudge.
+          e.hitFlash = 0.12;
+          for (let k = 0; k < 6; k++) {
+            addParticle(b.x, b.y, '#ffffff', rnd(1, 2.2), rnd(0.15, 0.30), 80, 220);
+          }
+          addShockwave(b.x, b.y, '#ffeeaa', 14, 0.16, 2);
+          // Tiny knockback in the bullet's travel direction
+          const sp = Math.hypot(b.vx, b.vy) || 1;
+          e.vx = (e.vx || 0) + (b.vx / sp) * 30;
+          e.vy = (e.vy || 0) + (b.vy / sp) * 30;
+          addShake(1.5);
+          if (sfx.shieldBounce) sfx.shieldBounce(); // reuse the "ping" sound for hits
+          continue;
+        }
+
         enemies.splice(i, 1);
         i--;
         killed = true;
@@ -4596,7 +4660,36 @@
     }
 
     // Enemies
-    for (const e of enemies) drawEnemy(e);
+    for (const e of enemies) {
+      drawEnemy(e);
+      // Hit-flash overlay — brief white tint after a non-lethal hit
+      if (e.hitFlash > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = e.hitFlash * 4; // peaks at 0.48 right after a hit
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r * 1.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      // HP bar — only for multi-HP enemies (bosses)
+      if (e.maxHp && e.maxHp > 1) {
+        const barW = e.r * 2.2;
+        const barH = 5;
+        const bx = e.x - barW / 2;
+        const by = e.y - e.r - 14;
+        const pct = Math.max(0, e.hp / e.maxHp);
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = pct > 0.5 ? '#88ffcc' : (pct > 0.25 ? '#ffcc44' : '#ff4422');
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 8;
+        ctx.fillRect(bx, by, barW * pct, barH);
+        ctx.restore();
+      }
+    }
 
     // Enemy projectiles (drawn under player bullets so player shots read on top)
     drawEnemyBullets();
