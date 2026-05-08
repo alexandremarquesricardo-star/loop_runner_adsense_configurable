@@ -1245,6 +1245,7 @@
     modal: $('#lbModal'),
     close: $('#lbClose'),
     modeSel: $('#lbMode'),
+    scopeSel: $('#lbScope'),
     info: $('#lbInfo'),
     table: $('#lbTable').querySelector('tbody'),
     userBest: $('#lbUserBest'),
@@ -1285,6 +1286,9 @@
 
   function renderLeaderboard() {
     const mode = lb.modeSel.value;
+    const scope = lb.scopeSel ? lb.scopeSel.value : 'world';
+    // Country scope is meaningless if we never resolved a country code → fall back to worldwide.
+    const useCountry = scope === 'country' && userCountry && userCountry !== 'XX';
     const userBestVal = mode === 'daily'
       ? Number(getLS('lr_daily', 0))
       : Number(getLS('lr_best', 0));
@@ -1301,9 +1305,12 @@
     params.append('select', 'name,score,country');
     params.append('order', 'score.desc');
     params.append('limit', '10');
+    if (useCountry) params.append('country', `eq.${userCountry}`);
 
     lb.table.innerHTML = '<tr><td colspan="5" style="opacity:.5; text-align:center; padding:18px;">Loading…</td></tr>';
-    lb.info.textContent = 'Worldwide Top 10';
+    if (useCountry)             lb.info.textContent = `Top 10 in ${userCountry}`;
+    else if (scope === 'country') lb.info.textContent = 'Worldwide Top 10 (country unknown — showing world)';
+    else                         lb.info.textContent = 'Worldwide Top 10';
 
     fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 5000)
       .then(res => {
@@ -1351,6 +1358,7 @@
       const rankParams = new URLSearchParams();
       rankParams.append('select', 'id');
       rankParams.append('score', `gt.${userBestVal}`);
+      if (useCountry) rankParams.append('country', `eq.${userCountry}`);
       fetchWithTimeout(`${SB_URL}?${rankParams.toString()}`, {
         method: 'HEAD',
         headers: { ...SB_HEADERS, 'Prefer': 'count=exact', 'Range': '0-0' }
@@ -1360,7 +1368,8 @@
           if (!range) return;
           const total = parseInt(range.split('/')[1], 10);
           if (!isNaN(total)) {
-            lb.userRank.textContent = `· Rank #${total + 1}`;
+            const suffix = useCountry ? ` in ${userCountry}` : '';
+            lb.userRank.textContent = `· Rank #${total + 1}${suffix}`;
           }
         })
         .catch(() => { /* silent */ });
@@ -1383,6 +1392,7 @@
 
   lb.close.addEventListener('click', hideLeaderboard);
   lb.modeSel.addEventListener('change', renderLeaderboard);
+  if (lb.scopeSel) lb.scopeSel.addEventListener('change', renderLeaderboard);
   ui.lbBtn.addEventListener('click', () => showLeaderboard());
 
   let modalAdFilled = false;
