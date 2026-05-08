@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Loop Runner Updates & Changelog</title>
-  <meta name="description" content="Track Loop Runner releases, improvements, and balance tweaks." />
+  <title>Loop Runner Devlog — Updates, Releases & Changelog</title>
+  <meta name="description" content="Loop Runner devlog: behind-the-scenes notes on new themes, boss waves, vector enemy designs, leaderboard additions, and balance tweaks." />
   <link rel="canonical" href="https://playloop.run/updates.html">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
-  <meta property="og:title" content="Loop Runner Updates & Changelog">
-  <meta property="og:description" content="Track Loop Runner releases, improvements, and balance tweaks.">
+  <meta property="og:title" content="Loop Runner Devlog — Updates, Releases & Changelog">
+  <meta property="og:description" content="Loop Runner devlog: behind-the-scenes notes on new themes, boss waves, vector enemy designs, leaderboard additions, and balance tweaks.">
   <meta property="og:url" content="https://playloop.run/updates.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
@@ -17,10 +17,17 @@
   <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Loop Runner — neon vector arcade game with 8 rotating themes, boss waves, and a Daily Run leaderboard.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Loop Runner Updates & Changelog">
-  <meta name="twitter:description" content="Track Loop Runner releases, improvements, and balance tweaks.">
+  <meta name="twitter:title" content="Loop Runner Devlog — Updates, Releases & Changelog">
+  <meta name="twitter:description" content="Loop Runner devlog: behind-the-scenes notes on new themes, boss waves, vector enemy designs, leaderboard additions, and balance tweaks.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <meta name="twitter:image:alt" content="Loop Runner — neon vector arcade game with 8 rotating themes, boss waves, and a Daily Run leaderboard.">
+
+  <!-- BlogPosting JSON-LD per devlog entry — eligible for Google's article rich-result treatment -->
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"BlogPosting","headline":"Eight rotating themes, vector enemy redesign, and boss waves","datePublished":"2026-05-08","dateModified":"2026-05-08","author":{"@type":"Organization","name":"Playloop"},"publisher":{"@type":"Organization","name":"Playloop","logo":{"@type":"ImageObject","url":"https://playloop.run/looprunner-preview.png"}},"image":"https://playloop.run/looprunner-preview.png","mainEntityOfPage":"https://playloop.run/updates.html","description":"Replaced the abstract enemy circles with custom vector creatures, added an 8-theme cycle (Jurassic, Cyberpunk, Deep Sea, Underworld, Mythical, Cosmic, Glitch, Steampunk) that rotates every 3 minutes, and introduced boss waves at score milestones."},{"@type":"BlogPosting","headline":"Hall of Fame archive, country leaderboards, and UX polish","datePublished":"2026-05-08","dateModified":"2026-05-08","author":{"@type":"Organization","name":"Playloop"},"publisher":{"@type":"Organization","name":"Playloop","logo":{"@type":"ImageObject","url":"https://playloop.run/looprunner-preview.png"}},"image":"https://playloop.run/looprunner-preview.png","mainEntityOfPage":"https://playloop.run/updates.html","description":"Daily Run podiums now archive forever in the Hall of Fame. Leaderboard gains a country scope. Auto-pick upgrades, mobile pause button, hardened network calls, and a post-death canvas freeze for snappier endings."}]}
+  </script>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -73,9 +80,75 @@
 <main class="container">
 
 <section class="hero">
-  <h1>Updates & Changelog</h1>
-  <p>Release notes and improvements for Loop Runner. Latest first.</p>
+  <h1>Loop Runner Devlog</h1>
+  <p>Release notes, balance tweaks, and behind-the-scenes design notes. Latest first.</p>
 </section>
+
+<article>
+  <h2>2026-05-08 — Eight rotating themes, vector enemy redesign, and boss waves</h2>
+  <p>
+    The biggest visual overhaul since launch. Every enemy in the game has been redrawn from scratch as a custom vector creature, and a new <strong>theme cycle</strong> rotates the whole cast every three minutes through eight distinct eras.
+  </p>
+  <h3>The eight themes (in cycle order)</h3>
+  <ul>
+    <li><strong>Jurassic</strong> — T-Rex, Triceratops, Velociraptor, Ankylosaurus, Pterosaur, Dilophosaurus.</li>
+    <li><strong>Cyberpunk</strong> — neon-vector sci-fi: 8-pointed star, alien cell, predator dart, hex hull, drone, eye-turret.</li>
+    <li><strong>Deep Sea</strong> — jellyfish, pufferfish, shark, hermit crab, piranha, anglerfish (with a glowing lure).</li>
+    <li><strong>Underworld</strong> — skull, bubbling cauldron, horned demon, tombstone, bat, sad ghost.</li>
+    <li><strong>Mythical</strong> — goblin with a club, hydra, lance-charging knight, plate-armor knight, fairy with a star wand, wizard's eye orb.</li>
+    <li><strong>Cosmic</strong> — asteroid, black hole, comet, ringed planet, meteor, satellite with a tracking dish.</li>
+    <li><strong>Glitch</strong> — RGB-split shapes, datamoshed cursor, encrypted hex cube, surveillance camera.</li>
+    <li><strong>Steampunk</strong> — cogwheel, ticking clockwork bomb, steam locomotive, riveted iron cube, brass dirigible, mechanical iris-aperture eye.</li>
+  </ul>
+  <p>
+    Survive the full 24-minute revolution and a special <em>"You've circled all themes"</em> banner fires.
+  </p>
+  <h3>Boss waves</h3>
+  <p>
+    At score milestones <strong>5,000</strong>, <strong>15,000</strong>, and <strong>30,000</strong> a single tougher enemy spawns: 2.4× the size of a regular foe, 8–18 HP (visible HP bar above the body), and 6× score reward. The boss inherits a random AI archetype from charger / shielder / orbiter, so what you fight changes per run — and theme-renders for free, so a 30k boss in Glitch is a giant RGB-split datamoshed cursor while in Steampunk it's a 2.4× brass mechanical iris-aperture eye.
+  </p>
+  <h3>Player ship</h3>
+  <p>
+    Replaced the white player dot with a custom-drawn <strong>vector dart-ship</strong>. Smooth-rotates to face the cursor, banks slightly into hard turns, fires a continuous mint-green particle thrust trail, and an animated flame plume off the engine. Bullets are now comet streaks oriented along velocity instead of round dots.
+  </p>
+  <h3>Death VFX upgrade</h3>
+  <p>
+    Kills now eject 6–9 spinning triangular debris shards in the enemy's core color, after a brief pre-burst white flash pulse — the same flash-then-debris microbeat AAA games use to make explosions feel weighty.
+  </p>
+</article>
+
+<article>
+  <h2>2026-05-08 — Hall of Fame, country leaderboards, and UX polish</h2>
+  <p>
+    A run of smaller features that all hit on the same day.
+  </p>
+  <h3>Hall of Fame</h3>
+  <p>
+    The new <a href="/hall-of-fame.html">Hall of Fame</a> page archives the top 3 finishers from every Daily Run, going back through history. Gold/silver/bronze medals, today highlighted, summary chip showing total days archived. Pure client-side — fetches the latest 500 daily submissions, buckets them by date, picks the podium per day.
+  </p>
+  <h3>Country leaderboards</h3>
+  <p>
+    The leaderboard modal grew a Scope select. Switch between Worldwide and Your Country — country is detected from the same IP geolocation already used to flag scores. Daily and country scopes combine cleanly. If geolocation is blocked or unresolved, country scope falls back to worldwide with a hint.
+  </p>
+  <h3>Upgrade picks now auto-apply</h3>
+  <p>
+    The roguelite upgrade modal that popped at score thresholds (Ring Burst, Pierce, Quick Reload, etc.) was forcing players to move the cursor to click a card — which then teleported the player into wherever you clicked, often into an enemy. Upgrades now silently roll a random one from the pool you haven't maxed, applied with a banner + flash + shake. No interruption, cursor stays where you left it.
+  </p>
+  <h3>Mobile pause button</h3>
+  <p>
+    Added a 48×48px ⏸ button bottom-left during play. Mobile players had no Esc/P key — pausing was desktop-only.
+  </p>
+  <h3>Other polish</h3>
+  <ul>
+    <li><strong>Personal history chart</strong> in the leaderboard modal — last 20 runs as scaled bars, mint for Normal mode and gold for Daily.</li>
+    <li><strong>Live ticker</strong> at the top of the leaderboard — "🔥 anon just scored 4,230 in PT" notifications fade in/out as new scores land.</li>
+    <li><strong>Empty-fire feedback</strong> — firing on an empty mag now plays a dud SFX and pulses the recharging slot red.</li>
+    <li><strong>Network hardening</strong> — leaderboard, rank, and geo fetches now timeout in 3–5s and fall through to local cache instead of hanging if a network blocker silently drops a request.</li>
+    <li><strong>Post-death canvas freeze</strong> — 1.5s after dying, the render loop returns without redrawing. GPU goes idle under the leaderboard modal instead of repainting frozen state at 60fps.</li>
+    <li><strong>Performance fixes</strong> — cosmic and underworld themes were causing slowdowns / browser freezes from per-frame gradient allocations and stacked shadow-blur passes on high-spawn enemies. Both rewritten to solid additive triangles and single shadow passes.</li>
+  </ul>
+</article>
+
 <article>
   <h2>2025-11-12 — Content & Policy Pages</h2>
   <ul>

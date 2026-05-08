@@ -17,10 +17,12 @@
   <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Loop Runner — neon vector arcade game with 8 rotating themes, boss waves, and a Daily Run leaderboard.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Loop Runner — Free Browser Action Game | Playloop.run">
   <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game with 8 rotating themes (Jurassic, Cyberpunk, Deep Sea & more), Daily Runs, and boss waves. Play instantly, no downloads.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <meta name="twitter:image:alt" content="Loop Runner — neon vector arcade game with 8 rotating themes, boss waves, and a Daily Run leaderboard.">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -53,8 +55,10 @@
     /* Ensure form controls are typeable */
     #overlay input, #overlay select, #overlay button { pointer-events:auto; }
 
-    /* Lock page scrolling only on the game page */
-    body.game { overflow:hidden; }
+    /* Lock page scrolling only while a run is in progress.
+       Before play (start overlay visible) and after game over the page scrolls
+       so visitors can read the features section / FAQ below the canvas. */
+    body.game.playing { overflow:hidden; }
   </style>
 
   <!-- Structured Data (JSON-LD) -->
@@ -123,6 +127,34 @@
       <div class="alert" role="note">
         <strong>Tip:</strong> Right-click or tap to fire (3 rounds, auto-recharge). Drag to move on touch. Space to restart, P/Esc to pause.
       </div>
+
+      <!-- Features section — gives crawlers real content to index on a canvas-only homepage -->
+      <section style="margin-top: 24px;">
+        <h2>What's in Loop Runner</h2>
+        <ul>
+          <li><strong>Eight rotating themes.</strong> The whole cast of enemies redraws every three minutes — Jurassic dinosaurs, cyberpunk drones, deep-sea anglerfish, underworld demons, mythical knights, cosmic comets, glitch corruption, and steampunk clockwork. Survive the full 24-minute revolution to unlock the "circled all themes" reward banner.</li>
+          <li><strong>Boss waves.</strong> At score milestones (5,000 / 15,000 / 30,000) a single tougher enemy spawns: 2.4× the normal size, with a visible HP bar, drawn in whatever theme is currently active.</li>
+          <li><strong>Daily Run.</strong> A shared daily seed — every player faces the same enemy patterns, pickups, and timing. Compete head-to-head on the daily leaderboard and check yesterday's podium in the <a href="/hall-of-fame.html">Hall of Fame</a>.</li>
+          <li><strong>Roguelite upgrades.</strong> Crossing score thresholds auto-grants a random upgrade from a pool: Ring Burst, Piercing Rounds, Quick Reload, Heavy Caliber, Time Warp, Powerup Magnet, and more.</li>
+          <li><strong>Worldwide and country leaderboards.</strong> Submit your name and country once; rankings update live. Switch the leaderboard scope to your country to chase a local podium.</li>
+          <li><strong>Plays anywhere.</strong> Mouse + right-click on desktop, touch + tap on mobile, on-screen pause for both.</li>
+        </ul>
+
+        <h2>How to play</h2>
+        <p>
+          Move the mouse to steer your ship — it follows the cursor. Right-click to fire (3 rounds, auto-recharging). Chain kills to build a combo multiplier, dodge what you can't shoot, and keep the chain alive for exponential score. Full control reference and tips on the <a href="/how-to-play.html">How to Play</a> page.
+        </p>
+
+        <h2>Frequently asked</h2>
+        <h3>Is Loop Runner free?</h3>
+        <p>Yes — fully free, no downloads, no accounts. A leaderboard submission only asks for a display name.</p>
+        <h3>Does it work on mobile?</h3>
+        <p>Yes. Drag with one finger to move; tap with a second finger to fire. The on-screen pause button is in the bottom-left.</p>
+        <h3>What's a "Daily Run"?</h3>
+        <p>A shared seed regenerates each day. Every Daily Run player faces identical enemies in the same order at the same speed, so the leaderboard rewards skill rather than luck. Yesterday's top 3 are archived in the <a href="/hall-of-fame.html">Hall of Fame</a>.</p>
+        <h3>Why are there bosses and themes?</h3>
+        <p>To keep long runs interesting. The <a href="/updates.html">devlog</a> covers the full design rationale.</p>
+      </section>
     </section>
   </main>
 
