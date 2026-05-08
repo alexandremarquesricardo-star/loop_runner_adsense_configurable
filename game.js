@@ -1262,8 +1262,111 @@
     table: $('#lbTable').querySelector('tbody'),
     userBest: $('#lbUserBest'),
     userScore: $('#lbUserScore'),
-    userRank: $('#lbUserRank')
+    userRank: $('#lbUserRank'),
+    history: $('#lbHistory'),
+    historyChart: $('#lbHistoryChart'),
+    historyStat: $('#lbHistoryStat'),
+    ticker: $('#lbTicker'),
+    tickerText: $('#lbTickerText'),
   };
+
+  /* ====== Live ticker — pseudo-realtime via polling ======
+   * Polls the latest 5 scores every 12s while the leaderboard modal is open.
+   * Any score newer than the last seen timestamp is announced in the ticker
+   * (rotated through one-by-one with a short fade). This avoids needing
+   * Supabase Realtime publication enabled on the table — same UX, no infra.
+   */
+  let tickerPoll = null;
+  let tickerLastSeenTs = 0;
+  let tickerQueue = [];
+  let tickerActive = false;
+
+  async function pollTickerOnce() {
+    try {
+      const params = new URLSearchParams();
+      params.append('select', 'name,score,country,created_at');
+      params.append('order', 'created_at.desc');
+      params.append('limit', '5');
+      const res = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 4000);
+      if (!res.ok) return;
+      const rows = await res.json();
+      // Newest-first → flip to chronological for the ticker
+      const fresh = rows
+        .filter(r => {
+          const t = r.created_at ? Date.parse(r.created_at) : 0;
+          return t > tickerLastSeenTs;
+        })
+        .reverse();
+      if (fresh.length === 0) return;
+      tickerLastSeenTs = Math.max(tickerLastSeenTs, ...fresh.map(r => Date.parse(r.created_at) || 0));
+      // Skip the first poll (would dump the whole top 5 at modal-open)
+      if (tickerLastSeenTs && tickerQueue.length < 30 && !pollTickerOnce.firstDone) {
+        pollTickerOnce.firstDone = true;
+        return;
+      }
+      pollTickerOnce.firstDone = true;
+      for (const r of fresh) tickerQueue.push(r);
+      pumpTicker();
+    } catch { /* ignore — ticker is decorative */ }
+  }
+  function pumpTicker() {
+    if (tickerActive || !lb.ticker) return;
+    const next = tickerQueue.shift();
+    if (!next) return;
+    tickerActive = true;
+    const loc = next.country && next.country !== 'XX' ? ` in ${next.country}` : '';
+    const name = (next.name || 'anon').toString().slice(0, 20);
+    lb.tickerText.textContent = `🔥 ${name} just scored ${Number(next.score).toLocaleString()}${loc}`;
+    lb.ticker.style.display = 'block';
+    lb.ticker.style.opacity = '0';
+    requestAnimationFrame(() => { lb.ticker.style.transition = 'opacity .25s'; lb.ticker.style.opacity = '0.9'; });
+    setTimeout(() => {
+      lb.ticker.style.opacity = '0';
+      setTimeout(() => {
+        tickerActive = false;
+        if (tickerQueue.length > 0) pumpTicker();
+        else lb.ticker.style.display = 'none';
+      }, 280);
+    }, 3200);
+  }
+  function startTicker() {
+    if (tickerPoll) return;
+    pollTickerOnce.firstDone = false;
+    pollTickerOnce();                                  // initial poll seeds tickerLastSeenTs
+    tickerPoll = setInterval(pollTickerOnce, 12000);
+  }
+  function stopTicker() {
+    if (tickerPoll) clearInterval(tickerPoll);
+    tickerPoll = null;
+    tickerQueue.length = 0;
+    tickerActive = false;
+    if (lb.ticker) lb.ticker.style.display = 'none';
+  }
+
+  // Personal-history chart — last 20 runs from localStorage as scaled bars.
+  function renderHistory() {
+    if (!lb.history) return;
+    let runs = [];
+    try { runs = JSON.parse(getLS('lr_history', '[]')) || []; } catch { runs = []; }
+    if (runs.length === 0) {
+      lb.history.style.display = 'none';
+      return;
+    }
+    lb.history.style.display = 'block';
+    const max = Math.max(...runs.map(r => r.score), 1);
+    const best = runs.reduce((m, r) => Math.max(m, r.score), 0);
+    const avg = Math.round(runs.reduce((s, r) => s + r.score, 0) / runs.length);
+    lb.historyStat.textContent = `best ${best.toLocaleString()} · avg ${avg.toLocaleString()} · ${runs.length} runs`;
+    lb.historyChart.innerHTML = '';
+    for (const r of runs) {
+      const h = Math.max(2, Math.round((r.score / max) * 44));
+      const bar = document.createElement('div');
+      bar.style.cssText = `flex:1; min-width:6px; max-width:18px; height:${h}px; border-radius:2px 2px 0 0; background:${r.mode === 'daily' ? '#ffd700' : '#88ffcc'}; box-shadow:0 0 4px ${r.mode === 'daily' ? 'rgba(255,215,0,.4)' : 'rgba(136,255,204,.4)'};`;
+      const when = new Date(r.ts).toLocaleString();
+      bar.title = `${r.mode === 'daily' ? 'Daily' : 'Normal'} · ${r.score.toLocaleString()} pts\n${when}`;
+      lb.historyChart.appendChild(bar);
+    }
+  }
 
   function loadLB(key) {
     try {
@@ -1288,12 +1391,15 @@
   function showLeaderboard(mode) {
     lb.modal.classList.add('show');
     lb.modeSel.value = mode || (state.dailyMode ? 'daily' : 'normal');
+    renderHistory();
     renderLeaderboard();
+    startTicker();
     maybeFillModalAd();
   }
 
   function hideLeaderboard() {
     lb.modal.classList.remove('show');
+    stopTicker();
   }
 
   function renderLeaderboard() {
@@ -1569,6 +1675,14 @@
     document.body.classList.remove('playing');
     const score = state.score | 0;
     let isPB = false;
+
+    // Persist this run to local history (last 20). Used by the personal-history chart in the LB modal.
+    try {
+      const hist = JSON.parse(getLS('lr_history', '[]')) || [];
+      hist.push({ score, mode: state.dailyMode ? 'daily' : 'normal', ts: Date.now() });
+      while (hist.length > 20) hist.shift();
+      setLS('lr_history', JSON.stringify(hist));
+    } catch { /* ignore — history is decorative */ }
     
     if (state.dailyMode) {
       if (score > state.dailyBest) {

@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Loop Runner — Free Browser Action Game | Playloop.run</title>
-  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required." />
+  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game with 8 rotating themes (Jurassic, Cyberpunk, Deep Sea & more), Daily Runs, and boss waves. Play instantly, no downloads." />
   <link rel="canonical" href="https://playloop.run/">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
   <meta property="og:title" content="Loop Runner — Free Browser Action Game | Playloop.run">
-  <meta property="og:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required.">
+  <meta property="og:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game with 8 rotating themes (Jurassic, Cyberpunk, Deep Sea & more), Daily Runs, and boss waves. Play instantly, no downloads.">
   <meta property="og:url" content="https://playloop.run/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Playloop">
@@ -19,7 +19,7 @@
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Loop Runner — Free Browser Action Game | Playloop.run">
-  <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game. Play instantly, no downloads required.">
+  <meta name="twitter:description" content="Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game with 8 rotating themes (Jurassic, Cyberpunk, Deep Sea & more), Daily Runs, and boss waves. Play instantly, no downloads.">
   <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico">
@@ -59,7 +59,7 @@
 
   <!-- Structured Data (JSON-LD) -->
   <script type="application/ld+json">
-{"@context": "https://schema.org", "@type": "VideoGame", "name": "Loop Runner", "url": "https://playloop.run/", "image": "https://playloop.run/looprunner-preview.png", "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game you can play instantly.", "inLanguage": "en", "applicationCategory": "Game", "operatingSystem": "Web", "gamePlatform": "Browser", "playMode": ["SinglePlayer"], "publisher": {"@type": "Organization", "name": "Playloop"}, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}}
+{"@context": "https://schema.org", "@type": "VideoGame", "name": "Loop Runner", "url": "https://playloop.run/", "image": "https://playloop.run/looprunner-preview.png", "description": "Dash, chain, and climb the leaderboard in Loop Runner — a free, fast-paced browser action game with 8 rotating themes (Jurassic, Cyberpunk, Deep Sea, Underworld, Mythical, Cosmic, Glitch, Steampunk), Daily Runs, and boss waves.", "genre": ["Action", "Arcade", "Skill"], "keywords": "action, arcade, skill, reflex, leaderboard, daily, boss, browser game, free", "inLanguage": "en", "applicationCategory": "Game", "operatingSystem": "Web", "gamePlatform": "Browser", "playMode": ["SinglePlayer"], "publisher": {"@type": "Organization", "name": "Playloop"}, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}}
   </script>
 
   <!-- Consent / Ads / CMP (unchanged) -->
@@ -214,6 +214,18 @@
       </div>
       <div id="lbUserBest" style="display:none; margin:0 0 12px 0; padding:10px 14px; background:rgba(108,207,255,.08); border:1px solid rgba(108,207,255,.25); border-radius:12px; font-size:14px;">
         <strong>Your best:</strong> <span id="lbUserScore">—</span><span id="lbUserRank" style="opacity:.85; margin-left:8px;"></span>
+      </div>
+      <!-- Personal history chart — last 20 runs (localStorage only, no backend) -->
+      <div id="lbHistory" style="display:none; margin:0 0 12px 0; padding:10px 14px; background:rgba(255,204,102,.06); border:1px solid rgba(255,204,102,.20); border-radius:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+          <strong style="font-size:13px;">Your last runs</strong>
+          <span id="lbHistoryStat" style="opacity:.7; font-size:11px;"></span>
+        </div>
+        <div id="lbHistoryChart" style="display:flex; align-items:flex-end; gap:4px; height:48px;"></div>
+      </div>
+      <!-- Live ticker — recently posted scores fade in/out at the top of the table area -->
+      <div id="lbTicker" style="display:none; min-height:22px; margin:4px 0 8px 0; padding:6px 10px; background:rgba(108,207,255,.06); border:1px dashed rgba(108,207,255,.20); border-radius:8px; font-size:12px; opacity:.85;">
+        <span id="lbTickerText">·</span>
       </div>
       <table id="lbTable">
         <thead>
