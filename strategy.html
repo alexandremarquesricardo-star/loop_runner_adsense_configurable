@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loop Runner Strategy Guide — Scoring, Combos, Boss Tactics | Playloop</title>
+  <meta name="description" content="The complete Loop Runner strategy guide: combo theory, scoring math, boss wave tactics, milestone routing, Daily Run preparation, and the small habits that separate a 2,000-point run from a 30,000-point one." />
+  <link rel="canonical" href="https://playloop.run/strategy.html">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#0b0b10">
+  <meta property="og:title" content="Loop Runner Strategy Guide — Scoring, Combos, Boss Tactics">
+  <meta property="og:description" content="Combo theory, scoring math, boss tactics, Daily Run prep — the deep strategy guide for Loop Runner.">
+  <meta property="og:url" content="https://playloop.run/strategy.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Playloop">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Loop Runner — neon vector arcade game with 8 rotating themes, boss waves, and a Daily Run leaderboard.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Loop Runner Strategy Guide — Scoring, Combos, Boss Tactics">
+  <meta name="twitter:description" content="Combo theory, scoring math, boss tactics, Daily Run prep — the deep strategy guide for Loop Runner.">
+  <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Loop Runner Strategy Guide — Scoring, Combos, Boss Tactics","author":{"@type":"Organization","name":"Playloop"},"publisher":{"@type":"Organization","name":"Playloop","logo":{"@type":"ImageObject","url":"https://playloop.run/looprunner-preview.png"}},"datePublished":"2026-05-17","dateModified":"2026-05-17","image":"https://playloop.run/looprunner-preview.png","mainEntityOfPage":"https://playloop.run/strategy.html","description":"The complete strategy guide for Loop Runner: combo theory, scoring math, boss tactics, Daily Run preparation, and habits that separate top runs from average ones."}
+  </script>
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+  <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+  <script>
+    (function signalGooglefcPresent() {
+      if (!window.frames['googlefcPresent']) {
+        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+        document.body ? add() : setTimeout(signalGooglefcPresent,0);
+      }
+    })();
+  </script>
+  <script>
+    (function(){
+      var nav = document.getElementById('site-nav');
+      if(nav){
+        var h = nav.offsetHeight || 44;
+        document.documentElement.style.setProperty('--navH', h + 'px');
+        setTimeout(function(){
+          var h2 = nav.offsetHeight || h;
+          document.documentElement.style.setProperty('--navH', h2 + 'px');
+        }, 200);
+      }
+    })();
+  </script>
+
+  <script async src="https://plausible.io/js/pa-R-jYP4Qbw6euJBmD-xEM6.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="horizontal"
+       data-full-width-responsive="true"></ins>
+  <script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/strategy.html">Strategy</a> · <a href="/themes.html">Themes</a> · <a href="/power-ups.html">Power-ups</a> · <a href="/hall-of-fame.html">Hall of Fame</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a></nav>
+<div id="ad-spacer"></div>
+
+<main class="container">
+
+<section class="hero">
+  <h1>Loop Runner Strategy Guide</h1>
+  <p>
+    Everything you need to climb the leaderboard, written by the people who built the spawn tables. Combo math,
+    boss tactics, milestone routing, Daily Run preparation, and the small habits that separate a 2,000-point run
+    from a 30,000-point one. Last updated 17 May 2026.
+  </p>
+</section>
+
+<section>
+  <h2>The one rule that decides everything</h2>
+  <p>
+    Loop Runner looks like a shooter, but it scores like a rhythm game. Almost every high run is built on
+    a single principle: <strong>survive long enough for the multiplier to do the heavy lifting</strong>. The
+    raw kill values are small. The combo multiplier is enormous. A clean 60-kill chain at mid-game can be
+    worth more than the previous five minutes of casual shooting combined. Every other section of this
+    guide is a footnote to that idea.
+  </p>
+  <p>
+    If you take only one thing from this page: <em>don't break the chain unless you have to</em>. Don't
+    fire at a target you might miss. Don't dive after a power-up if the route in costs you a combo timer.
+    Don't go aggressive in a quiet spawn lull — let the next wave come to you. The chain is currency, and
+    you spend it by ending it.
+  </p>
+</section>
+
+<section>
+  <h2>How scoring actually works</h2>
+  <p>
+    Score in Loop Runner has three sources, in rough order of importance:
+  </p>
+  <ul>
+    <li><strong>Combo kills.</strong> Each kill grants a base value (varies by enemy archetype, roughly 10–80 points) multiplied by your current combo level. The combo level grows with consecutive kills inside a short decay window. Late-game multipliers in the 20× to 60× range are entirely normal once the chain is established.</li>
+    <li><strong>Passive survival.</strong> A small trickle of points accrues every second you're alive. It's deliberately tiny — measured in tens of points, not thousands — so that camping doesn't score. The number exists so a "no-kill" panic run still puts <em>something</em> on the board.</li>
+    <li><strong>Boss completion bonuses.</strong> Defeating a boss enemy at a milestone wave grants a large flat bonus (roughly 6× a normal kill at the current multiplier). A clean boss kill while the chain is hot is the single biggest one-shot point gain available.</li>
+  </ul>
+  <p>
+    The Greed upgrade further inflates kill values and the Critical Hits upgrade adds occasional 2× kill
+    spikes. Stacking both with a long combo is where four- and five-digit single-kill numbers come from.
+  </p>
+</section>
+
+<section>
+  <h2>Combo theory — the fundamentals</h2>
+
+  <h3>The decay window</h3>
+  <p>
+    After each kill a timer starts. Land another kill before it expires and the combo level goes up by
+    one; let it expire and the chain resets to zero. The exact decay length is short — you can feel it
+    more than count it — but it is deliberately long enough to dodge through a brief spawn gap. The
+    practical implication is that <em>spawn density</em>, not your fire rate, is what determines how
+    deep a chain can go. You can only chain enemies as fast as the game offers them.
+  </p>
+
+  <h3>Why long chains compound</h3>
+  <p>
+    The multiplier is approximately linear in chain depth: a 30-combo kill is worth roughly thirty times
+    a fresh kill. Across a 60-kill chain the <em>total</em> score earned is the sum 1+2+…+60, which is
+    1,830× base — not 60× base. That triangular growth is why a chain that lasts ninety seconds is so
+    much more than twice as valuable as one that lasts forty-five seconds.
+  </p>
+
+  <h3>Reading the decay timer</h3>
+  <p>
+    The combo HUD pill flickers and dims as the timer winds down. Train yourself to glance at it after
+    every kill. If it's dim, the next decision should be "find another target now," not "reposition for
+    a perfect angle." A messy combo kept alive scores higher than a clean run with three resets.
+  </p>
+
+  <h3>When to deliberately break combo</h3>
+  <p>
+    Almost never — but there are two cases:
+  </p>
+  <ul>
+    <li><strong>Lethal forced reset.</strong> If the only way to keep the chain alive is to drive into a
+    bullet stream you can't shoot through, take the reset. A dead run scores zero from that point on.</li>
+    <li><strong>Pre-boss reposition.</strong> If a boss wave is about to spawn and you're crowded against
+    a wall, sometimes it's better to let a one-second gap reset the chain so you can start clean from a
+    safe centre position. This is rare but worth knowing.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Magazine management</h2>
+  <p>
+    You have three rounds. They recharge on their own timer, one at a time. Beginners burn all three on
+    the first enemy they see and then dodge for a full second waiting for a reload. Strong players treat
+    the magazine like a budget:
+  </p>
+  <ul>
+    <li><strong>Never fire below one round.</strong> Always keep at least one round in reserve for an
+    emergency — the enemy you didn't see coming that needs killing right now.</li>
+    <li><strong>Time the recharge.</strong> Fire round one, dodge while round two refills, fire round
+    two, dodge, fire round three. This rhythm matches the spawn rate at low-to-mid score and never
+    leaves you helpless.</li>
+    <li><strong>Empty-fire is feedback, not punishment.</strong> An empty trigger pull plays a dud sound
+    and flashes the recharging slot red. It's there so you instantly know "I have nothing right now,
+    dodge instead." Use it as a check, not a habit.</li>
+  </ul>
+  <p>
+    The Quick Reload upgrade compresses the recharge timer; Heavy Caliber turns each round into a
+    one-shot kill on most non-boss enemies. Both change magazine economy dramatically — see the
+    <a href="/power-ups.html">Power-ups page</a> for synergies.
+  </p>
+</section>
+
+<section>
+  <h2>Boss waves — surviving the spikes</h2>
+  <p>
+    Bosses spawn at score milestones <strong>5,000</strong>, <strong>15,000</strong>, and
+    <strong>30,000</strong>. They are a single tougher enemy with 8–18 HP and 2.4× the visual size of a
+    normal foe. A boss inherits a random AI archetype, and which one you draw changes how you should
+    approach the fight:
+  </p>
+  <ul>
+    <li><strong>Charger.</strong> Closes the distance fast and tries to ram. The dodge is to circle
+    perpendicular to its incoming line — never strafe directly away, because it accelerates and you
+    don't. Fire on the approach, then break off as it passes.</li>
+    <li><strong>Shielder.</strong> Has a brief invulnerability window. Don't waste a magazine into the
+    shield; wait for the visual tell (a flicker, then it drops). Three rounds during the open window
+    chew its HP bar fast.</li>
+    <li><strong>Orbiter.</strong> Circles you at a fixed radius. Easiest archetype. Match its rotation,
+    keep firing, don't get distracted by the trash spawns that come in around it.</li>
+  </ul>
+  <p>
+    The boss is also the single biggest combo opportunity. The trash mobs that spawn alongside the
+    boss are your chain fuel — kill them on the approach so the boss kill itself lands while the
+    multiplier is at its peak. A 30k boss killed at combo 40 routinely scores more than the entire
+    pre-fight chain that fed it.
+  </p>
+</section>
+
+<section>
+  <h2>Milestone routing — the 5k / 15k / 30k arc</h2>
+
+  <h3>Opening (score 0–5,000)</h3>
+  <p>
+    Easy spawn density. Don't go for combo records yet — go for upgrade fuel. Most players will
+    auto-collect their first two roguelite upgrades in this window. The single best opening upgrade
+    is whichever one of <strong>Quick Reload</strong> or <strong>Piercing Rounds</strong> the random
+    roll gives you. Both make every later section easier. If you draw Ring Burst, lean into it
+    immediately — it carries you straight through the 5k boss.
+  </p>
+
+  <h3>Mid-game (5k–15k)</h3>
+  <p>
+    Spawn pressure ramps. This is where chains get long. Plant yourself near screen centre and let the
+    waves come to you instead of chasing them. Centre position means you can break either direction
+    when a bullet stream develops, and it's the only position the spawn algorithm guarantees offers a
+    target on every side within the decay window.
+  </p>
+  <p>
+    Theme rotation hits at the three-minute mark. The cast redraws but the gameplay rules don't
+    change. Don't panic when Cyberpunk drones suddenly turn into Deep Sea anglerfish mid-chain —
+    they hit boxes are nearly identical. The visual reset is the dangerous moment, not the
+    mechanical one.
+  </p>
+
+  <h3>Late game (15k–30k)</h3>
+  <p>
+    Density is intense. Two truths now apply: you cannot kill everything, and the chain doesn't care.
+    Focus on the closest threat and trust that the next target will appear inside the decay window.
+    Players who try to multi-task this section are the ones who die at 17,000.
+  </p>
+  <p>
+    The 15k boss is the make-or-break moment. A clean kill with combo 35+ usually means you'll see
+    30k. A messy kill at combo 5 means you're starting the back third from scratch.
+  </p>
+
+  <h3>End-game (30k+)</h3>
+  <p>
+    Past the 30k boss the spawn curve flattens slightly while difficulty stays high. This is the
+    "circle all themes" phase — survive the full 24-minute revolution to trigger the You've Circled
+    All Themes banner. By this point your build is locked in; the run is decided by reflex and
+    chain discipline, not by upgrades. The current published high scores live here.
+  </p>
+</section>
+
+<section>
+  <h2>Movement habits that compound</h2>
+
+  <h3>Centre bias</h3>
+  <p>
+    On a 16:9 canvas the geometric centre is the position with the most escape vectors. Drifting
+    toward a corner halves your options. Train yourself to return to centre between threats — even
+    when there's nothing visibly chasing you. The next spawn is always coming.
+  </p>
+
+  <h3>Lead the cursor</h3>
+  <p>
+    The player ship lerps toward the cursor rather than snapping. There's a small lag. Practised
+    players park the cursor slightly ahead of where they want to be, not where they are. This
+    matters most when threading a gap between two enemies — point at the far side of the gap, not
+    at the middle of it.</p>
+
+  <h3>Pre-aim on the boss</h3>
+  <p>
+    Bullets travel along your cursor vector at the moment of firing. The boss is large enough that
+    you almost can't miss with a centre-mass aim, but the trash enemies that spawn around it are
+    small. Park your cursor on the trash, fire, then snap to the boss only as a round comes off
+    cooldown.</p>
+</section>
+
+<section>
+  <h2>The Daily Run — a different game</h2>
+  <p>
+    The Daily Run uses a fixed seed shared by every player on a given day. Same enemies, same
+    pickups, same order, same timing. That changes the strategy entirely:
+  </p>
+  <ul>
+    <li><strong>The first attempt is reconnaissance.</strong> Treat it as a scouting run. You're
+    going to learn where the early boss spawns, which pickup appears at 1:30, where the first
+    nasty bullet pattern develops. Don't expect to leaderboard on attempt one.</li>
+    <li><strong>The second attempt sets the route.</strong> Now you know the layout, you can choose
+    a side to favour, pre-position for the first boss, and rehearse the harder transitions.</li>
+    <li><strong>The third attempt is for the score.</strong> Most podium runs come from the third
+    or fourth attempt, when route knowledge meets fresh reflexes.</li>
+  </ul>
+  <p>
+    The Daily Run also reveals which upgrade pools the seed offers — the same upgrade choices
+    arrive in the same order. If yesterday's pattern handed you Ring Burst at 4,500, today's
+    won't.</p>
+  <p>
+    Yesterday's top three finishers are permanently archived in the <a href="/hall-of-fame.html">Hall
+    of Fame</a>. The cutoff is 00:00 UTC.
+  </p>
+</section>
+
+<section>
+  <h2>Mobile play — adjustments that matter</h2>
+  <p>
+    The core game is identical on mobile, but the input model is different and that changes a few
+    tactical recommendations:
+  </p>
+  <ul>
+    <li><strong>Two-finger discipline.</strong> One thumb drags to move, the other taps to fire. A
+    fire-tap that lands inside your own movement-finger's drag zone will sometimes be misread as a
+    move. Keep the fire-thumb on the opposite half of the screen.</li>
+    <li><strong>Bigger lead distance.</strong> Touch input has more latency than mouse input on most
+    devices. Lead the cursor further than you would on desktop.</li>
+    <li><strong>Pause is your friend.</strong> The on-screen pause button (bottom-left, 48px) is
+    deliberately oversized. Use it. A pause to settle the grip is free; a death to fatigue costs
+    you everything.</li>
+    <li><strong>Avoid mobile data on first load.</strong> The game logic is small but the leaderboard
+    talks to a backend on submission. If you score a personal best on a flaky connection the score
+    will fall back to local cache instead of going up worldwide. Try to be on Wi-Fi for the run
+    you want recorded.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Diagnosing why a run died</h2>
+  <p>
+    After every death, ask one of three questions:
+  </p>
+  <ol>
+    <li><strong>Did I run out of magazine?</strong> If yes, you fired too early on a target you didn't
+    need to kill. Reserve rule applies — never below one round.</li>
+    <li><strong>Did I get cornered?</strong> If yes, you drifted off centre and ran out of vectors.
+    Centre bias is the cure.</li>
+    <li><strong>Did the chain die first?</strong> If the combo broke before you did, you'll see the
+    timer flicker out in the last few seconds before the death. That's a spawn-reading failure —
+    you weren't looking at the right part of the screen for the next target. Glance at the combo
+    pill more, the score pill less.</li>
+  </ol>
+  <p>
+    Three deaths in a row to the same cause is a habit. Two deaths in a row to different causes is
+    bad luck. Don't fix what isn't broken.</p>
+</section>
+
+<section>
+  <h2>Common mistakes by score band</h2>
+  <ul>
+    <li><strong>Sub-2,000 runs</strong> almost always die to magazine starvation. Fix: stop firing at
+    every target.</li>
+    <li><strong>2,000–8,000 runs</strong> almost always die to corner-camping. Fix: return to centre.</li>
+    <li><strong>8,000–15,000 runs</strong> usually die to the first boss. Fix: read the archetype tell
+    before committing.</li>
+    <li><strong>15,000–25,000 runs</strong> die to chain pressure — players try to kill everything
+    instead of accepting that some enemies must pass through. Fix: nearest threat first.</li>
+    <li><strong>25,000+ runs</strong> die to fatigue. Pause more.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Putting it together — a target run</h2>
+  <p>
+    A clean podium-shape run looks roughly like this in the leaderboard's per-minute breakdown
+    (you can see your own last 20 runs as bars inside the leaderboard modal):
+  </p>
+  <ul>
+    <li><strong>0:00–1:30:</strong> Light pressure, no risk, accumulate first upgrade. Score ≈ 1,500.</li>
+    <li><strong>1:30–3:00:</strong> First long chain develops. Pick up second upgrade. Score ≈ 5,000 —
+    boss spawns.</li>
+    <li><strong>3:00–4:30:</strong> Clean boss kill, fresh theme rotation, biggest chain of the run.
+    Score ≈ 12,000.</li>
+    <li><strong>4:30–6:00:</strong> 15k boss, pressure crests. Score ≈ 20,000.</li>
+    <li><strong>6:00–8:00:</strong> Late game grind, occasional resets. Score ≈ 30,000+.</li>
+  </ul>
+  <p>
+    If your runs end well before that arc completes, work backward through the score bands and fix
+    the habit that breaks first. Watching your own bars in the personal-history chart inside the
+    leaderboard modal is the single best feedback loop the game offers.</p>
+</section>
+
+<section>
+  <h2>Further reading</h2>
+  <ul>
+    <li><a href="/themes.html">Themes & enemy reference</a> — every enemy in every theme, with behaviour notes.</li>
+    <li><a href="/power-ups.html">Power-ups & upgrades</a> — the full roguelite pool with synergy notes.</li>
+    <li><a href="/how-to-play.html">How to Play</a> — the controls and basics, if you skipped them.</li>
+    <li><a href="/hall-of-fame.html">Hall of Fame</a> — yesterday's Daily Run podium and the archive.</li>
+  </ul>
+</section>
+
+<section style="margin-top: 32px;">
+  <a href="/" class="cta cta--primary">▶ Apply it &mdash; play a run</a>
+</section>
+
+</main>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/strategy.html">Strategy</a> •
+  <a href="/themes.html">Themes</a> •
+  <a href="/power-ups.html">Power-ups</a> •
+  <a href="/hall-of-fame.html">Hall of Fame</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loop Runner Themes & Enemy Reference — All 8 Eras | Playloop</title>
+  <meta name="description" content="The complete enemy field guide for Loop Runner — every creature in all 8 rotating themes (Jurassic, Cyberpunk, Deep Sea, Underworld, Mythical, Cosmic, Glitch, Steampunk), with behaviour notes, danger ratings, and tactical advice." />
+  <link rel="canonical" href="https://playloop.run/themes.html">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#0b0b10">
+  <meta property="og:title" content="Loop Runner Themes & Enemy Reference — All 8 Eras">
+  <meta property="og:description" content="Every enemy in every theme, with behaviour notes and tactical advice for Loop Runner.">
+  <meta property="og:url" content="https://playloop.run/themes.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Playloop">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://playloop.run/looprunner-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Loop Runner — neon vector arcade game with 8 rotating themes, boss waves, and a Daily Run leaderboard.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Loop Runner Themes & Enemy Reference — All 8 Eras">
+  <meta name="twitter:description" content="Every enemy in every theme, with behaviour notes and tactical advice.">
+  <meta name="twitter:image" content="https://playloop.run/looprunner-preview.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Loop Runner Themes & Enemy Reference","author":{"@type":"Organization","name":"Playloop"},"publisher":{"@type":"Organization","name":"Playloop","logo":{"@type":"ImageObject","url":"https://playloop.run/looprunner-preview.png"}},"datePublished":"2026-05-17","dateModified":"2026-05-17","image":"https://playloop.run/looprunner-preview.png","mainEntityOfPage":"https://playloop.run/themes.html","description":"The complete enemy field guide for Loop Runner, covering all 8 rotating themes with per-creature behaviour notes."}
+  </script>
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3857946786580406" crossorigin="anonymous"></script>
+  <script async src="https://fundingchoicesmessages.google.com/i/pub-3857946786580406?ers=1"></script>
+  <script>
+    (function signalGooglefcPresent() {
+      if (!window.frames['googlefcPresent']) {
+        function add(){const f=document.createElement('iframe');f.style='width:0;height:0;border:0;display:none';f.name='googlefcPresent';document.body.appendChild(f);}
+        document.body ? add() : setTimeout(signalGooglefcPresent,0);
+      }
+    })();
+  </script>
+  <script>
+    (function(){
+      var nav = document.getElementById('site-nav');
+      if(nav){
+        var h = nav.offsetHeight || 44;
+        document.documentElement.style.setProperty('--navH', h + 'px');
+        setTimeout(function(){
+          var h2 = nav.offsetHeight || h;
+          document.documentElement.style.setProperty('--navH', h2 + 'px');
+        }, 200);
+      }
+    })();
+  </script>
+
+  <style>
+    .theme-block { margin: 28px 0; padding: 18px 20px; background: rgba(20,20,28,.55); border: 1px solid #2e3240; border-radius: 14px; }
+    .theme-block h2 { margin-top: 4px; }
+    .theme-meta { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; letter-spacing: .4px; text-transform: uppercase; opacity: .8; background: rgba(108,207,255,.10); border: 1px solid rgba(108,207,255,.25); margin-left: 8px; vertical-align: middle; }
+    .enemy { margin: 14px 0; padding: 10px 14px; background: rgba(255,255,255,.025); border-left: 3px solid #4a4f60; border-radius: 6px; }
+    .enemy h3 { margin: 0 0 4px 0; font-size: 16px; }
+    .enemy .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; opacity: .85; }
+    .tag.chaser { background: rgba(255,120,120,.12); color: #ff9b9b; border: 1px solid rgba(255,120,120,.3); }
+    .tag.shielder { background: rgba(108,207,255,.12); color: #6ccfff; border: 1px solid rgba(108,207,255,.3); }
+    .tag.orbiter { background: rgba(204,153,255,.12); color: #cc99ff; border: 1px solid rgba(204,153,255,.3); }
+    .tag.shooter { background: rgba(255,204,102,.12); color: #ffcc66; border: 1px solid rgba(255,204,102,.3); }
+    .tag.swarm { background: rgba(136,255,204,.12); color: #88ffcc; border: 1px solid rgba(136,255,204,.3); }
+  </style>
+
+  <script async src="https://plausible.io/js/pa-R-jYP4Qbw6euJBmD-xEM6.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+<div id="ad-top-wrapper" role="region" aria-label="Advertisement">
+  <ins id="ad-top-unit" class="adsbygoogle"
+       style="display:block; text-align:center;"
+       data-ad-client="ca-pub-3857946786580406"
+       data-ad-slot="7067398117"
+       data-ad-format="horizontal"
+       data-full-width-responsive="true"></ins>
+  <script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+<nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/strategy.html">Strategy</a> · <a href="/themes.html">Themes</a> · <a href="/power-ups.html">Power-ups</a> · <a href="/hall-of-fame.html">Hall of Fame</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a></nav>
+<div id="ad-spacer"></div>
+
+<main class="container">
+
+<section class="hero">
+  <h1>Loop Runner Themes &amp; Enemy Reference</h1>
+  <p>
+    Loop Runner cycles through eight visual eras — every three minutes the entire enemy cast redraws
+    and replaces. Mechanics stay constant under the surface, but each theme tweaks the silhouettes,
+    sizes, and palette of the AI archetypes you face. This is the full field guide. Survive a full
+    24-minute revolution to trigger the <em>You've Circled All Themes</em> banner.
+  </p>
+  <p style="opacity:.8;font-size:14px;">
+    Each enemy below is tagged with its dominant behaviour: <span class="tag chaser">Chaser</span>
+    closes distance, <span class="tag orbiter">Orbiter</span> circles, <span class="tag shooter">Shooter</span>
+    fires projectiles, <span class="tag shielder">Shielder</span> has a brief invulnerable window,
+    <span class="tag swarm">Swarm</span> appears in groups.
+  </p>
+</section>
+
+<div class="theme-block">
+  <h2>1. Jurassic <span class="theme-meta">Minutes 0:00–3:00</span></h2>
+  <p>
+    The opening era. Earthy reds, ochres, and bone whites. Big silhouettes, slower individual movement,
+    relatively forgiving. Most players see Jurassic first and it shapes their muscle memory for the
+    whole run. If you can read its rhythms, the rest of the rotation is variations on the same theme.
+  </p>
+
+  <div class="enemy">
+    <h3>T-Rex <span class="tag chaser">Chaser</span></h3>
+    <p>The signature Jurassic enemy: large, bipedal, deliberate. Closes the distance in a near-straight line. Easy to dodge if you start moving early, easy to die to if you fixate on a far target and let one walk into your hitbox.</p>
+  </div>
+  <div class="enemy">
+    <h3>Triceratops <span class="tag chaser">Chaser</span></h3>
+    <p>Lower, wider hit shape than the T-Rex with a frontal horn arc. Behaves as a charger — once it commits to a direction it sticks with it. Strafe perpendicular to break its lock.</p>
+  </div>
+  <div class="enemy">
+    <h3>Velociraptor <span class="tag chaser">Chaser</span> <span class="tag swarm">Swarm</span></h3>
+    <p>Small, fast, comes in pairs or trios. The Jurassic theme's pressure source. A single raptor is trivial; three at once is the spawn pattern most likely to break an early chain. Prioritise the one closest to your trajectory.</p>
+  </div>
+  <div class="enemy">
+    <h3>Ankylosaurus <span class="tag shielder">Shielder</span></h3>
+    <p>Stocky, low, armoured. The shield archetype rolled in plate. One round bounces off the armour with a tell flicker — wait for the flicker to fade, then fire. Predictable, but it ruins magazine economy if you don't recognise it.</p>
+  </div>
+  <div class="enemy">
+    <h3>Pterosaur <span class="tag orbiter">Orbiter</span></h3>
+    <p>Flying. Circles at a wide radius instead of charging in. Match its rotation and you'll out-DPS it before it gets dangerous. Don't chase — let the orbit bring it into your line.</p>
+  </div>
+  <div class="enemy">
+    <h3>Dilophosaurus <span class="tag shooter">Shooter</span></h3>
+    <p>Holds its distance and spits projectile arcs. The first Jurassic enemy that can hurt you from off-screen. Treat it as priority kill — every other Jurassic enemy is reactive, this one is the only one actively making the screen worse.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>2. Cyberpunk <span class="theme-meta">Minutes 3:00–6:00</span></h2>
+  <p>
+    Pure neon vector. Magentas, cyans, electric whites. Sharp geometric silhouettes after Jurassic's
+    organic curves — the visual whiplash is intentional. Cyberpunk enemies are faster, smaller, and
+    more aggressive on average than the opener.
+  </p>
+
+  <div class="enemy">
+    <h3>8-Pointed Star <span class="tag orbiter">Orbiter</span></h3>
+    <p>Rotates as it travels. Small core inside a larger spinning frame — the hitbox is the core, not the points. Easy to mistime your shot if you aim for the spike. Centre-mass aim only.</p>
+  </div>
+  <div class="enemy">
+    <h3>Alien Cell <span class="tag chaser">Chaser</span> <span class="tag swarm">Swarm</span></h3>
+    <p>Pulsing organic shape, vaguely biological under all the neon. Spawns in clusters and moves as a loose flock. The flock's centre of mass is where the next two spawns are statistically most likely — clear it first.</p>
+  </div>
+  <div class="enemy">
+    <h3>Predator Dart <span class="tag chaser">Chaser</span></h3>
+    <p>Arrow silhouette. The fastest Cyberpunk enemy. It doesn't chase intelligently — it commits to a vector at spawn and rides it across the screen. Once you know that, it's predictable: just don't be where it's pointing.</p>
+  </div>
+  <div class="enemy">
+    <h3>Hex Hull <span class="tag shielder">Shielder</span></h3>
+    <p>Hexagonal armoured plate. Cyberpunk's shield archetype. The flicker tell on the hex is faster than the Ankylosaurus version — read the colour shift, not the geometry.</p>
+  </div>
+  <div class="enemy">
+    <h3>Drone <span class="tag shooter">Shooter</span></h3>
+    <p>Quadrotor silhouette with a small underslung weapon. Hovers at mid-range and fires tracking bolts. Priority kill — its projectiles seek your trajectory rather than your current position, which means they punish predictable movement harder than reactive movement.</p>
+  </div>
+  <div class="enemy">
+    <h3>Eye-Turret <span class="tag shooter">Shooter</span></h3>
+    <p>Stationary. The first stationary enemy of the rotation. It doesn't move toward you but it spawns inconveniently close and fires aimed shots in three-round bursts. Kill it on sight or accept that you're playing the next ten seconds around it.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>3. Deep Sea <span class="theme-meta">Minutes 6:00–9:00</span></h2>
+  <p>
+    Bioluminescent palette: teals, abyssal blues, pinpoint whites. The visual style mimics deep-water
+    visibility — high contrast on the creatures, dim everything else. Mechanically it's the trickiest
+    transition because the colour cues you learned in Cyberpunk no longer apply.
+  </p>
+
+  <div class="enemy">
+    <h3>Jellyfish <span class="tag orbiter">Orbiter</span></h3>
+    <p>Drifts. Translucent dome with trailing tendrils — the tendrils are decorative, the hitbox is the dome. Slow, predictable, almost a free combo target.</p>
+  </div>
+  <div class="enemy">
+    <h3>Pufferfish <span class="tag shielder">Shielder</span></h3>
+    <p>Inflates briefly into a spiked shield state. Wait for it to deflate. The puffed silhouette is huge and visually intimidating but it's only invulnerable mid-puff.</p>
+  </div>
+  <div class="enemy">
+    <h3>Shark <span class="tag chaser">Chaser</span></h3>
+    <p>Long body, fast straight-line approach. Deep Sea's T-Rex equivalent. Strafe early — its momentum carries it past you for an easy follow-up shot if you sidestep cleanly.</p>
+  </div>
+  <div class="enemy">
+    <h3>Hermit Crab <span class="tag shielder">Shielder</span></h3>
+    <p>Tucks into its shell to block damage, extends to move. The shell shimmer is the tell. Two shielders in one theme means Deep Sea punishes magazine waste harder than other themes — be patient.</p>
+  </div>
+  <div class="enemy">
+    <h3>Piranha <span class="tag swarm">Swarm</span> <span class="tag chaser">Chaser</span></h3>
+    <p>Small, fast, comes in dense schools. The Deep Sea swarm threat. A piranha cluster crossing the screen at the same moment a shark spawns is the most common cause of an 8,000-point death in this theme.</p>
+  </div>
+  <div class="enemy">
+    <h3>Anglerfish <span class="tag shooter">Shooter</span></h3>
+    <p>Largest Deep Sea enemy. Glowing lure on a stalk. Holds position at mid-range and fires homing bolts toward the lure's aim arc. The lure itself is a visual cue — wherever it's pointing, that's where the next bolt will arrive.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>4. Underworld <span class="theme-meta">Minutes 9:00–12:00</span></h2>
+  <p>
+    Theme-rotation midpoint. Bone whites, hellfire oranges, deep purples. Underworld leans into
+    spookiness without being slow — it's where the difficulty curve first feels genuinely intense.
+    Boss waves often land in this theme on long runs.
+  </p>
+
+  <div class="enemy">
+    <h3>Skull <span class="tag chaser">Chaser</span></h3>
+    <p>Floats. Simple, fast, generic threat. The Underworld baseline enemy and the most common spawn in the theme. Easy individually, dangerous when stacked with anything else.</p>
+  </div>
+  <div class="enemy">
+    <h3>Bubbling Cauldron <span class="tag shooter">Shooter</span></h3>
+    <p>Stationary. Pops projectile bubbles in random directions on a regular tempo. Treat it like a slow-firing landmine — kill it on the way past rather than dodging around it.</p>
+  </div>
+  <div class="enemy">
+    <h3>Horned Demon <span class="tag chaser">Chaser</span></h3>
+    <p>Underworld's heavy melee. Larger hitbox, slightly slower than the skull, harder to budge off-line once it commits. The intimidating silhouette is the point — players panic and break combo on first sight. Don't.</p>
+  </div>
+  <div class="enemy">
+    <h3>Tombstone <span class="tag shielder">Shielder</span></h3>
+    <p>Stationary and shielded. The most annoying Underworld spawn for chain economy. If a wave is otherwise empty, the tombstone is your only target and you'll burn rounds on the flicker. Accept it.</p>
+  </div>
+  <div class="enemy">
+    <h3>Bat <span class="tag orbiter">Orbiter</span> <span class="tag swarm">Swarm</span></h3>
+    <p>Small, fast, irregular flight path. Bats are the Underworld's chain fuel — they're small enough to be cheap kills and numerous enough to keep the combo timer happy.</p>
+  </div>
+  <div class="enemy">
+    <h3>Sad Ghost <span class="tag chaser">Chaser</span></h3>
+    <p>Translucent. The dodgy thing about the ghost is the visual — at low contrast it's easy to lose against the Underworld background. Train yourself to track outline silhouettes, not fills.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>5. Mythical <span class="theme-meta">Minutes 12:00–15:00</span></h2>
+  <p>
+    High-fantasy palette: deep greens, knight-armour silvers, magical gold sparks. Mythical is the
+    "diverse spawn" theme — each archetype is represented by something distinct rather than variants
+    of one creature. It's a memorisation test.
+  </p>
+
+  <div class="enemy">
+    <h3>Goblin (with club) <span class="tag chaser">Chaser</span> <span class="tag swarm">Swarm</span></h3>
+    <p>Small, fast, comes in waves of three or four. Each carries a tiny club — purely decorative, no melee range bonus. They function exactly like Cyberpunk's alien cells with a different sprite.</p>
+  </div>
+  <div class="enemy">
+    <h3>Hydra <span class="tag shooter">Shooter</span></h3>
+    <p>Multi-headed silhouette. Fires from whichever head is facing you, so the projectile origin shifts. The hitbox is the body core, not any individual head — aim for the trunk.</p>
+  </div>
+  <div class="enemy">
+    <h3>Lance-Charging Knight <span class="tag chaser">Chaser</span></h3>
+    <p>Pure charger archetype with a long forward lance. The lance is visual; only the rider's body is the hitbox. The danger is that the lance makes the silhouette look further away than it is — players misjudge contact range and die to a knight they thought was still safe.</p>
+  </div>
+  <div class="enemy">
+    <h3>Plate-Armour Knight <span class="tag shielder">Shielder</span></h3>
+    <p>The shielder. Tell is a brief shimmer across the plate before vulnerability. Slow walker — you can usually orbit around one rather than waiting for the tell.</p>
+  </div>
+  <div class="enemy">
+    <h3>Fairy (with star wand) <span class="tag orbiter">Orbiter</span></h3>
+    <p>Small, sparkly, deliberately easy. The Mythical theme's "give the player a quick kill" enemy. Don't ignore — every fairy is a free combo extension.</p>
+  </div>
+  <div class="enemy">
+    <h3>Wizard's Eye Orb <span class="tag shooter">Shooter</span></h3>
+    <p>Floats at mid-range, fires arcane bolts on a slow tempo. The shots are large and easy to dodge individually but they layer with other ranged threats. Priority on a contested screen.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>6. Cosmic <span class="theme-meta">Minutes 15:00–18:00</span></h2>
+  <p>
+    Black field, distant starlight, cool blues and purples with rare hot-orange comets. Cosmic was
+    rebuilt in May 2026 to drop expensive per-frame gradient allocations — the new look is solid
+    additive triangles, lighter on the GPU, same vibe. If you remember the old Cosmic running hot
+    on your laptop, that's why.
+  </p>
+
+  <div class="enemy">
+    <h3>Asteroid <span class="tag chaser">Chaser</span></h3>
+    <p>Lumbering, irregular silhouette. Drifts on its spawn vector rather than chasing intelligently. Predictable. The Cosmic theme's "baseline" enemy and chain fuel.</p>
+  </div>
+  <div class="enemy">
+    <h3>Black Hole <span class="tag shielder">Shielder</span></h3>
+    <p>Concentric ring silhouette. The accretion disc is the shield phase — wait for the rings to settle. Stationary; you can ignore it briefly and revisit when the wave is calmer.</p>
+  </div>
+  <div class="enemy">
+    <h3>Comet <span class="tag chaser">Chaser</span></h3>
+    <p>Fast, with a trailing tail particle effect. The tail is decorative. Behaviour is straight-line charge along its spawn vector, like Cyberpunk's Predator Dart. Don't be on the line.</p>
+  </div>
+  <div class="enemy">
+    <h3>Ringed Planet <span class="tag orbiter">Orbiter</span></h3>
+    <p>Larger silhouette, slow rotation, wide orbit pattern. The ring is hitbox-relevant — the planet body and the inner ring both count. Aim wide.</p>
+  </div>
+  <div class="enemy">
+    <h3>Meteor <span class="tag swarm">Swarm</span></h3>
+    <p>Cosmic's swarm threat. Smaller than asteroids, comes in showers. A meteor shower coinciding with a black hole shield is the Cosmic theme's worst-case wave — be ready to retreat to centre.</p>
+  </div>
+  <div class="enemy">
+    <h3>Satellite (with tracking dish) <span class="tag shooter">Shooter</span></h3>
+    <p>The shooter. Dish rotates to face you and fires aimed bolts. The dish-rotation animation is your tell — once it stops tracking, the next bolt is coming.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>7. Glitch <span class="theme-meta">Minutes 18:00–21:00</span></h2>
+  <p>
+    The "uncomfortable" theme. RGB-split chromatic aberration on every silhouette, datamoshed
+    fragments, occasional fake-static. Glitch is the visual hardest read in the rotation — the
+    aberration breaks your subconscious target-locking. Top players slow down here and lean on
+    movement patterns rather than precise aim.
+  </p>
+
+  <div class="enemy">
+    <h3>RGB-Split Shape <span class="tag chaser">Chaser</span></h3>
+    <p>Generic geometric form rendered with red/green/blue channel offsets. The hitbox is the green channel — the red and blue are decorative. Aim for the middle of the colour smear.</p>
+  </div>
+  <div class="enemy">
+    <h3>Datamoshed Cursor <span class="tag chaser">Chaser</span></h3>
+    <p>An arrow-cursor silhouette with smear artefacts. Behaves as a fast chaser. The visual unease is the point — it's reading the player's own input metaphor as a threat.</p>
+  </div>
+  <div class="enemy">
+    <h3>Encrypted Hex Cube <span class="tag shielder">Shielder</span></h3>
+    <p>Cube with scrolling hexadecimal characters on each face. The scroll pauses during the vulnerable window. Read the scroll speed, not the cube colour.</p>
+  </div>
+  <div class="enemy">
+    <h3>Surveillance Camera <span class="tag shooter">Shooter</span></h3>
+    <p>Stationary. Pans to track you, then fires a red-lens bolt. The pan is a long, obvious tell. Easy to dodge if you keep moving; punishing if you stop.</p>
+  </div>
+  <div class="enemy">
+    <h3>Bitcrushed Drone <span class="tag swarm">Swarm</span></h3>
+    <p>Small, pixelated, comes in flickering clusters. The flicker is purely visual — they're solid targets between flicker frames. Don't wait for them to "stabilise."</p>
+  </div>
+  <div class="enemy">
+    <h3>Corrupted Sigil <span class="tag orbiter">Orbiter</span></h3>
+    <p>Geometric symbol with rotating fragments. The fragments are decorative; the central glyph is the hitbox. The Glitch theme's slowest enemy and reliable combo extension.</p>
+  </div>
+</div>
+
+<div class="theme-block">
+  <h2>8. Steampunk <span class="theme-meta">Minutes 21:00–24:00</span></h2>
+  <p>
+    The rotation's finale. Brass golds, rivet greys, smoke-grey accents. Steampunk silhouettes are
+    dense and mechanical — heavier visual weight than any previous theme. Steampunk's enemies are not
+    individually harder than other themes, but the screen feels busier because every silhouette has
+    intricate detail. Survive Steampunk and the You've Circled All Themes banner fires.
+  </p>
+
+  <div class="enemy">
+    <h3>Cogwheel <span class="tag orbiter">Orbiter</span></h3>
+    <p>Rotates as it moves. Teeth are decorative, the hub is the hitbox. The Steampunk theme's chain-fuel enemy.</p>
+  </div>
+  <div class="enemy">
+    <h3>Clockwork Bomb <span class="tag chaser">Chaser</span></h3>
+    <p>Round body with a visible ticking timer face. Closes the distance and detonates on proximity. The timer is decorative — it doesn't actually count down to anything visible — but the silhouette is a good signal that this one is on a contact-damage approach. Kill it before it gets close.</p>
+  </div>
+  <div class="enemy">
+    <h3>Steam Locomotive <span class="tag chaser">Chaser</span></h3>
+    <p>Long horizontal silhouette with a smoke plume. Tracks a straight line across the screen. The smoke is decorative; the locomotive body is the hitbox. Like Cyberpunk's Predator Dart, this is a "don't be on the line" enemy.</p>
+  </div>
+  <div class="enemy">
+    <h3>Riveted Iron Cube <span class="tag shielder">Shielder</span></h3>
+    <p>Steampunk's heavy shielder. The riveted texture pulses during vulnerability. Slow to move, so a circle-and-wait approach works well here.</p>
+  </div>
+  <div class="enemy">
+    <h3>Brass Dirigible <span class="tag shooter">Shooter</span></h3>
+    <p>Floats. Fires cannon shells at mid-range tempo. The shells travel slowly — a clean dirigible fight is the easiest shooter encounter in the game if the screen isn't crowded.</p>
+  </div>
+  <div class="enemy">
+    <h3>Mechanical Iris-Aperture Eye <span class="tag shooter">Shooter</span></h3>
+    <p>Stationary. The aperture opens to fire and closes between shots — the iris animation is a perfect tell. Steampunk's boss draws this archetype reliably on 30k waves: a 2.4× brass iris-eye is the closing image of a circle-all-themes run, and one of the most photogenic boss kills in the game.</p>
+  </div>
+</div>
+
+<section>
+  <h2>Why eight themes?</h2>
+  <p>
+    A single visual palette gets monotonous past about six minutes. Eight themes at three minutes
+    each gives a 24-minute revolution — long enough that no theme overstays its welcome, short
+    enough that the variety is part of the texture of every run. The rotation is also a soft skill
+    test: each transition forces the eye to recalibrate, which is why deaths cluster around the
+    minute boundaries on the personal-history chart.
+  </p>
+  <p>
+    The cycle order is deliberately not chronological or stylistic — Jurassic next to Cyberpunk is
+    visual whiplash on purpose. The order was chosen so that no two adjacent themes share a dominant
+    colour. Cyberpunk → Deep Sea is the closest near-miss in the rotation (both heavy on blue), and
+    it's also the transition where high-score runs most commonly die.
+  </p>
+</section>
+
+<section>
+  <h2>Bosses inherit the theme</h2>
+  <p>
+    A boss wave doesn't import a special sprite. It picks a normal archetype, scales it to 2.4× size,
+    hands it 8–18 HP, and draws it in whatever theme is currently active. A 5,000-point boss in
+    Jurassic might be a giant Ankylosaurus shielder; the same archetype at 30,000 in Glitch is an
+    enormous RGB-split datamoshed cursor. The strategic implication is that the archetype tells you
+    everything about how to fight it — see the <a href="/strategy.html">Strategy Guide</a> for the
+    three boss archetype playbooks.
+  </p>
+</section>
+
+<section>
+  <h2>Putting the field guide to work</h2>
+  <ul>
+    <li><strong>Read silhouettes, not colours.</strong> Theme rotations swap palettes faster than your eye recalibrates. The shape stays consistent across themes — a chaser is a chaser is a chaser.</li>
+    <li><strong>Prioritise by archetype, not by appearance.</strong> Shooters first if they have line on you; chargers second; orbiters last (they come back around).</li>
+    <li><strong>Treat shielders as cost-aware kills.</strong> A shielder always wastes at least one round on the flicker. If the wave is hot, skip and orbit; if the wave is quiet, kill cleanly.</li>
+    <li><strong>Swarm enemies are combo currency.</strong> Goblins, piranhas, bats, alien cells, meteors — each is cheap individually, valuable in chain. Don't let a swarm pass through to chase a "more important" single target.</li>
+  </ul>
+</section>
+
+<section style="margin-top: 32px;">
+  <a href="/" class="cta cta--primary">▶ Try it &mdash; play a run</a>
+</section>
+
+</main>
+<footer>
+  <a href="/about.html">About</a> •
+  <a href="/how-to-play.html">How to Play</a> •
+  <a href="/strategy.html">Strategy</a> •
+  <a href="/themes.html">Themes</a> •
+  <a href="/power-ups.html">Power-ups</a> •
+  <a href="/hall-of-fame.html">Hall of Fame</a> •
+  <a href="/updates.html">Updates</a> •
+  <a href="/privacy.html">Privacy Policy</a> •
+  <a href="/terms.html">Terms</a>
+</footer>
+</body>
+</html>

@@ -115,16 +115,7 @@
     <script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
   </div>
 
-  <nav id="site-nav">
-    <span class="brand">Playloop</span> ·
-    <a href="/">Home</a> ·
-    <a href="/how-to-play.html">How to Play</a> ·
-    <a href="/hall-of-fame.html">Hall of Fame</a> ·
-    <a href="/updates.html">Updates</a> ·
-    <a href="/about.html">About</a> ·
-    <a href="/privacy.html">Privacy</a> ·
-    <a href="/terms.html">Terms</a>
-  </nav>
+  <nav id="site-nav"><span class="brand">Playloop</span> · <a href="/">Home</a> · <a href="/how-to-play.html">How to Play</a> · <a href="/strategy.html">Strategy</a> · <a href="/themes.html">Themes</a> · <a href="/power-ups.html">Power-ups</a> · <a href="/hall-of-fame.html">Hall of Fame</a> · <a href="/updates.html">Updates</a> · <a href="/about.html">About</a></nav>
   <div id="ad-spacer"></div>
 
   <main>
@@ -146,12 +137,110 @@
       <div style="margin-top: 24px;">
         <a href="/" class="cta cta--primary">▶ Play Today's Daily Run</a>
       </div>
+
+      <section style="margin-top: 36px;">
+        <h2>How the Daily Run works</h2>
+        <p>
+          Loop Runner's Daily Run is a separate game mode that runs on a fixed, shared random seed.
+          Every player who attempts the Daily Run on a given day faces the same enemy spawns in the
+          same order at the same speed — the same power-up drops in the same places at the same
+          timestamps, the same boss archetypes at the same milestones. The seed regenerates at
+          00:00 UTC and the previous day's scores are sealed and archived.
+        </p>
+        <p>
+          The point is fairness. Normal mode uses randomised spawns, which means raw scores between
+          two Normal-mode players are only loosely comparable — one player might have drawn a quiet
+          spawn pattern at a critical moment, another might have been swarmed at the same score.
+          The Daily Run removes that variance. If you and another player both attempt today's seed
+          and they score higher, they played it better. There is no other explanation.
+        </p>
+      </section>
+
+      <section>
+        <h2>What this archive is</h2>
+        <p>
+          Every completed day, the top three Daily Run scores become a permanent record. They live
+          here in the Hall of Fame, ordered newest-first, with gold/silver/bronze medals indicating
+          finishing position. Each card shows the day (with "Today" highlighted), the player's
+          display name, their score, and their country code if available. Empty rows in a card mean
+          fewer than three players posted Daily Run scores that day — historically this is rare for
+          recent days but more common for the earliest archived dates, before the game had its
+          current player base.
+        </p>
+        <p>
+          The archive is computed live from the leaderboard database — it isn't a cached file. When
+          you load this page, your browser fetches the most recent Daily Run submissions
+          (currently the last 500), buckets them by submission date in UTC, and renders the top
+          three per bucket. That means new podiums appear here within seconds of the day ending,
+          and we don't need a scheduled job to roll the archive forward.
+        </p>
+      </section>
+
+      <section>
+        <h2>How scores are validated</h2>
+        <p>
+          A Daily Run score is accepted into the archive when:
+        </p>
+        <ul>
+          <li>It was submitted in <strong>Daily</strong> mode (Normal-mode scores never appear in the Hall of Fame, no matter how high).</li>
+          <li>The submitting client passed basic sanity checks — sane time-to-score, plausible kill-per-minute pacing, no impossible jumps in the score timeline.</li>
+          <li>The display name doesn't violate our <a href="/terms.html">Terms of Use</a>. Names containing hate speech, real-world personal data, or harassment are removed; the score still counts, but the entry won't appear with that name.</li>
+        </ul>
+        <p>
+          We treat the leaderboard as a record of skill, not a personal data store — see the
+          <a href="/privacy.html">Privacy Policy</a> for what we store and what we don't.
+        </p>
+      </section>
+
+      <section>
+        <h2>Why the Daily Run is the most realistic path to a podium</h2>
+        <p>
+          The all-time worldwide leaderboard rewards the best run ever played. Posting on it
+          requires a single outlier session against the entire history of the game. The Daily Run
+          podium, by contrast, only requires beating the other people who attempted <em>today's
+          specific seed</em>. On most days that's a much smaller field.
+        </p>
+        <p>
+          Practically speaking: a high Normal-mode score takes hours of practice and the right run.
+          A Daily Run podium often takes three or four attempts on the same day, because route
+          knowledge accumulates inside a single session. The first attempt is reconnaissance, the
+          second sets the route, the third is for the score. The <a href="/strategy.html">Strategy
+          Guide</a> covers Daily-specific tactics in detail.
+        </p>
+      </section>
+
+      <section>
+        <h2>What the country codes mean</h2>
+        <p>
+          The two-letter code next to a name is the player's country at the time of submission,
+          derived from a public IP-to-country lookup. The lookup happens on the player's own
+          browser; only the resolved code is sent to our database. We don't store IP addresses and
+          we don't collect city-level location. A missing or "XX" code means geolocation was
+          blocked or returned no answer — usually a VPN, a privacy extension, or a regional ISP
+          that the lookup service doesn't classify.
+        </p>
+      </section>
+
+      <section>
+        <h2>Want a permanent spot?</h2>
+        <p>
+          Today's Daily Run is open right now. Pick a name, learn the seed, beat two other people,
+          and your podium row stays here as long as the game exists. The
+          <a href="/strategy.html">Strategy Guide</a> covers what separates a 5,000-point Daily
+          attempt from a 25,000-point one, and the <a href="/themes.html">Themes</a> and
+          <a href="/power-ups.html">Power-ups</a> references cover the spawn cast and upgrade pool
+          you'll be working with.
+        </p>
+      </section>
     </section>
   </main>
 
   <footer>
     <a href="/about.html">About</a> •
     <a href="/how-to-play.html">How to Play</a> •
+    <a href="/strategy.html">Strategy</a> •
+    <a href="/themes.html">Themes</a> •
+    <a href="/power-ups.html">Power-ups</a> •
     <a href="/hall-of-fame.html">Hall of Fame</a> •
     <a href="/updates.html">Updates</a> •
     <a href="/privacy.html">Privacy Policy</a> •
