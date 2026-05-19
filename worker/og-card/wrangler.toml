@@ -1,0 +1,20 @@
+name = "playloop-og-card"
+main = "src/index.mjs"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# WASM + font binaries are imported directly from src/. Wrangler bundles them at build time.
+rules = [
+  { type = "Data",          globs = ["**/*.ttf", "**/*.otf"], fallthrough = true },
+  { type = "CompiledWasm",  globs = ["**/*.wasm"],            fallthrough = true },
+]
+
+# Custom route — populate with your zone after the worker is deployed.
+# Example:
+#   route = "og.playloop.run/*"
+#
+# Leaving this commented so first `wrangler deploy` puts the worker on workers.dev
+# (e.g. playloop-og-card.<account>.workers.dev) and you can validate before flipping DNS.
+
+[observability]
+enabled = true
