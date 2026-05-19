@@ -93,6 +93,14 @@
     // Game-over canvas freeze — keep rendering for ~1.5s after death so the burst finishes,
     // then stop entirely so the GPU doesn't keep redrawing under the leaderboard modal.
     deathFreezeTimer: 0,
+    // Share/Challenge layer — runSeed is the 32-bit value that uniquely identifies a run.
+    // For daily runs it derives from todayKey(); for normal it's random per-run; for
+    // challenge runs it comes from the inbound ?c= URL param so a friend replays the same world.
+    runSeed: 0,
+    // When a ?c=<seed>&from=...&beat=<score> URL is opened, this holds the parsed context until used.
+    challengeContext: null,
+    // Per-run tally for share-card ladder + share-text copy. Reset at startGame.
+    runStats: { kills: 0, peakCombo: 0, themes: new Set(), bossesKilled: 0, durationS: 0, beatRival: false },
   };
 
   /* ====== Theme system — visual era rotates every 3 min ====== */
@@ -188,7 +196,7 @@
     overlay:$('#overlay'),
     ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
     start:$('#start'), dailyBtn:$('#dailyBtn'),
-    btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'),
+    btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'), btnChallenge:$('#btnChallenge'),
     lbBtn:$('#lbBtn'), nameInput:$('#nameInput'),
     restartBtn:$('#restartBtn'), shareBtn:$('#shareBtn'),
     dailyBanner:$('#dailyBanner')
@@ -238,6 +246,14 @@
     ui.ovBody.innerHTML = 'Aim with your mouse or finger. <b>Right-click</b> or <b>tap</b> to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!<br><span style="opacity:.9">Need help? Read the <a href=\'how-to-play.html\' style=\'color:#7cfdd6\'>How to Play</a> guide.</span>';
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
+    if (ui.btnShare) ui.btnShare.style.display = 'none';
+    if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
+    hideSharePreview();
+    // Surface the daily-run hero on home (unless we're in a challenge flow, which the overlay text handles)
+    if (typeof bootDailyHero === 'function' && !state.challengeContext) {
+      const el = document.getElementById('dailyHero');
+      if (el) el.style.display = '';
+    }
     showOverlay();
   }
   function setOverlayPaused(){
@@ -245,17 +261,52 @@
     ui.ovBody.innerHTML = 'Press <b>P</b> or <b>Esc</b> to resume';
     ui.btnResume.style.display = '';
     ui.btnPlayAgain.style.display = '';
+    if (ui.btnShare) ui.btnShare.style.display = 'none';
+    if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
+    hideSharePreview();
     showOverlay();
   }
   function setOverlayGameOver(score, best, isPB, flavor){
-    ui.ovTitle.textContent = isPB ? 'New Best!' : 'Game Over';
-    let body = `Score: <b>${score}</b> • Best: <b>${best}</b>${isPB?' • 🎉':''}`;
+    // Comparison title + body when this was a challenge run
+    const cc = state.challengeContext;
+    let title;
+    let body = '';
+    if (cc && Number.isFinite(cc.beat)) {
+      const beat = cc.beat | 0;
+      const rival = (cc.from || 'A friend').toString().slice(0, 20);
+      const delta = score - beat;
+      if (delta > 0) {
+        title = `You beat ${rival}!`;
+        body = `<div style="font-size:18px; margin:4px 0 6px 0;"><b style="color:#7cfdd6;">YOU ${score.toLocaleString()}</b> <span style="opacity:.6;">vs</span> <b style="color:#ff9999;">${rival} ${beat.toLocaleString()}</b></div>`;
+        body += `<div style="opacity:.85; margin-bottom:6px;">+${delta.toLocaleString()} ahead · ${isPB ? 'and a new personal best 🎉' : 'no PB but a clean dunk'}</div>`;
+      } else if (delta === 0) {
+        title = `Dead heat with ${rival}`;
+        body = `<div style="font-size:18px; margin:4px 0 6px 0;"><b>YOU ${score.toLocaleString()}</b> <span style="opacity:.6;">=</span> <b>${rival} ${beat.toLocaleString()}</b></div>`;
+        body += `<div style="opacity:.85; margin-bottom:6px;">Statistically impossible. Did it anyway.</div>`;
+      } else {
+        title = `${rival} still leads`;
+        body = `<div style="font-size:18px; margin:4px 0 6px 0;"><b style="color:#ff9999;">YOU ${score.toLocaleString()}</b> <span style="opacity:.6;">vs</span> <b style="color:#ffd700;">${rival} ${beat.toLocaleString()}</b></div>`;
+        body += `<div style="opacity:.85; margin-bottom:6px;">${(-delta).toLocaleString()} short. The replay world is identical — try a different build.</div>`;
+      }
+    } else {
+      title = isPB ? 'New Best!' : 'Game Over';
+      body = `Score: <b>${score.toLocaleString()}</b> • Best: <b>${best.toLocaleString()}</b>${isPB?' • 🎉':''}`;
+    }
     if (flavor) {
       body += `<br><span style="opacity:.85; font-style:italic;">${flavor}</span>`;
     }
+    ui.ovTitle.textContent = title;
     ui.ovBody.innerHTML = body;
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = '';
+
+    // Reveal share/challenge buttons + render preview thumbnail
+    if (ui.btnShare) ui.btnShare.style.display = '';
+    if (ui.btnChallenge) ui.btnChallenge.style.display = '';
+    renderSharePreview();
+    // Game-over overlay hides the daily-hero panel — the run's own result is the focus now.
+    const dh = document.getElementById('dailyHero'); if (dh) dh.style.display = 'none';
+
     showOverlay();
   }
 
@@ -264,6 +315,7 @@
   function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
   let seededRand=Math.random; let usingSeed=false;
   function setDailySeed(){ usingSeed=true; seededRand=mulberry32(hashToInt('looprunner:'+todayKey())); }
+  function applyRunSeed(seed){ state.runSeed = seed >>> 0; usingSeed = true; seededRand = mulberry32(state.runSeed); }
   function rnd(a=0,b=1){ return (usingSeed?seededRand():Math.random())*(b-a)+a; }
   function rndi(a,b){ return Math.floor(rnd(a,b+1)); }
   function hashToInt(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
@@ -1539,20 +1591,485 @@
   }
 
   /* ====== Share (overlay + quickbar) ====== */
-  async function doShare() {
-    const url = location.href;
-    const text = `I just played Loop Runner and scored ${state.score | 0}!`;
+  /* ====== Share + Challenge layer ======
+   *
+   * The end-of-run flow produces a `lastRunSummary` object (see gameOver), which feeds:
+   *   - renderShareCard(): an offscreen 1200×630 canvas, exported to PNG blob
+   *   - renderShareText(): a Wordle-style copy-text block with an emoji ladder
+   *   - buildChallengeUrl(): the inbound-link URL friends click to replay the same seed
+   *
+   * Two share intents are exposed:
+   *   - doShare()          → "Share Run"            → PNG + text + canonical URL
+   *   - doChallengeShare() → "Challenge a Friend"   → text invitation + challenge URL (?c=&from=&beat=)
+   *
+   * Both prefer Web Share API with file attachment when available, fall back to PNG download
+   * + clipboard URL copy, and surface result via toast banner.
+   */
+
+  // Stashed at end of each gameOver. Survives across overlay show/hide.
+  let lastRunSummary = null;
+
+  // --- Challenge HUD strip ---
+  const challengeHudEl = document.getElementById('challengeHud');
+  const challengeHudFromEl = document.getElementById('challengeHudFrom');
+  const challengeHudBeatEl = document.getElementById('challengeHudBeat');
+  const challengeHudYouEl = document.getElementById('challengeHudYou');
+
+  function refreshChallengeHud() {
+    if (!challengeHudEl) return;
+    const cc = state.challengeContext;
+    if (!cc || !Number.isFinite(cc.beat)) {
+      challengeHudEl.style.display = 'none';
+      return;
+    }
+    const rival = (cc.from || 'A friend').toString().slice(0, 20);
+    challengeHudEl.style.display = '';
+    challengeHudFromEl.innerHTML = `🎯 <span class="ch-from">${escapeHtml(rival)}</span>:`;
+    challengeHudBeatEl.innerHTML = `<span class="ch-beat">${(cc.beat | 0).toLocaleString()}</span>`;
+    challengeHudYouEl.innerHTML = '';
+  }
+
+  // Updates the "you" portion of the challenge HUD with the live score during a run.
+  function updateChallengeHudLive() {
+    if (!challengeHudEl || challengeHudEl.style.display === 'none') return;
+    const cc = state.challengeContext;
+    if (!cc) return;
+    const my = state.score | 0;
+    const beat = cc.beat | 0;
+    const cls = my > beat ? 'ch-you win' : (my === beat ? 'ch-you' : 'ch-you lose');
+    challengeHudYouEl.innerHTML = `· you <span class="${cls}">${my.toLocaleString()}</span>`;
+  }
+
+  // --- URL parsing on boot ---
+  function parseChallengeContextFromURL() {
     try {
+      const params = new URLSearchParams(location.search);
+      const c = params.get('c');
+      if (!c) return null;
+      const seed = Number.parseInt(c, 10);
+      if (!Number.isFinite(seed) || seed < 0) return null;
+      const fromRaw = (params.get('from') || '').slice(0, 20);
+      const from = fromRaw.replace(/[^\w\s.\-+]/g, '').trim() || 'A friend';
+      const beat = Number.parseInt(params.get('beat') || '0', 10) | 0;
+      return { seed: seed >>> 0, from, beat: beat > 0 ? beat : 0 };
+    } catch { return null; }
+  }
+
+  // --- Wordle-style ladder ---
+  // Five tiers: 5k, 10k, 25k, 50k, 100k. Filled with the theme glyph; empty with a void block.
+  // Bonus glyphs are appended for boss kills + theme variety + combo peaks.
+  const LADDER_TIERS = [5000, 10000, 25000, 50000, 100000];
+  function buildLadderEmoji(summary) {
+    const filled = LADDER_TIERS.map(t => summary.score >= t ? '🟩' : '⬜').join('');
+    let bonus = '';
+    if (summary.bossesKilled > 0) bonus += '👑'.repeat(Math.min(summary.bossesKilled, 3));
+    if (summary.peakCombo >= 25) bonus += '🔥';
+    if (summary.themesVisited >= 5) bonus += '🌈';
+    if (summary.challenge && summary.challenge.outcome === 'win') bonus += '🏆';
+    return filled + (bonus ? ' ' + bonus : '');
+  }
+
+  // --- Copy text (the thing that goes in tweets / WhatsApp / Discord) ---
+  function renderShareText(summary) {
+    const lines = [];
+    const dateLabel = summary.mode === 'daily' ? `Daily ${summary.date}` : `Run ${summary.date}`;
+    lines.push(`Loop Runner · ${dateLabel}`);
+    lines.push(`${buildLadderEmoji(summary)} ${summary.score.toLocaleString()}`);
+    const flagCountry = (summary.country && summary.country !== 'XX') ? countryFlag(summary.country) + ' ' : '';
+    const themeBit = summary.themeName ? ` · era ${summary.themeName}` : '';
+    lines.push(`${flagCountry}${summary.kills} kills · combo ×${summary.peakCombo}${themeBit}`);
+    if (summary.challenge) {
+      const rival = summary.challenge.from || 'a friend';
+      if (summary.challenge.outcome === 'win') lines.push(`Beat ${rival}'s ${(summary.challenge.beat | 0).toLocaleString()} 🏆`);
+      else if (summary.challenge.outcome === 'tie') lines.push(`Tied ${rival} at ${(summary.challenge.beat | 0).toLocaleString()}`);
+      else lines.push(`Chasing ${rival}'s ${(summary.challenge.beat | 0).toLocaleString()}`);
+    }
+    if (summary.flavor) lines.push(`"${stripTags(summary.flavor)}"`);
+    lines.push(buildChallengeUrl(summary));
+    return lines.join('\n');
+  }
+
+  // Inbound challenge URL the share link routes friends to. Always points at playloop.run/
+  // with ?c=<seed>&from=<name>&beat=<score>. We hardcode the canonical host so portal/iframe
+  // builds still emit a working link, not their iframe URL.
+  function buildChallengeUrl(summary) {
+    const base = 'https://playloop.run/';
+    const params = new URLSearchParams();
+    params.set('c', String(summary.seed >>> 0));
+    if (summary.name) params.set('from', summary.name);
+    if (summary.score) params.set('beat', String(summary.score | 0));
+    return base + '?' + params.toString();
+  }
+
+  // --- Country code → flag emoji (regional indicator pair) ---
+  function countryFlag(cc) {
+    if (!cc || cc.length !== 2 || cc === 'XX') return '';
+    const A = 0x1F1E6;
+    const a = cc.toUpperCase().charCodeAt(0) - 65;
+    const b = cc.toUpperCase().charCodeAt(1) - 65;
+    if (a < 0 || a > 25 || b < 0 || b > 25) return '';
+    return String.fromCodePoint(A + a) + String.fromCodePoint(A + b);
+  }
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function stripTags(s) { return String(s).replace(/<[^>]*>/g, ''); }
+
+  // --- Card renderer (1200×630 PNG, OG-compatible) ---
+  // We draw onto the visible #shareCardCanvas (which is what the preview shows) so the user
+  // sees the exact PNG before sharing. The same canvas is then exported via toBlob.
+  function renderShareCard(summary) {
+    const cv = document.getElementById('shareCardCanvas');
+    if (!cv) return null;
+    const w = cv.width, h = cv.height;
+    const c = cv.getContext('2d');
+
+    // Theme-tinted backdrop. We mirror the in-game nebula colors for each theme.
+    const theme = THEMES.find(t => t.key === summary.themeKey) || THEMES[0];
+    const tint = (theme.nebulae[0].color + '0.9)').replace('rgba(', 'rgb(').replace(',0.9)', ')');
+
+    // Base fill
+    c.fillStyle = '#0a0b12';
+    c.fillRect(0, 0, w, h);
+
+    // Two-tone radial glow from a colored nebula
+    const grad = c.createRadialGradient(w * 0.25, h * 0.4, 50, w * 0.55, h * 0.5, w * 0.75);
+    grad.addColorStop(0, theme.nebulae[0].color + '0.55)');
+    grad.addColorStop(0.6, theme.nebulae[1].color + '0.18)');
+    grad.addColorStop(1, 'rgba(8,8,15,0)');
+    c.fillStyle = grad;
+    c.fillRect(0, 0, w, h);
+
+    // Faint scan-grid for arcade feel
+    c.strokeStyle = 'rgba(255,255,255,0.05)';
+    c.lineWidth = 1;
+    for (let y = 60; y < h; y += 60) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+    for (let x = 60; x < w; x += 60) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+
+    // Brand wordmark top-left
+    c.fillStyle = '#7cfdd6';
+    c.font = 'bold 36px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+    c.textBaseline = 'top';
+    c.textAlign = 'left';
+    c.fillText('LOOP RUNNER', 60, 50);
+    c.fillStyle = 'rgba(255,255,255,0.75)';
+    c.font = '500 22px ui-sans-serif, system-ui, sans-serif';
+    c.fillText('playloop.run', 60, 96);
+
+    // Era badge top-right
+    c.fillStyle = 'rgba(255,255,255,0.7)';
+    c.font = '600 18px ui-sans-serif, system-ui, sans-serif';
+    c.textAlign = 'right';
+    const dateLabel = summary.mode === 'daily' ? `DAILY · ${summary.date}` : summary.date;
+    c.fillText(`${(summary.themeName || '').toUpperCase()}  ·  ${dateLabel}`, w - 60, 56);
+
+    // Country flag + name top-right (line 2)
+    c.font = '500 20px ui-sans-serif, "Segoe UI Emoji", "Apple Color Emoji", system-ui, sans-serif';
+    const flag = countryFlag(summary.country);
+    c.fillText(`${flag} ${summary.name || 'Player'}`.trim(), w - 60, 90);
+
+    // Huge score in the center
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    // Score color by tier
+    const sColor = summary.score >= 50000 ? '#ffd700'
+                 : summary.score >= 25000 ? '#7cfdd6'
+                 : summary.score >= 10000 ? '#88ddff'
+                 : '#ffeeaa';
+    c.shadowColor = sColor;
+    c.shadowBlur = 30;
+    c.fillStyle = sColor;
+    c.font = 'bold 180px ui-sans-serif, system-ui, sans-serif';
+    c.fillText(summary.score.toLocaleString(), w / 2, h / 2 - 30);
+    c.shadowBlur = 0;
+
+    // Score label under it
+    c.fillStyle = 'rgba(255,255,255,0.75)';
+    c.font = '600 28px ui-sans-serif, system-ui, sans-serif';
+    c.fillText(summary.isPB ? 'NEW PERSONAL BEST' : 'POINTS', w / 2, h / 2 + 80);
+
+    // Stats row
+    c.font = '500 24px ui-sans-serif, system-ui, sans-serif';
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    const statsLine = `${summary.kills} kills  ·  combo ×${summary.peakCombo}  ·  ${formatDuration(summary.durationS)}` + (summary.bossesKilled ? `  ·  ${summary.bossesKilled} boss${summary.bossesKilled > 1 ? 'es' : ''}` : '');
+    c.fillText(statsLine, w / 2, h / 2 + 130);
+
+    // Ladder emoji bar
+    c.font = '600 56px ui-sans-serif, "Segoe UI Emoji", "Apple Color Emoji", system-ui, sans-serif';
+    c.fillStyle = '#fff';
+    c.fillText(buildLadderEmoji(summary), w / 2, h - 130);
+
+    // Challenge ribbon (if challenge run)
+    if (summary.challenge && summary.challenge.outcome) {
+      c.textAlign = 'left';
+      c.font = '600 22px ui-sans-serif, system-ui, sans-serif';
+      const rival = summary.challenge.from || 'a friend';
+      const txt = summary.challenge.outcome === 'win'
+        ? `🏆 Beat ${rival}'s ${(summary.challenge.beat | 0).toLocaleString()}`
+        : summary.challenge.outcome === 'tie'
+          ? `🤝 Tied ${rival} at ${(summary.challenge.beat | 0).toLocaleString()}`
+          : `⏱️ Chasing ${rival}'s ${(summary.challenge.beat | 0).toLocaleString()}`;
+      c.fillStyle = summary.challenge.outcome === 'win' ? '#7cfdd6' : 'rgba(255,255,255,0.8)';
+      c.fillText(txt, 60, h - 60);
+    }
+
+    // Footer CTA
+    c.textAlign = 'right';
+    c.font = '500 22px ui-sans-serif, system-ui, sans-serif';
+    c.fillStyle = 'rgba(255,255,255,0.7)';
+    c.fillText('Beat this score → playloop.run', w - 60, h - 60);
+
+    return cv;
+  }
+
+  function formatDuration(s) {
+    s = Math.max(0, s | 0);
+    const m = (s / 60) | 0;
+    const r = s % 60;
+    return m + ':' + String(r).padStart(2, '0');
+  }
+
+  // Returns the canvas as a Blob (PNG)
+  function shareCardBlob() {
+    return new Promise((resolve) => {
+      const cv = document.getElementById('shareCardCanvas');
+      if (!cv || !cv.toBlob) return resolve(null);
+      cv.toBlob((b) => resolve(b), 'image/png', 0.92);
+    });
+  }
+
+  // --- Preview rendering inside the overlay ---
+  const sharePreviewEl = document.getElementById('sharePreview');
+  const shareCopyTextEl = document.getElementById('shareCopyText');
+
+  function renderSharePreview() {
+    if (!lastRunSummary || !sharePreviewEl) return;
+    renderShareCard(lastRunSummary);
+    if (shareCopyTextEl) shareCopyTextEl.textContent = renderShareText(lastRunSummary);
+    sharePreviewEl.style.display = '';
+  }
+  function hideSharePreview() {
+    if (sharePreviewEl) sharePreviewEl.style.display = 'none';
+  }
+
+  // --- Toast for share feedback (no dependency on alert()) ---
+  function showToast(msg, kind) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.style.cssText = 'position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:9999; background:rgba(15,18,28,.95); border:1px solid rgba(124,253,214,.4); color:#7cfdd6; padding:10px 16px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 8px 30px rgba(0,0,0,.45); pointer-events:none; opacity:0; transition:opacity .2s ease;';
+      document.body.appendChild(el);
+    }
+    el.style.borderColor = kind === 'err' ? 'rgba(255,120,120,.5)' : 'rgba(124,253,214,.4)';
+    el.style.color       = kind === 'err' ? '#ffb3b3' : '#7cfdd6';
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+  }
+
+  // --- The actual share intents ---
+  async function doShare() {
+    if (!lastRunSummary) {
+      showToast('Play a run first — then share your card');
+      return;
+    }
+    const text = renderShareText(lastRunSummary);
+    const url = buildChallengeUrl(lastRunSummary);
+    const title = 'Loop Runner';
+    const blob = await shareCardBlob();
+    const file = blob ? new File([blob], `loop-runner-${lastRunSummary.score}.png`, { type: 'image/png' }) : null;
+
+    // Preferred path: Web Share API with file (mobile-class share sheets)
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title, text, url, files: [file] });
+        try { plausible('Share', { props: { method: 'webshare-file', kind: 'run' } }); } catch {}
+        return;
+      }
       if (navigator.share) {
-        await navigator.share({ title: 'Loop Runner', text, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
+        await navigator.share({ title, text, url });
+        try { plausible('Share', { props: { method: 'webshare', kind: 'run' } }); } catch {}
+        return;
       }
     } catch (e) {
-      /* user cancelled */
+      // User cancelled or share unsupported — fall through to download + clipboard
+    }
+
+    // Fallback: trigger PNG download + copy share text to clipboard
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text + '\n' + url);
+      copied = true;
+    } catch {}
+    if (blob) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `loop-runner-${lastRunSummary.score}.png`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+    showToast(copied ? 'Card saved · text copied' : 'Card saved');
+    try { plausible('Share', { props: { method: 'download', kind: 'run' } }); } catch {}
+  }
+
+  async function doChallengeShare() {
+    if (!lastRunSummary) {
+      showToast('Play a run first to send a challenge');
+      return;
+    }
+    const url = buildChallengeUrl(lastRunSummary);
+    const name = lastRunSummary.name || 'A challenger';
+    const text = `${name} just dropped ${lastRunSummary.score.toLocaleString()} on Loop Runner.\nSame world, same seed. Beat it →`;
+    const title = 'Loop Runner Challenge';
+    const blob = await shareCardBlob();
+    const file = blob ? new File([blob], `loop-runner-challenge-${lastRunSummary.score}.png`, { type: 'image/png' }) : null;
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title, text, url, files: [file] });
+        try { plausible('Share', { props: { method: 'webshare-file', kind: 'challenge' } }); } catch {}
+        return;
+      }
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+        try { plausible('Share', { props: { method: 'webshare', kind: 'challenge' } }); } catch {}
+        return;
+      }
+    } catch {}
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text + '\n' + url);
+      copied = true;
+    } catch {}
+    showToast(copied ? 'Challenge link copied' : 'Could not copy link', copied ? '' : 'err');
+    try { plausible('Share', { props: { method: 'clipboard', kind: 'challenge' } }); } catch {}
+  }
+
+  /* ====== Daily Run hero (home overlay marquee) ======
+   * Surfaces today's daily-seed leader and a countdown to the next 00:00 UTC seed roll.
+   * Cached in localStorage (`lr_daily_hero_<date>`) for ~5 minutes so the call doesn't
+   * fire on every page load. Hidden whenever a challenge URL is present, since that
+   * overlay is already telling a different story.
+   */
+  const dailyHeroEl = document.getElementById('dailyHero');
+  const dailyHeroDateEl = document.getElementById('dailyHeroDate');
+  const dailyHeroTopEl = document.getElementById('dailyHeroTop');
+  const dailyHeroCountdownEl = document.getElementById('dailyHeroCountdown');
+  const dailyHeroPlayBtn = document.getElementById('dailyHeroPlayBtn');
+
+  function showDailyHero(visible) {
+    if (!dailyHeroEl) return;
+    dailyHeroEl.style.display = visible ? '' : 'none';
+  }
+
+  function formatCountdown(ms) {
+    if (ms < 0) ms = 0;
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const r = s % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+  }
+
+  function nextSeedRolloverMs() {
+    const now = new Date();
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+    return next.getTime() - now.getTime();
+  }
+
+  let dailyHeroTickId = null;
+  function startDailyHeroCountdown() {
+    if (dailyHeroTickId) clearInterval(dailyHeroTickId);
+    function tick() {
+      if (dailyHeroCountdownEl) dailyHeroCountdownEl.textContent = formatCountdown(nextSeedRolloverMs());
+    }
+    tick();
+    dailyHeroTickId = setInterval(tick, 1000);
+  }
+
+  async function fetchDailyHeroTop() {
+    if (!dailyHeroTopEl) return;
+    const key = 'lr_daily_hero_' + todayKey();
+    const cached = getLS(key, null);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.ts && (Date.now() - parsed.ts) < 5 * 60 * 1000) {
+          renderDailyHeroTop(parsed.data);
+          // Still refresh in the background so the next view is current
+          fetchDailyHeroTopNetwork(key);
+          return;
+        }
+      } catch {}
+    }
+    dailyHeroTopEl.textContent = '…';
+    fetchDailyHeroTopNetwork(key);
+  }
+
+  async function fetchDailyHeroTopNetwork(key) {
+    try {
+      const params = new URLSearchParams();
+      params.append('select', 'name,score,country');
+      params.append('mode', 'eq.daily');
+      params.append('order', 'score.desc');
+      params.append('limit', '1');
+      const res = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 4000);
+      if (!res.ok) throw new Error('hero fetch failed: ' + res.status);
+      const rows = await res.json();
+      const data = rows && rows[0] ? rows[0] : null;
+      setLS(key, JSON.stringify({ ts: Date.now(), data }));
+      renderDailyHeroTop(data);
+    } catch (e) {
+      if (dailyHeroTopEl && dailyHeroTopEl.textContent === '…') dailyHeroTopEl.textContent = 'No scores yet';
     }
   }
+
+  function renderDailyHeroTop(row) {
+    if (!dailyHeroTopEl) return;
+    if (!row) { dailyHeroTopEl.textContent = 'Be the first today'; return; }
+    const flag = countryFlag(row.country) || '🌐';
+    const name = (row.name || 'Anon').toString().slice(0, 16);
+    const score = Number(row.score || 0).toLocaleString();
+    dailyHeroTopEl.textContent = `${flag} ${score} · ${name}`;
+  }
+
+  function bootDailyHero() {
+    if (!dailyHeroEl) return;
+    if (dailyHeroDateEl) dailyHeroDateEl.textContent = todayKey();
+    // Challenge context wins — the overlay is already telling a different story.
+    if (state.challengeContext) { showDailyHero(false); return; }
+    showDailyHero(true);
+    startDailyHeroCountdown();
+    fetchDailyHeroTop();
+    if (dailyHeroPlayBtn) {
+      dailyHeroPlayBtn.addEventListener('click', () => {
+        initAudio();
+        state.challengeContext = null;
+        refreshChallengeHud();
+        startGame(true);
+        try { plausible('Daily Hero Click'); } catch {}
+      });
+    }
+  }
+
+  // --- Boot-time: parse challenge URL, set context, ping Plausible ---
+  (function bootChallenge(){
+    const ctx = parseChallengeContextFromURL();
+    if (!ctx) return;
+    state.challengeContext = ctx;
+    refreshChallengeHud();
+    // Rewrite the home overlay to lead with the challenge so it's obvious why they landed here
+    const rival = ctx.from || 'A challenger';
+    const beat = (ctx.beat || 0).toLocaleString();
+    setTimeout(() => {
+      if (!ui.ovBody) return;
+      ui.ovTitle.textContent = `${rival} dares you`;
+      ui.ovBody.innerHTML = `<div style="font-size:16px;">Target: <b style="color:#ffd700;">${beat}</b> · same world, same seed.<br><span style="opacity:.85;">Hit <b>Play</b> below to start the challenge.</span></div>`;
+      // Repurpose Play to start the challenge directly
+    }, 0);
+    try { plausible('Challenge Received', { props: { rival, beat: ctx.beat | 0 } }); } catch {}
+  })();
 
   /* ====== Network helper ======
    * fetch() with a hard timeout via AbortController. Without this, a fetch can hang
@@ -1659,11 +2176,27 @@
     player.y = H / 2;
     player.vx = 0;
     player.vy = 0;
-    
+
+    // Reset run-tally for share-card ladder & copy text
+    state.runStats = { kills: 0, peakCombo: 0, themes: new Set([THEMES[0].key]), bossesKilled: 0, durationS: 0, beatRival: false };
+
     hydrateHUD();
     state.dailyMode = daily;
-    usingSeed = false;
-    if (daily) setDailySeed();
+
+    // Seed selection precedence: explicit challenge URL → daily seed → fresh random
+    // (Normal-mode runs are now seeded too, so every run is reproducible and shareable
+    // as a challenge URL. The seed value itself is random per run, so feel is unchanged.)
+    if (state.challengeContext && Number.isFinite(state.challengeContext.seed)) {
+      applyRunSeed(state.challengeContext.seed);
+    } else if (daily) {
+      applyRunSeed(hashToInt('looprunner:' + todayKey()));
+    } else {
+      applyRunSeed((Math.random() * 0xFFFFFFFF) >>> 0);
+    }
+
+    // Show / refresh challenge HUD strip if a challenge is active
+    refreshChallengeHud();
+
     hideOverlay();
     document.body.classList.add('playing');
   }
@@ -1683,7 +2216,7 @@
       while (hist.length > 20) hist.shift();
       setLS('lr_history', JSON.stringify(hist));
     } catch { /* ignore — history is decorative */ }
-    
+
     if (state.dailyMode) {
       if (score > state.dailyBest) {
         state.dailyBest = score;
@@ -1697,10 +2230,47 @@
         isPB = true;
       }
     }
-    
+
+    // Capture run duration for share card / copy text
+    state.runStats.durationS = state.time | 0;
+
+    // Decide challenge outcome (if this was a challenge run)
+    let challengeOutcome = null;
+    if (state.challengeContext && Number.isFinite(state.challengeContext.beat)) {
+      const beat = state.challengeContext.beat | 0;
+      challengeOutcome = score > beat ? 'win' : (score === beat ? 'tie' : 'loss');
+      state.runStats.beatRival = challengeOutcome === 'win';
+      try {
+        plausible('Challenge Completed', { props: {
+          outcome: challengeOutcome,
+          delta: score - beat,
+        }});
+      } catch {}
+    }
+
+    // Stash the summary used by share card / copy text / challenge URL
+    lastRunSummary = {
+      score,
+      best: state.dailyMode ? state.dailyBest : state.best,
+      isPB,
+      mode: state.dailyMode ? 'daily' : 'normal',
+      seed: state.runSeed >>> 0,
+      name: (getLS('lr_name', 'Player') || 'Player').slice(0, 20),
+      country: userCountry,
+      themeKey: currentTheme().key,
+      themeName: currentTheme().name,
+      themesVisited: state.runStats.themes.size,
+      kills: state.runStats.kills,
+      peakCombo: state.runStats.peakCombo,
+      bossesKilled: state.runStats.bossesKilled,
+      durationS: state.runStats.durationS,
+      date: todayKey(),
+      flavor: getEndOfRunFlavor(score, state.combo, state.time, isPB),
+      challenge: state.challengeContext ? { ...state.challengeContext, outcome: challengeOutcome } : null,
+    };
+
     hydrateHUD();
-    const flavor = getEndOfRunFlavor(score, state.combo, state.time, isPB);
-    setOverlayGameOver(score, state.dailyMode ? state.dailyBest : state.best, isPB, flavor);
+    setOverlayGameOver(score, state.dailyMode ? state.dailyBest : state.best, isPB, lastRunSummary.flavor);
     incrementRunsCompleted();
     submitScore();
     showLeaderboard(state.dailyMode ? 'daily' : 'normal');
@@ -1806,10 +2376,16 @@
 
   ui.start.addEventListener('click', () => {
     initAudio();
+    // Clicking Play from home clears any inbound challenge context — they're starting fresh.
+    state.challengeContext = null;
+    refreshChallengeHud();
     startGame(false);
   });
   ui.dailyBtn.addEventListener('click', () => {
     initAudio();
+    // Daily Run always takes the daily seed, regardless of any inbound challenge URL.
+    state.challengeContext = null;
+    refreshChallengeHud();
     startGame(true);
   });
   ui.btnResume.addEventListener('click', resumeGameUI);
@@ -1822,6 +2398,7 @@
   });
   ui.btnShare.addEventListener('click', doShare);
   ui.shareBtn.addEventListener('click', doShare);
+  if (ui.btnChallenge) ui.btnChallenge.addEventListener('click', doChallengeShare);
 
   /* ====== Loop ====== */
   let last = performance.now();
@@ -1903,6 +2480,8 @@
         state.themeCyclesCompleted++;
         pushBanner('YOU\'VE CIRCLED ALL THEMES', 'epic', 3.2);
       }
+      // Track themes visited this run (for share-card ladder)
+      state.runStats.themes.add(currentTheme().key);
       pushBanner('NEXT ERA: ' + currentTheme().name, 'great', 2.6);
       addFlash(0.45, '255,255,255');
       addShake(10);
@@ -1910,6 +2489,7 @@
 
     if (((state.score | 0) % 10) === 0) {
       ui.score.textContent = `Score: ${state.score | 0}`;
+      updateChallengeHudLive();
     }
 
     update(dt);
@@ -2197,6 +2777,10 @@
         killed = true;
 
         state.combo += 1;
+        // Per-run tally for share card / ladder
+        state.runStats.kills++;
+        if (state.combo > state.runStats.peakCombo) state.runStats.peakCombo = state.combo;
+        if (e.isBoss) state.runStats.bossesKilled++;
 
         // Score = base × type-mul × greed × combo-curve, with optional crit doubling
         let mult = e.scoreMul || 1;
@@ -2209,6 +2793,7 @@
         state.score += add;
         ui.combo.textContent = `Combo: ${state.combo}`;
         ui.score.textContent = `Score: ${state.score | 0}`;
+        updateChallengeHudLive();
         const floatColor = isCrit
           ? '#ff6688'
           : (mult >= 2 ? '#ffd700' : (mult >= 1.5 ? '#88ffcc' : '#ffeeaa'));
@@ -5108,14 +5693,19 @@
   }
 
   /* ====== Modal close-click ====== */
-  document.getElementById('lbModal').addEventListener('click', (e) => {
-    if (e.target.id === 'lbModal') e.currentTarget.classList.remove('show');
-  });
+  // lbModal is absent on the /embed/ widget — guard so game.js stays portable.
+  const __lbModalEl = document.getElementById('lbModal');
+  if (__lbModalEl) {
+    __lbModalEl.addEventListener('click', (e) => {
+      if (e.target.id === 'lbModal') e.currentTarget.classList.remove('show');
+    });
+  }
 
   /* ====== Boot ====== */
   resize();
   requestAnimationFrame(function loopStart() {
     requestAnimationFrame(loop);
   });
+  bootDailyHero();
   setOverlayHome();
 })();

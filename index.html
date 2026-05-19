@@ -195,11 +195,38 @@
       <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
     </div>
 
+    <!-- Challenge HUD strip — visible only when a ?c=<seed>&from=...&beat=... URL is loaded.
+         Pinned just under the top HUD so the player always knows the target score during a challenge run. -->
+    <div id="challengeHud" style="display:none;" aria-live="polite">
+      <span id="challengeHudFrom"></span>
+      <span id="challengeHudBeat"></span>
+      <span id="challengeHudYou"></span>
+    </div>
+
     <!-- Overlay -->
     <div id="overlay" class="visible" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
       <div id="overlayCard" class="container hero" style="max-width:560px;">
         <h3 id="overlayTitle">Loop Runner</h3>
         <div id="overlayBody">Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!</div>
+
+        <!-- Daily Run hero — visible on home overlay (hidden while in challenge mode). -->
+        <div id="dailyHero" style="display:none;">
+          <div class="dailyHero-bar">
+            <div class="dailyHero-meta">
+              <div class="dailyHero-label">TODAY'S DAILY RUN</div>
+              <div class="dailyHero-date" id="dailyHeroDate">—</div>
+            </div>
+            <div class="dailyHero-stats">
+              <div><span class="dailyHero-statLabel">Top today</span> <span id="dailyHeroTop">—</span></div>
+              <div><span class="dailyHero-statLabel">Next seed in</span> <span id="dailyHeroCountdown">—</span></div>
+            </div>
+          </div>
+          <div class="dailyHero-cta-row">
+            <button id="dailyHeroPlayBtn" class="cta cta--primary"><span aria-hidden="true">☀</span> Play today's Daily Run</button>
+            <span class="dailyHero-hint">Everyone plays the same seed · single global leaderboard</span>
+          </div>
+        </div>
+
         <div class="row" style="margin:8px 0;">
           <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
           <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
@@ -207,7 +234,13 @@
         <div id="overlayRow" class="row" style="margin:8px 0 0 0;">
           <button class="cta" id="btnResume" style="display:none">▶ Resume</button>
           <button class="cta" id="btnPlayAgain" style="display:none">↻ Play Again</button>
-          <button class="cta" id="btnShare">📣 Share</button>
+          <button class="cta" id="btnShare" style="display:none">📣 Share Run</button>
+          <button class="cta cta--secondary" id="btnChallenge" style="display:none">🎯 Challenge a Friend</button>
+        </div>
+        <!-- Share preview — populated after a run ends. Shows the auto-generated card so the player sees what they're about to share. -->
+        <div id="sharePreview" style="display:none; margin-top:10px;">
+          <canvas id="shareCardCanvas" width="1200" height="630" style="width:100%; max-width:480px; border-radius:12px; outline:1px solid #2e3240; display:block; margin:0 auto;"></canvas>
+          <div id="shareCopyText" style="margin-top:6px; opacity:.8; font-size:12px; font-family: ui-monospace, SFMono-Regular, monospace; white-space:pre-line; text-align:left; max-width:480px; margin-left:auto; margin-right:auto;"></div>
         </div>
         <div class="hint" style="opacity:.85; font-size:13px;">Controls: Right-click to fire • Space to restart • P / Esc to pause</div>
         <div style="margin-top:10px; opacity:.9; font-size:13px;">

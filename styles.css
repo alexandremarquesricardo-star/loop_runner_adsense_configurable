@@ -178,3 +178,92 @@ th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255
   from{ opacity:0; }
   to{ opacity:1; }
 }
+
+/* ====== Challenge HUD strip — pinned during a ?c=<seed>&from=... run ====== */
+#challengeHud{
+  position:fixed;
+  top: calc(var(--adH, 0px) + var(--navH, 44px) + 8px);
+  left:50%; transform:translateX(-50%);
+  z-index:18;
+  pointer-events:auto;
+  display:flex; gap:10px; align-items:center;
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(15,18,28,.85);
+  border:1px solid rgba(255,215,0,.45);
+  box-shadow:0 6px 22px rgba(0,0,0,.4), 0 0 24px rgba(255,215,0,.15);
+  font-size:13px; font-weight:600; letter-spacing:.02em;
+  color:#ffeeaa;
+  max-width:92vw;
+  white-space:nowrap;
+}
+body.playing #challengeHud{
+  top: calc(var(--adH, 0px) + 8px);
+}
+#challengeHud .ch-from{ color:#fff; opacity:.95; }
+#challengeHud .ch-beat{ color:#ffd700; }
+#challengeHud .ch-you{ color:#88ffcc; }
+#challengeHud .ch-you.win{ color:#7cfdd6; }
+#challengeHud .ch-you.lose{ color:#ff9999; }
+@media (max-width: 480px){
+  #challengeHud{ font-size:11.5px; gap:6px; padding:6px 10px; }
+}
+
+/* ====== Share preview thumbnail inside game-over overlay ====== */
+#sharePreview canvas{
+  background:#0b0b10;
+}
+#shareCopyText{
+  background:rgba(255,255,255,.04);
+  border:1px dashed rgba(255,255,255,.12);
+  border-radius:8px;
+  padding:8px 10px;
+}
+
+/* ====== Daily Run hero (home overlay marquee) ====== */
+#dailyHero{
+  margin:14px 0 6px 0;
+  padding:14px 16px;
+  border-radius:14px;
+  background:linear-gradient(135deg, rgba(255,215,0,.10), rgba(124,253,214,.06));
+  border:1px solid rgba(255,215,0,.30);
+  box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 8px 26px rgba(0,0,0,.35);
+}
+.dailyHero-bar{
+  display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
+  flex-wrap:wrap;
+}
+.dailyHero-meta{ min-width:160px; }
+.dailyHero-label{
+  font-size:11px; letter-spacing:.18em; font-weight:700;
+  color:#ffd700; opacity:.9;
+}
+.dailyHero-date{
+  font-size:20px; font-weight:700; color:#fff;
+  margin-top:2px; letter-spacing:.02em;
+}
+.dailyHero-stats{
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  font-size:14px; color:rgba(255,255,255,.85);
+}
+.dailyHero-stats > div{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  padding:6px 12px;
+  white-space:nowrap;
+}
+.dailyHero-statLabel{
+  opacity:.65; font-size:12px; margin-right:4px; text-transform:uppercase; letter-spacing:.06em;
+}
+.dailyHero-cta-row{
+  margin-top:12px;
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+.dailyHero-hint{
+  font-size:12px; opacity:.7;
+}
+@media (max-width: 520px){
+  .dailyHero-bar{ flex-direction:column; align-items:stretch; }
+  .dailyHero-stats{ flex-direction:column; align-items:flex-start; }
+}
