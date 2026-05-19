@@ -221,6 +221,21 @@
         </p>
       </section>
 
+      <!-- ARCHIVE_LIST_START — managed by .github/scripts/build-daily-archive.mjs. Do not edit by hand;
+           content between these markers is regenerated nightly with every new daily archive. -->
+      <section id="archiveList">
+        <h2>Archived Daily Runs</h2>
+        <p>Every completed Daily Run gets its own permanent page with the full top 10, a country breakdown, and a tier histogram. The newest archives appear first.</p>
+        <ul class="archive-list" style="margin:14px 0 0 0; padding:0; list-style:none; display:grid; gap:0;">
+          <li style="display:flex; gap:12px; align-items:baseline; font-size:14px; padding:6px 0; border-bottom:1px dashed rgba(255,255,255,.08);">
+            <a href="/daily/2026-05-18/" style="font-variant-numeric:tabular-nums; color:#7cfdd6; text-decoration:none; min-width:110px;">2026-05-18</a>
+            <span style="opacity:.95;">🇵🇹 4,588 · Ricardo</span>
+            <span style="margin-left:auto; opacity:.6; font-size:12px;">2 entries</span>
+          </li>
+        </ul>
+      </section>
+      <!-- ARCHIVE_LIST_END -->
+
       <section>
         <h2>Want a permanent spot?</h2>
         <p>
@@ -254,7 +269,10 @@
      * scheduled job needed. fetchWithTimeout-style abort in case the host hangs.
      */
     const SB_URL = 'https://azaqjxovkewurgbecizs.supabase.co/rest/v1/scores';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YXFqeG92a2V3dXJnYmVjaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNzAxNzAsImV4cCI6MjA2MTk0NjE3MH0.JMjXtiomb2qhiCoGo9JgDPqTKWWPGQSoOH34F-5b6SQ';
+    // Anon key for the current Supabase project (azaqjxovkewurgbecizs). The previous key here
+    // was issued before the 2026-05-07 project rebuild and silently returned 401 in prod,
+    // leaving the Hall of Fame stuck on "Fetching past Daily Runs…". Fixed 2026-05-19.
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YXFqeG92a2V3dXJnYmVjaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjIxNDMsImV4cCI6MjA5MzczODE0M30.ug99lkj1HoahFtjKSwz2GOBoPFStxf8JEh5FGE7UYr4';
     const SB_HEADERS = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
 
     function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
