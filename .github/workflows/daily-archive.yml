@@ -1,0 +1,55 @@
+name: Daily Run archive
+
+on:
+  schedule:
+    # 00:30 UTC daily — after the 00:00 UTC seed rollover so yesterday's submissions are fully closed.
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Optional YYYY-MM-DD to backfill (defaults to yesterday UTC)'
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-archive
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build archive page
+        env:
+          TARGET_DATE: ${{ inputs.target_date }}
+          # Twitter creds are optional — if any are missing the script skips the post silently.
+          TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+          TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+        run: node .github/scripts/build-daily-archive.mjs
+
+      - name: Commit + push if changed
+        run: |
+          git config user.name "playloop-bot"
+          git config user.email "bot@playloop.run"
+          git add daily/ sitemap.xml
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            STAMP=${TARGET_DATE:-$(date -u -d 'yesterday' +%Y-%m-%d)}
+            git commit -m "daily: archive ${STAMP} Daily Run results"
+            git push
+          fi
+        env:
+          TARGET_DATE: ${{ inputs.target_date }}
