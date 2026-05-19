@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loop Runner — Embedded Play</title>
+  <meta name="description" content="Loop Runner — embeddable arcade widget. Play instantly, full version at playloop.run." />
+  <meta name="robots" content="noindex,follow">
+  <meta name="theme-color" content="#0b0b10">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/styles.css">
+
+  <style>
+    /* Embed-only chrome: strip site-nav + top-ad away, full bleed. */
+    html, body { background:#0b0b10; }
+    body.embed { margin:0; }
+    body.embed #ad-top-wrapper,
+    body.embed #ad-spacer,
+    body.embed #site-nav,
+    body.embed #interstitial,
+    body.embed #lbModal,
+    body.embed #lbBtn,
+    body.embed #ad-modal-unit,
+    body.embed #ad-interstitial-unit,
+    body.embed footer { display:none !important; }
+
+    /* Brand strip: pinned bottom-right with "Play full version" CTA — every embed view is a back-link. */
+    .embed-brand {
+      position:fixed; right:10px; bottom:10px; z-index:60;
+      display:flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      background:rgba(15,18,28,.78);
+      border:1px solid rgba(124,253,214,.32);
+      font: 600 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:#7cfdd6; text-decoration:none;
+      box-shadow:0 6px 20px rgba(0,0,0,.4);
+      pointer-events:auto;
+    }
+    .embed-brand strong { color:#fff; }
+    .embed-brand:hover { background:rgba(15,18,28,.95); }
+
+    /* The full-version pill in the top corner — easy to spot, doesn't fight the HUD. */
+    .embed-cta {
+      position:fixed; left:50%; transform:translateX(-50%); top:8px; z-index:60;
+      padding:6px 12px; border-radius:999px;
+      background:rgba(15,18,28,.78);
+      border:1px solid rgba(255,215,0,.40);
+      color:#ffd700; font: 600 12px ui-sans-serif, system-ui, sans-serif; letter-spacing:.04em;
+      text-decoration:none;
+      box-shadow:0 6px 20px rgba(0,0,0,.4);
+    }
+    .embed-cta:hover { background:rgba(15,18,28,.95); }
+
+    /* When a real ad iframe doesn't exist, --adH would stay 0 anyway; force navH so layout math is correct. */
+    :root { --adH:0px; --navH:0px; }
+  </style>
+
+  <script>
+    // Track that this is an embed view so game.js (and Plausible) can record it.
+    document.documentElement.dataset.embed = '1';
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
+  </script>
+  <!-- Plausible: track embed views as a custom-path goal so we can measure widget distribution. -->
+  <script async defer data-domain="playloop.run" src="https://plausible.io/js/pa-R-jYP4Qbw6euJBmD-xEM6.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init();
+    try { plausible('Embed View', { props: { referrer: (document.referrer || 'direct').slice(0, 120) } }); } catch {}
+  </script>
+
+  <style>
+    #overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:27; pointer-events:auto; }
+    #overlay.visible{ display:flex; }
+    #overlayCard{
+      min-width:min(85%,520px); max-width:92%;
+      border-radius:16px; padding:14px 16px;
+      background:rgba(20,20,28,.88);
+      box-shadow:0 10px 30px rgba(0,0,0,.45);
+      outline:1px dashed #2e3240;
+      pointer-events:auto;
+    }
+    #overlay input, #overlay select, #overlay button { pointer-events:auto; }
+    body.embed.playing { overflow:hidden; }
+  </style>
+</head>
+
+<body class="embed">
+
+  <!-- Game canvas -->
+  <canvas id="game" aria-label="Loop Runner game canvas"></canvas>
+
+  <!-- Hidden stubs for the chrome that game.js expects to exist (it null-guards most, but a few
+       direct references like ui.start.addEventListener need a non-null target). They never render. -->
+  <div id="ad-top-wrapper" aria-hidden="true">
+    <ins id="ad-top-unit" class="adsbygoogle" aria-hidden="true"></ins>
+  </div>
+  <nav id="site-nav" aria-hidden="true"></nav>
+  <div id="ad-spacer" aria-hidden="true"></div>
+
+  <!-- Visible UI: HUD + overlay -->
+  <div id="ui" aria-live="polite">
+    <div class="hud">
+      <div id="score" class="pill">Score: 0</div>
+      <div id="combo" class="pill">Combo: 0</div>
+      <div id="best" class="pill">Best: 0</div>
+      <div id="daily" class="pill">Daily: 0</div>
+      <button id="lbBtn" class="cta cta--secondary" style="display:none;">Leaderboard</button>
+    </div>
+
+    <div id="challengeHud" style="display:none;" aria-live="polite">
+      <span id="challengeHudFrom"></span>
+      <span id="challengeHudBeat"></span>
+      <span id="challengeHudYou"></span>
+    </div>
+
+    <div id="overlay" class="visible" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+      <div id="overlayCard" class="container hero" style="max-width:520px;">
+        <h3 id="overlayTitle">Loop Runner</h3>
+        <div id="overlayBody">Tap or right-click to fire. Chain kills to build combo. Catch power-ups for special abilities!</div>
+
+        <div id="dailyHero" style="display:none;">
+          <div class="dailyHero-bar">
+            <div class="dailyHero-meta">
+              <div class="dailyHero-label">TODAY'S DAILY RUN</div>
+              <div class="dailyHero-date" id="dailyHeroDate">—</div>
+            </div>
+            <div class="dailyHero-stats">
+              <div><span class="dailyHero-statLabel">Top today</span> <span id="dailyHeroTop">—</span></div>
+              <div><span class="dailyHero-statLabel">Next seed in</span> <span id="dailyHeroCountdown">—</span></div>
+            </div>
+          </div>
+          <div class="dailyHero-cta-row">
+            <button id="dailyHeroPlayBtn" class="cta cta--primary"><span aria-hidden="true">☀</span> Play today's Daily Run</button>
+            <span class="dailyHero-hint">Same seed worldwide · single global leaderboard</span>
+          </div>
+        </div>
+
+        <div class="row" style="margin:8px 0;">
+          <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
+          <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
+        </div>
+        <div id="overlayRow" class="row" style="margin:8px 0 0 0;">
+          <button class="cta" id="btnResume" style="display:none">▶ Resume</button>
+          <button class="cta" id="btnPlayAgain" style="display:none">↻ Play Again</button>
+          <button class="cta" id="btnShare" style="display:none">📣 Share Run</button>
+          <button class="cta cta--secondary" id="btnChallenge" style="display:none">🎯 Challenge a Friend</button>
+        </div>
+        <div id="sharePreview" style="display:none; margin-top:10px;">
+          <canvas id="shareCardCanvas" width="1200" height="630" style="width:100%; max-width:440px; border-radius:12px; outline:1px solid #2e3240; display:block; margin:0 auto;"></canvas>
+          <div id="shareCopyText" style="margin-top:6px; opacity:.8; font-size:12px; font-family: ui-monospace, SFMono-Regular, monospace; white-space:pre-line; text-align:left; max-width:440px; margin-left:auto; margin-right:auto;"></div>
+        </div>
+        <div class="hint" style="opacity:.85; font-size:12px;">Right-click / tap to fire · Space to restart · P / Esc to pause</div>
+        <div style="margin-top:8px; opacity:.9; font-size:12px;">
+          Name:
+          <input id="nameInput" type="text" placeholder="Your name (for scores)" style="width:200px;" autocomplete="nickname" inputmode="text" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden stubs: interstitial + lbModal — game.js null-guards both but registers DOM on boot.
+       Keeping them present (display:none) avoids a regression if any future code does a direct ref. -->
+  <div id="interstitial" class="interstitial" aria-hidden="true" role="dialog" style="display:none;">
+    <div class="interstitial-sheet">
+      <div id="interstitialTitle" class="interstitial-title">—</div>
+      <div class="interstitial-ad-wrap"><ins id="ad-interstitial-unit" class="adsbygoogle"></ins></div>
+      <button id="interstitialContinue" class="cta cta--primary" disabled>Continue</button>
+    </div>
+  </div>
+  <div id="lbModal" class="modal" aria-hidden="true" role="dialog" style="display:none;">
+    <div class="sheet">
+      <button id="lbClose" class="cta cta--secondary">Close</button>
+      <ins id="ad-modal-unit" class="adsbygoogle"></ins>
+      <select id="lbMode"><option value="normal">Normal</option><option value="daily">Daily</option></select>
+      <select id="lbScope"><option value="world">World</option><option value="country">Country</option></select>
+      <div id="lbInfo"></div>
+      <div id="lbUserBest" style="display:none;"><span id="lbUserScore">—</span><span id="lbUserRank"></span></div>
+      <div id="lbList"></div>
+      <div id="lbHistory"></div>
+      <div id="lbTicker"></div>
+      <button id="shareBtn" class="cta cta--secondary" style="display:none;">Share</button>
+    </div>
+  </div>
+
+  <!-- Branding: bottom-right strip + top-center pill, both link to the full version -->
+  <a class="embed-cta" href="https://playloop.run/" target="_blank" rel="noopener" onclick="try{plausible('Embed CTA Click',{props:{slot:'top'}})}catch{}">▶ Play full version</a>
+  <a class="embed-brand" href="https://playloop.run/" target="_blank" rel="noopener" onclick="try{plausible('Embed CTA Click',{props:{slot:'brand'}})}catch{}">
+    <span><strong>Loop Runner</strong> · playloop.run</span>
+  </a>
+
+  <script>
+    // Translate /embed/?seed=NNN → ?c=NNN so the existing challenge-URL parser picks it up.
+    // We also accept ?c= directly for parity.
+    (function(){
+      try {
+        const p = new URLSearchParams(location.search);
+        const seed = p.get('seed') || p.get('c');
+        if (seed && !p.get('c')) {
+          p.set('c', seed);
+          history.replaceState(null, '', location.pathname + '?' + p.toString());
+        }
+      } catch {}
+    })();
+  </script>
+  <script src="/game.js" defer></script>
+</body>
+</html>
