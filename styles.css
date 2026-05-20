@@ -212,6 +212,12 @@ body.playing #challengeHud{
 /* ====== Share preview thumbnail inside game-over overlay ====== */
 #sharePreview canvas{
   background:#0b0b10;
+  /* Override the generic `canvas { height: calc(100vh - ...) }` rule above
+     (which is for the main game canvas). The share-card canvas must size
+     by its intrinsic 1200x630 aspect ratio, not full-viewport height —
+     otherwise it renders ~1320px tall and shoves Share/Challenge buttons
+     below the fold. */
+  height:auto;
 }
 #shareCopyText{
   background:rgba(255,255,255,.04);
