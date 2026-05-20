@@ -244,6 +244,8 @@
   function setOverlayHome(){
     ui.ovTitle.textContent = 'Loop Runner';
     ui.ovBody.innerHTML = 'Aim with your mouse or finger. <b>Right-click</b> or <b>tap</b> to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!<br><span style="opacity:.9">Need help? Read the <a href=\'how-to-play.html\' style=\'color:#7cfdd6\'>How to Play</a> guide.</span>';
+    ui.start.style.display = '';
+    ui.dailyBtn.style.display = '';
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
     if (ui.btnShare) ui.btnShare.style.display = 'none';
@@ -259,6 +261,11 @@
   function setOverlayPaused(){
     ui.ovTitle.textContent = 'Paused';
     ui.ovBody.innerHTML = 'Press <b>P</b> or <b>Esc</b> to resume';
+    // Hide the home-overlay start buttons during pause/game-over — they
+    // duplicate Resume/Play Again and add noise that pulls focus away
+    // from the action the player actually wants (resume now, share later).
+    ui.start.style.display = 'none';
+    ui.dailyBtn.style.display = 'none';
     ui.btnResume.style.display = '';
     ui.btnPlayAgain.style.display = '';
     if (ui.btnShare) ui.btnShare.style.display = 'none';
@@ -297,6 +304,11 @@
     }
     ui.ovTitle.textContent = title;
     ui.ovBody.innerHTML = body;
+    // Hide the home-overlay start buttons on game-over — Play Again is the
+    // primary action; mixing it with #start/#dailyBtn made three "play" CTAs
+    // and diluted focus away from Share/Challenge.
+    ui.start.style.display = 'none';
+    ui.dailyBtn.style.display = 'none';
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = '';
 
@@ -1669,6 +1681,39 @@
     return filled + (bonus ? ' ' + bonus : '');
   }
 
+  // Canvas-drawn ladder used only by the share PNG (renderShareCard). Emoji
+  // ladders render differently on every OS (Windows ⬜ looks grey-purple,
+  // macOS looks flat white), and the resulting PNG locks that OS-specific
+  // look in for every recipient. Drawing the bars ourselves keeps the share
+  // visual identical regardless of which platform produced it.
+  // buildLadderEmoji() is still used for the share TEXT — there each
+  // platform renders the unicode natively, which is the correct behaviour.
+  function drawShareLadder(c, summary, cx, cy) {
+    const tiers = LADDER_TIERS;
+    const barW = 90, barH = 34, gap = 12, radius = 8;
+    const totalW = tiers.length * barW + (tiers.length - 1) * gap;
+    const startX = cx - totalW / 2;
+    for (let i = 0; i < tiers.length; i++) {
+      const x = startX + i * (barW + gap);
+      const filled = summary.score >= tiers[i];
+      roundRect(c, x, cy - barH / 2, barW, barH, radius);
+      if (filled) {
+        c.fillStyle = '#7cfdd6';
+        c.shadowColor = 'rgba(124,253,214,0.6)';
+        c.shadowBlur = 22;
+        c.fill();
+        c.shadowBlur = 0;
+      } else {
+        c.fillStyle = 'rgba(255,255,255,0.06)';
+        c.fill();
+        c.strokeStyle = 'rgba(255,255,255,0.22)';
+        c.lineWidth = 1.5;
+        roundRect(c, x, cy - barH / 2, barW, barH, radius);
+        c.stroke();
+      }
+    }
+  }
+
   // --- Copy text (the thing that goes in tweets / WhatsApp / Discord) ---
   function renderShareText(summary) {
     const lines = [];
@@ -1798,10 +1843,9 @@
     const statsLine = `${summary.kills} kills  ·  combo ×${summary.peakCombo}  ·  ${formatDuration(summary.durationS)}` + (summary.bossesKilled ? `  ·  ${summary.bossesKilled} boss${summary.bossesKilled > 1 ? 'es' : ''}` : '');
     c.fillText(statsLine, w / 2, h / 2 + 130);
 
-    // Ladder emoji bar
-    c.font = '600 56px ui-sans-serif, "Segoe UI Emoji", "Apple Color Emoji", system-ui, sans-serif';
-    c.fillStyle = '#fff';
-    c.fillText(buildLadderEmoji(summary), w / 2, h - 130);
+    // Canvas-drawn ladder (NOT emoji) so every recipient sees the same
+    // visual regardless of which OS rendered the share. See drawShareLadder.
+    drawShareLadder(c, summary, w / 2, h - 130);
 
     // Challenge ribbon (if challenge run)
     if (summary.challenge && summary.challenge.outcome) {
