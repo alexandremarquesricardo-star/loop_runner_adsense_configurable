@@ -179,11 +179,14 @@ function buildShareHtml(params) {
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${esc(cardUrl)}">
 
-<meta http-equiv="refresh" content="0;url=${esc(gameUrl)}">
+<!-- NO meta-refresh here on purpose. Slack's unfurler (and a few others)
+     follow http-equiv="refresh" and then unfurl the redirect destination
+     instead of this page, which kills the personalised og:image. JS-only
+     redirect below: bots don't run JS so they see the og tags; browsers
+     run JS so users still go straight to the game. -->
 <style>body{background:#0a0b12;color:#7cfdd6;font:14px/1.4 system-ui,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;text-align:center}a{color:#7cfdd6}</style>
 </head>
 <body>
-<noscript><p>Redirecting to <a href="${esc(gameUrl)}">${esc(gameUrl)}</a>…</p></noscript>
 <p>Loading the challenge…<br><a href="${esc(gameUrl)}">${esc(gameUrl)}</a></p>
 <script>location.replace(${JSON.stringify(gameUrl)});</script>
 </body>
