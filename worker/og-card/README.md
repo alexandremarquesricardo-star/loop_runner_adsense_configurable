@@ -24,6 +24,18 @@ npx wrangler login              # one-time Cloudflare auth
 npx wrangler deploy             # deploys to playloop-og-card.<account>.workers.dev
 ```
 
+> **Before the cards render text**, you must bundle Inter (or any TTF) into `src/fonts/`. Cloudflare Workers has no system fonts, so `<text>` nodes render empty until two files exist:
+>
+> ```bash
+> mkdir -p src/fonts
+> # Grab Inter from https://github.com/rsms/inter/releases (Inter-4.x.zip)
+> # Copy these two from the unzipped "Inter Desktop" folder:
+> #   Inter-Regular.ttf  → src/fonts/Inter-Regular.ttf
+> #   Inter-Bold.ttf     → src/fonts/Inter-Bold.ttf
+> ```
+>
+> Then uncomment the two `import interBold/interRegular` lines at the top of `src/index.mjs` and redeploy. The worker will deploy without fonts (good for initial smoke-test that the route + WASM init works), but cards will be text-less until you add them.
+
 Hit it once to confirm:
 ```
 curl -I "https://playloop-og-card.<account>.workers.dev/card?c=12345&from=Ricardo&score=12400&country=PT&theme=cyberpunk"
@@ -46,6 +58,6 @@ Cloudflare Workers free tier: 100,000 requests/day, 10ms CPU per request. PNG re
 
 ## Notes
 
-- Font: currently relies on the SVG `font-family="Inter"` declaration plus resvg's fallback chain. For perfect cross-platform parity, drop `inter-regular.ttf` and `inter-bold.ttf` into `src/fonts/` and the worker will pick them up via the `Data` rule in `wrangler.toml` (the import lines at the top of `src/index.mjs` already reference them — currently inlined as `undefined` placeholders).
+- Font: text renders only when TTFs are bundled into `src/fonts/`. See the "First-time deploy" section above. The Resvg constructor automatically picks up whatever fonts are imported at the top of `src/index.mjs` via the `Data` rule in `wrangler.toml`.
 - The error path returns a minimal branded SVG so OG previews never break entirely.
 - If you ever need to bust caches, bump `CACHE_VERSION` in `src/index.mjs`.

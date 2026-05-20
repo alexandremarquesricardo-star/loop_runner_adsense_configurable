@@ -14,8 +14,15 @@
  */
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
 import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm';
-import interBold from './fonts/inter-bold.ttf';
-import interRegular from './fonts/inter-regular.ttf';
+// Font bundling is required before first deploy — Cloudflare Workers has no system
+// fonts, so without bundled TTFs the SVG <text> nodes render empty. To enable text:
+//   1. Drop Inter-Regular.ttf and Inter-Bold.ttf into src/fonts/
+//   2. Uncomment the two imports below
+// The Resvg constructor below picks them up automatically via the `fontBuffers` array.
+// import interBold from './fonts/Inter-Bold.ttf';
+// import interRegular from './fonts/Inter-Regular.ttf';
+const interBold = null;
+const interRegular = null;
 
 const CACHE_VERSION = 'v1';
 
@@ -100,7 +107,7 @@ function buildSvg({ score, name, country, themeKey, seed, date, isChallenge, riv
     <text x="${W-60}" y="112" font-family="Inter" font-weight="500" font-size="20" fill="rgba(255,255,255,0.7)" text-anchor="end">${flag} ${esc(name)}</text>
 
     <!-- Huge score -->
-    <text x="${W/2}" y="${H/2 + 10}" font-family="Inter" font-weight="800" font-size="180" fill="${sColor}" text-anchor="middle" filter="url(#glow)">${score.toLocaleString()}</text>
+    <text x="${W/2}" y="${H/2 + 10}" font-family="Inter" font-weight="800" font-size="180" fill="${sColor}" text-anchor="middle">${score.toLocaleString()}</text>
     <text x="${W/2}" y="${H/2 + 90}" font-family="Inter" font-weight="600" font-size="28" fill="rgba(255,255,255,0.75)" text-anchor="middle">POINTS</text>
 
     <!-- Ladder -->
@@ -138,13 +145,14 @@ export default {
       const params = parseParams(url);
       await ensureInit();
       const svg = buildSvg(params);
+      // resvg-wasm 2.x: pass TTF bytes via font.fontBuffers. Filter out the nulls
+      // so the worker still deploys before fonts are bundled (text will be blank
+      // until you drop fonts into src/fonts/ — see the import block at the top).
+      const fontBuffers = [interBold, interRegular].filter(Boolean).map(f => new Uint8Array(f));
       const resvg = new Resvg(svg, {
         fitTo: { mode: 'width', value: 1200 },
-        font: { loadSystemFonts: false, fontFiles: [], defaultFontFamily: 'Inter' },
+        font: { loadSystemFonts: false, fontBuffers, defaultFontFamily: 'Inter' },
       });
-      // Register the inlined fonts so SVG text renders
-      // (resvg-wasm reads ttf bytes; the wrangler binding gives us ArrayBuffer-like values)
-      // Note: @resvg/resvg-wasm 2.x accepts fontBuffers in the constructor instead — both paths supported here.
       const png = resvg.render().asPng();
       return new Response(png, {
         headers: {
