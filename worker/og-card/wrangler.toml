@@ -9,12 +9,9 @@ rules = [
   { type = "CompiledWasm",  globs = ["**/*.wasm"],            fallthrough = true },
 ]
 
-# Custom route — populate with your zone after the worker is deployed.
-# Example:
-#   route = "og.playloop.run/*"
-#
-# Leaving this commented so first `wrangler deploy` puts the worker on workers.dev
-# (e.g. playloop-og-card.<account>.workers.dev) and you can validate before flipping DNS.
+# Bind the worker to og.playloop.run. The CNAME og → playloop-og-card.<account>.workers.dev
+# in Cloudflare DNS (orange-cloud / proxied) is what makes this route resolve.
+route = { pattern = "og.playloop.run/*", zone_name = "playloop.run" }
 
 [observability]
 enabled = true

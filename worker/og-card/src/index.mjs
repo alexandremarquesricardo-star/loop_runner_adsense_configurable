@@ -14,15 +14,12 @@
  */
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
 import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm';
-// Font bundling is required before first deploy — Cloudflare Workers has no system
-// fonts, so without bundled TTFs the SVG <text> nodes render empty. To enable text:
-//   1. Drop Inter-Regular.ttf and Inter-Bold.ttf into src/fonts/
-//   2. Uncomment the two imports below
-// The Resvg constructor below picks them up automatically via the `fontBuffers` array.
-// import interBold from './fonts/Inter-Bold.ttf';
-// import interRegular from './fonts/Inter-Regular.ttf';
-const interBold = null;
-const interRegular = null;
+// Inter fonts bundled into the worker via the `Data` rule in wrangler.toml.
+// Wrangler reads the TTF bytes at build time and inlines them; the Resvg
+// constructor below picks them up via the `fontBuffers` array. To swap fonts,
+// drop new TTFs into src/fonts/ and update the import filenames.
+import interBold from './fonts/Inter-Bold.ttf';
+import interRegular from './fonts/Inter-Regular.ttf';
 
 const CACHE_VERSION = 'v1';
 
@@ -135,40 +132,118 @@ function parseParams(url) {
   return { score, beat, name, country, themeKey, seed, date, rivalName, rivalScore: beat, isChallenge };
 }
 
+// HTML wrapper page returned for /c/ (challenge share links). Unfurlers read
+// the og:* tags server-side and never run JS, so this is the only way to get
+// rich previews in iMessage / Discord / X / Slack / WhatsApp. Browser users
+// hit the meta-refresh + JS location.replace and end up on playloop.run.
+function buildShareHtml(params) {
+  const cardUrl = `https://og.playloop.run/card?c=${encodeURIComponent(params.seed)}`
+    + `&from=${encodeURIComponent(params.name)}`
+    + `&score=${params.score | 0}`
+    + (params.isChallenge ? `&rival=${encodeURIComponent(params.rivalName)}&beat=${params.rivalScore | 0}` : '')
+    + `&country=${encodeURIComponent(params.country)}`
+    + `&theme=${encodeURIComponent(params.themeKey)}`
+    + `&date=${encodeURIComponent(params.date)}`;
+
+  const gameUrl = `https://playloop.run/?c=${encodeURIComponent(params.seed)}`
+    + `&from=${encodeURIComponent(params.name)}`
+    + (params.score ? `&beat=${params.score | 0}` : '');
+
+  const title = params.score > 0
+    ? `Beat ${esc(params.name)}'s ${params.score.toLocaleString()} on Loop Runner`
+    : `${esc(params.name)} on Loop Runner`;
+  const description = `Replay the exact same run. One mistake ends it. Daily seed, global leaderboard, no install.`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${esc(title)}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="${esc(gameUrl)}">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="${esc(gameUrl)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:image" content="${esc(cardUrl)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="${esc(title)}">
+<meta property="og:site_name" content="Loop Runner">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(cardUrl)}">
+
+<meta http-equiv="refresh" content="0;url=${esc(gameUrl)}">
+<style>body{background:#0a0b12;color:#7cfdd6;font:14px/1.4 system-ui,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;text-align:center}a{color:#7cfdd6}</style>
+</head>
+<body>
+<noscript><p>Redirecting to <a href="${esc(gameUrl)}">${esc(gameUrl)}</a>…</p></noscript>
+<p>Loading the challenge…<br><a href="${esc(gameUrl)}">${esc(gameUrl)}</a></p>
+<script>location.replace(${JSON.stringify(gameUrl)});</script>
+</body>
+</html>`;
+}
+
+async function renderCardPng(params) {
+  await ensureInit();
+  const svg = buildSvg(params);
+  const fontBuffers = [interBold, interRegular].filter(Boolean).map(f => new Uint8Array(f));
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'width', value: 1200 },
+    font: { loadSystemFonts: false, fontBuffers, defaultFontFamily: 'Inter' },
+  });
+  return resvg.render().asPng();
+}
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-    if (!url.pathname.endsWith('/card') && !url.pathname.endsWith('/card.png') && url.pathname !== '/') {
-      return new Response('Not found', { status: 404 });
-    }
-    try {
+    const path = url.pathname;
+
+    // HTML share wrapper for challenge links: og.playloop.run/c/?c=<seed>&from=&beat=
+    // Unfurlers see og:* tags here; browser clients meta-refresh to playloop.run.
+    if (path === '/c' || path === '/c/' || path.startsWith('/c/')) {
       const params = parseParams(url);
-      await ensureInit();
-      const svg = buildSvg(params);
-      // resvg-wasm 2.x: pass TTF bytes via font.fontBuffers. Filter out the nulls
-      // so the worker still deploys before fonts are bundled (text will be blank
-      // until you drop fonts into src/fonts/ — see the import block at the top).
-      const fontBuffers = [interBold, interRegular].filter(Boolean).map(f => new Uint8Array(f));
-      const resvg = new Resvg(svg, {
-        fitTo: { mode: 'width', value: 1200 },
-        font: { loadSystemFonts: false, fontBuffers, defaultFontFamily: 'Inter' },
-      });
-      const png = resvg.render().asPng();
-      return new Response(png, {
+      const html = buildShareHtml(params);
+      return new Response(html, {
         headers: {
-          'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=31536000, immutable',
-          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/html; charset=utf-8',
+          // Short cache because the HTML wraps a redirect target that we may iterate on.
+          'Cache-Control': 'public, max-age=3600',
           'X-OG-Version': CACHE_VERSION,
         },
       });
-    } catch (err) {
-      // Fall back to a tiny error-state SVG response so OG previews still show something.
-      const errSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#0a0b12"/><text x="600" y="320" text-anchor="middle" font-family="Arial" font-size="48" fill="#7cfdd6">LOOP RUNNER · playloop.run</text></svg>`;
-      return new Response(errSvg, {
-        status: 200,
-        headers: { 'Content-Type': 'image/svg+xml', 'X-OG-Error': err.message.slice(0, 200), 'Cache-Control': 'no-store' },
-      });
     }
+
+    // PNG card endpoint.
+    if (path === '/' || path === '/card' || path === '/card.png') {
+      try {
+        const params = parseParams(url);
+        const png = await renderCardPng(params);
+        return new Response(png, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Access-Control-Allow-Origin': '*',
+            'X-OG-Version': CACHE_VERSION,
+          },
+        });
+      } catch (err) {
+        // Fall back to a tiny error-state SVG response so OG previews still show something.
+        const errSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#0a0b12"/><text x="600" y="320" text-anchor="middle" font-family="Arial" font-size="48" fill="#7cfdd6">LOOP RUNNER · playloop.run</text></svg>`;
+        return new Response(errSvg, {
+          status: 200,
+          headers: { 'Content-Type': 'image/svg+xml', 'X-OG-Error': err.message.slice(0, 200), 'Cache-Control': 'no-store' },
+        });
+      }
+    }
+
+    return new Response('Not found', { status: 404 });
   },
 };

@@ -1689,15 +1689,20 @@
     return lines.join('\n');
   }
 
-  // Inbound challenge URL the share link routes friends to. Always points at playloop.run/
-  // with ?c=<seed>&from=<name>&beat=<score>. We hardcode the canonical host so portal/iframe
-  // builds still emit a working link, not their iframe URL.
+  // Inbound challenge URL the share link routes friends to. Points at the
+  // og.playloop.run/c/ wrapper (Cloudflare Worker) which returns HTML with
+  // og:image meta tags so unfurlers (iMessage / Discord / X / Slack / WhatsApp)
+  // show a personalised preview card. Browser visitors meta-refresh straight
+  // through to playloop.run/?c=<seed>&from=&beat= and load the seeded replay.
+  // theme + country are passed so the card backdrop tint and flag match the run.
   function buildChallengeUrl(summary) {
-    const base = 'https://playloop.run/';
+    const base = 'https://og.playloop.run/c/';
     const params = new URLSearchParams();
     params.set('c', String(summary.seed >>> 0));
     if (summary.name) params.set('from', summary.name);
     if (summary.score) params.set('beat', String(summary.score | 0));
+    if (summary.themeKey) params.set('theme', summary.themeKey);
+    if (summary.country && summary.country !== 'XX') params.set('country', summary.country);
     return base + '?' + params.toString();
   }
 
