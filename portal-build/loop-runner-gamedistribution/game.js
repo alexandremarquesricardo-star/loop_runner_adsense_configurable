@@ -291,7 +291,67 @@
   const MAX_ENEMIES = 80;       // hard cap to keep frame budget healthy
   const MAX_ENEMY_BULLETS = 60; // safety cap for projectile spam
 
+  /* ====== Adaptive performance governor ======
+     The neon look leans hard on canvas shadowBlur (set ~150×/frame across every
+     enemy/bullet/shard) — by far the most expensive 2D op, and its cost scales with
+     on-screen entity count. Difficulty (and thus density) maxes at t=120s, so without
+     a governor the frame budget blows right around the 2-minute mark and the game
+     drags. This watches the real frame rate and sheds load — glow first, then particle
+     volume, then the effective enemy cap — to hold 60fps, restoring full fidelity once
+     frames are cheap again. On a healthy machine it simply stays pinned at top tier. */
+  const perf = {
+    glow: 1,                  // shadowBlur multiplier (0 = flat, 1 = full bloom)
+    particles: 1,             // particle / trail spawn multiplier
+    maxEnemies: MAX_ENEMIES,  // effective concurrent-enemy cap
+    shards: 1,                // death-debris count multiplier
+    fps: 60,                  // smoothed frame rate (EMA)
+    level: 2,                 // 0 = low, 1 = medium, 2 = high
+    _below: 0, _above: 0,     // hysteresis counters
+  };
+  const PERF_TIERS = [
+    { glow: 0.0,  particles: 0.35, maxEnemies: 46, shards: 0.5  }, // 0 — struggling: glow off
+    { glow: 0.55, particles: 0.65, maxEnemies: 62, shards: 0.75 }, // 1 — reduced bloom
+    { glow: 1.0,  particles: 1.0,  maxEnemies: MAX_ENEMIES, shards: 1.0 }, // 2 — full quality
+  ];
+  function applyPerfTier() {
+    const t = PERF_TIERS[perf.level];
+    perf.glow = t.glow; perf.particles = t.particles;
+    perf.maxEnemies = t.maxEnemies; perf.shards = t.shards;
+  }
+  function updatePerf(dt) {
+    // dt is clamped to ≤0.05 upstream, so a frozen tab reads as 20fps rather than 0 —
+    // the EMA + sustained counters keep one-off GC spikes from dropping quality.
+    const inst = dt > 0 ? 1 / dt : 60;
+    perf.fps += (inst - perf.fps) * 0.05; // smooth over ~20 frames
+    // Demote quickly (≈0.75s of sustained slowdown) but promote slowly (≈4s of smooth
+    // frames) so quality doesn't visibly flap at the threshold.
+    if (perf.fps < 50 && perf.level > 0) {
+      if (++perf._below > 45) { perf.level--; applyPerfTier(); perf._below = 0; perf._above = 0; }
+    } else perf._below = 0;
+    if (perf.fps > 58 && perf.level < 2) {
+      if (++perf._above > 240) { perf.level++; applyPerfTier(); perf._above = 0; perf._below = 0; }
+    } else perf._above = 0;
+  }
+
+  // Single-point glow scaler: route every `ctx.shadowBlur = N` through perf.glow so the
+  // governor can dim or kill bloom across all draw sites at once. Setting blur to 0 is
+  // the biggest per-entity win when the frame rate dips.
+  (function interceptShadowBlur() {
+    let proto = ctx, desc = null;
+    while (proto && !(desc = Object.getOwnPropertyDescriptor(proto, 'shadowBlur'))) {
+      proto = Object.getPrototypeOf(proto);
+    }
+    if (!desc || !desc.set) return; // unsupported engine — leave native behavior intact
+    Object.defineProperty(ctx, 'shadowBlur', {
+      get() { return desc.get.call(this); },
+      set(v) { desc.set.call(this, v * perf.glow); },
+      configurable: true,
+    });
+  })();
+
   function addParticle(x, y, color = '#8fb3ff', size = 2, life = 0.4, speedMin = 40, speedMax = 240) {
+    // Thin out bursts when the governor has scaled particle volume down.
+    if (perf.particles < 1 && Math.random() > perf.particles) return;
     const a = rnd(0, Math.PI * 2);
     const sp = rnd(speedMin, speedMax);
     particles.push({
@@ -808,7 +868,7 @@
   function difficulty01() { return clamp01(state.time / 120); }
 
   function spawnEnemy() {
-    if (enemies.length >= MAX_ENEMIES) return;
+    if (enemies.length >= perf.maxEnemies) return;
     const type = pickEnemyType(state.time);
     if (type === 'swarmer') {
       announceFirstSeen('swarmer');
@@ -824,7 +884,7 @@
     const count = rndi(5, 7);
     const baseSpeed = 90 + difficulty01() * 90;
     for (let i = 0; i < count; i++) {
-      if (enemies.length >= MAX_ENEMIES) break;
+      if (enemies.length >= perf.maxEnemies) break;
       const x = bx + rnd(-36, 36);
       const y = by + rnd(-36, 36);
       const r = 8;
@@ -901,7 +961,7 @@
   function spawnSplitterChildren(parent) {
     // Two mini-grunts flying outward; they're regular grunts (no extra credit).
     for (let k = 0; k < 2; k++) {
-      if (enemies.length >= MAX_ENEMIES) break;
+      if (enemies.length >= perf.maxEnemies) break;
       const ang = rnd(0, Math.PI * 2);
       const sp  = rnd(120, 180);
       enemies.push({
@@ -1340,7 +1400,10 @@
     state.spawnInterval = 1.1;
     state.fireRounds = state.maxFireRounds;
     state.rechargeTimer = 0;
-    
+
+    // Each run starts at full fidelity; the governor sheds load only if frames actually drag.
+    perf.level = 2; perf.fps = 60; perf._below = 0; perf._above = 0; applyPerfTier();
+
     enemies.length = 0;
     bullets.length = 0;
     particles.length = 0;
@@ -1516,6 +1579,8 @@
       dt *= 0.4;
     }
 
+    updatePerf(dt);
+
     state.time += dt;
     state.score += dt * 10;
 
@@ -1545,7 +1610,7 @@
       const d = difficulty01();
       state.spawnInterval = lerp(1.1, 0.42, d);
       // Past 60s, sometimes burst-spawn a second enemy at the same beat
-      if (state.time > 60 && Math.random() < 0.15 + d * 0.15) spawnEnemy();
+      if (state.time > 60 && perf.level >= 1 && Math.random() < 0.15 + d * 0.15) spawnEnemy();
       state.spawnTimer = state.spawnInterval;
     }
 
@@ -1590,7 +1655,7 @@
       b.life -= dt;
 
       // Trail particle
-      if (Math.random() < 0.85) {
+      if (Math.random() < 0.85 * perf.particles) {
         particles.push({
           x: b.x, y: b.y,
           vx: -b.vx * 0.05 + rnd(-20, 20),
