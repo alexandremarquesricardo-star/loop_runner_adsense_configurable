@@ -1,6 +1,16 @@
 {
   "days": [
     {
+      "date": "2026-06-01",
+      "url": "/daily/2026-06-01/",
+      "entries": 5,
+      "winner": {
+        "name": "Ricardo",
+        "score": 35421,
+        "country": "GB"
+      }
+    },
+    {
       "date": "2026-05-31",
       "url": "/daily/2026-05-31/",
       "entries": 1,
@@ -105,5 +115,5 @@
       }
     }
   ],
-  "updatedAt": "2026-06-01T05:22:22.123Z"
+  "updatedAt": "2026-06-02T05:07:52.195Z"
 }
