@@ -36,8 +36,10 @@
     #overlay{
       position:fixed; inset:0; display:none;
       align-items:center; justify-content:center; z-index:27;
-      /* IMPORTANT: enable interaction despite #ui { pointer-events:none } */
-      pointer-events:auto;
+      /* Click-through on the empty area: the transparent overlay spans the whole
+         viewport and would otherwise swallow clicks meant for the HUD (e.g. the
+         Leaderboard button). The card + its controls re-enable pointer-events below. */
+      pointer-events:none;
     }
     #overlay.visible{ display:flex; }
 

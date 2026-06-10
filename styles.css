@@ -68,6 +68,10 @@ canvas{ display:block; width:100vw; height:calc(100vh - var(--adH, 0px) - var(--
 #ui{ position:fixed; inset:0; pointer-events:none; }
 .hud{ position:absolute; left:12px; top:calc(var(--adH, 0px) + var(--navH, 0px) + 12px); display:flex; gap:12px; align-items:center; transition: top .25s ease; }
 body.playing .hud{ top:calc(var(--adH, 0px) + 12px); }
+/* Score & Combo are live-only values (always 0 before a run) — hide them on the
+   landing screen so the HUD isn't four dead zeros. Best/Daily stay as record teasers. */
+#score, #combo{ display:none; }
+body.playing #score, body.playing #combo{ display:block; }
 .pill{ background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; color:#c9d1d9; }
 .cta{ pointer-events:auto; border:0; border-radius:14px; padding:.6rem .9rem; font-weight:800; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; user-select:none; -webkit-tap-highlight-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.2); }
 .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; border:1px solid rgba(124,253,214,.25); }

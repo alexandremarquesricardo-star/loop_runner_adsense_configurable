@@ -15,7 +15,9 @@
     #overlay{
       position:fixed; inset:0; display:none;
       align-items:center; justify-content:center; z-index:27;
-      pointer-events:auto;
+      /* Click-through on empty area so the overlay doesn't swallow HUD clicks
+         (e.g. Leaderboard). Card + controls re-enable pointer-events below. */
+      pointer-events:none;
     }
     #overlay.visible{ display:flex; }
 
