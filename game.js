@@ -197,6 +197,7 @@
     ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
     start:$('#start'), dailyBtn:$('#dailyBtn'),
     btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'), btnChallenge:$('#btnChallenge'),
+    btnRevive:$('#btnRevive'), btnReviveSkip:$('#btnReviveSkip'),
     lbBtn:$('#lbBtn'), nameInput:$('#nameInput'),
     restartBtn:$('#restartBtn'), shareBtn:$('#shareBtn'),
     dailyBanner:$('#dailyBanner')
@@ -256,6 +257,8 @@
       const el = document.getElementById('dailyHero');
       if (el) el.style.display = '';
     }
+    if (ui.btnRevive) ui.btnRevive.style.display = 'none';
+    if (ui.btnReviveSkip) ui.btnReviveSkip.style.display = 'none';
     showOverlay();
   }
   function setOverlayPaused(){
@@ -270,6 +273,8 @@
     ui.btnPlayAgain.style.display = '';
     if (ui.btnShare) ui.btnShare.style.display = 'none';
     if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
+    if (ui.btnRevive) ui.btnRevive.style.display = 'none';
+    if (ui.btnReviveSkip) ui.btnReviveSkip.style.display = 'none';
     hideSharePreview();
     showOverlay();
   }
@@ -318,6 +323,8 @@
     renderSharePreview();
     // Game-over overlay hides the daily-hero panel — the run's own result is the focus now.
     const dh = document.getElementById('dailyHero'); if (dh) dh.style.display = 'none';
+    if (ui.btnRevive) ui.btnRevive.style.display = 'none';
+    if (ui.btnReviveSkip) ui.btnReviveSkip.style.display = 'none';
 
     showOverlay();
   }
@@ -455,7 +462,7 @@
   };
 
   /* ====== Entities ====== */
-  const player = { x: W/2, y: H/2, r: 12, vx: 0, vy: 0, maxSpeed: 400, friction: 8, angle: 0 };
+  const player = { x: W/2, y: H/2, r: 12, vx: 0, vy: 0, maxSpeed: 400, friction: 8, angle: 0, invuln: 0 };
   const enemies = [];
   const bullets = [];
   const particles = [];
@@ -2289,6 +2296,8 @@
     player.y = H / 2;
     player.vx = 0;
     player.vy = 0;
+    player.invuln = 0;
+    state.revivesUsed = 0;
 
     // Reset run-tally for share-card ladder & copy text
     state.runStats = { kills: 0, peakCombo: 0, themes: new Set([THEMES[0].key]), bossesKilled: 0, durationS: 0, beatRival: false };
@@ -2319,6 +2328,15 @@
     state.paused = false;
     state.deathFreezeTimer = 1.5; // play out the burst, then freeze the canvas
     document.body.classList.remove('playing');
+    // Offer a rewarded revive before finalizing. canOfferRevive() is false unless a
+    // rewarded ad can actually serve (dev/localhost, or H5 Games Ads enabled in prod),
+    // so today this falls straight through to commit — behaviour is unchanged.
+    if (rewardedAds.canOfferRevive()) { offerRevive(); return; }
+    commitGameOver();
+  }
+
+  // Finalize the run: persist history, update bests, submit score, surface the LB.
+  function commitGameOver() {
     const score = state.score | 0;
     let isPB = false;
 
@@ -2387,6 +2405,135 @@
     incrementRunsCompleted();
     submitScore();
     showLeaderboard(state.dailyMode ? 'daily' : 'normal');
+  }
+
+  /* ====== Rewarded video — AdSense H5 Games Ads (adBreak API) ======
+   * Highest-eCPM lever in casual games. Drives the opt-in "watch ad to revive" at
+   * game-over. Degrades gracefully: if H5 Games Ads isn't live yet (site still in
+   * AdSense review), no revive is offered and the run finalizes exactly as before.
+   *
+   * Flags:
+   *   H5_ENABLED — flip to true once AdSense H5 Games Ads is approved/enabled for the
+   *                account. Kept false while the site is under review so the pending
+   *                display-ad review is never perturbed by adBreak calls in prod.
+   *   DEV_FREE   — on localhost, simulate a rewarded ad so the revive UX is testable
+   *                without a live creative.
+   */
+  const rewardedAds = (function () {
+    const H5_ENABLED = false;
+    const DEV_FREE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+    let inited = false;
+
+    const adsLive = () => H5_ENABLED || DEV_FREE;
+    const push = (o) => { try { (window.adsbygoogle = window.adsbygoogle || []).push(o); } catch (e) {} };
+
+    function init() {
+      if (inited) return; inited = true;
+      if (!H5_ENABLED || DEV_FREE) return;
+      // Preload the rewarded creative so beforeReward can fire instantly at game-over.
+      push({ preloadAdBreaks: 'on', sound: 'on' });
+    }
+
+    function canOfferRevive() {
+      if (!adsLive()) return false;            // no ad can serve → no offer (no UI flicker)
+      if ((state.revivesUsed || 0) >= 1) return false; // one revive per run
+      if (state.dailyMode) return false;       // keep the shared-seed daily board revive-free
+      if ((state.score | 0) < 200) return false; // not worth an ad on a tiny run
+      return true;
+    }
+
+    // onAvailable(showAdFn): an ad is ready — call showAdFn() when the user opts in.
+    // onReward(): the user finished the ad — grant the revive.
+    // onUnavailable(): no ad / dismissed / error — caller should finalize the run.
+    function requestRevive({ onAvailable, onReward, onUnavailable }) {
+      let settled = false;
+      const done = (granted) => { if (settled) return; settled = true; (granted ? onReward : onUnavailable)(); };
+
+      if (DEV_FREE) {
+        onAvailable(() => setTimeout(() => done(true), 1200)); // fake "watching" delay
+        return;
+      }
+
+      push({
+        type: 'reward',
+        name: 'revive',
+        beforeReward(showAdFn) { onAvailable(showAdFn); },
+        adViewed() { done(true); },
+        adDismissed() { done(false); },
+        adBreakDone(info) {
+          const s = info && info.breakStatus;
+          if (s !== 'viewed' && s !== 'dismissed') done(false); // notReady/timeout/error/…
+        },
+      });
+    }
+
+    return { init, canOfferRevive, requestRevive };
+  })();
+  rewardedAds.init();
+
+  function setOverlayRevive(score, status) {
+    ui.ovTitle.textContent = 'Continue your run?';
+    const base = `You went down at <b>${score.toLocaleString()}</b>. Watch a short ad to revive on the spot and keep the run alive.`;
+    ui.ovBody.innerHTML = status ? `${base}<br><span style="opacity:.8; font-style:italic;">${status}</span>` : base;
+    ui.start.style.display = 'none';
+    ui.dailyBtn.style.display = 'none';
+    ui.btnResume.style.display = 'none';
+    ui.btnPlayAgain.style.display = 'none';
+    if (ui.btnShare) ui.btnShare.style.display = 'none';
+    if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
+    hideSharePreview();
+    const dh = document.getElementById('dailyHero'); if (dh) dh.style.display = 'none';
+    showOverlay();
+  }
+
+  function offerRevive() {
+    const score = state.score | 0;
+    setOverlayRevive(score);
+    // Continue button stays hidden until a rewarded ad is confirmed available.
+    if (ui.btnRevive) { ui.btnRevive.style.display = 'none'; ui.btnRevive.disabled = false; }
+    if (ui.btnReviveSkip) ui.btnReviveSkip.style.display = '';
+
+    let decided = false;
+    const cleanup = () => {
+      if (ui.btnRevive) { ui.btnRevive.style.display = 'none'; ui.btnRevive.onclick = null; }
+      if (ui.btnReviveSkip) { ui.btnReviveSkip.style.display = 'none'; ui.btnReviveSkip.onclick = null; }
+    };
+    const decline = () => { if (decided) return; decided = true; cleanup(); commitGameOver(); };
+    if (ui.btnReviveSkip) ui.btnReviveSkip.onclick = decline;
+
+    rewardedAds.requestRevive({
+      onAvailable(showAdFn) {
+        if (decided || !ui.btnRevive) return;
+        ui.btnRevive.style.display = '';
+        ui.btnRevive.onclick = () => {
+          if (decided) return;
+          ui.btnRevive.disabled = true;
+          setOverlayRevive(score, 'Loading ad…');
+          showAdFn();
+        };
+      },
+      onReward() { if (decided) return; decided = true; cleanup(); reviveRun(); },
+      onUnavailable() { decline(); },
+    });
+  }
+
+  function reviveRun() {
+    state.revivesUsed = (state.revivesUsed || 0) + 1;
+    // Clear immediate threats and grant brief invulnerability so the revive is fair,
+    // not an instant re-death on the same frame.
+    enemies.length = 0;
+    enemyBullets.length = 0;
+    player.x = W / 2; player.y = H / 2; player.vx = 0; player.vy = 0;
+    player.invuln = 2.5;
+    state.deathFreezeTimer = 0;
+    effects.hitStop = 0;
+    state.spawnTimer = 0;
+    addShockwave(player.x, player.y, '#88ffcc', 200, 0.6, 4);
+    addFlash(0.5, '136,255,204');
+    hideOverlay();
+    document.body.classList.add('playing');
+    state.paused = false;
+    state.running = true;
   }
 
   function pauseGameUI() {
@@ -2667,6 +2814,9 @@
     player.x = Math.max(player.r, Math.min(W - player.r, player.x));
     player.y = Math.max(player.r, Math.min(H - player.r, player.y));
 
+    // Post-revive invulnerability window counts down here (collisions are skipped while > 0).
+    if (player.invuln > 0) player.invuln = Math.max(0, player.invuln - dt);
+
     // Update bullets (with trails)
     for (let i = 0; i < bullets.length; i++) {
       const b = bullets[i];
@@ -2821,7 +2971,7 @@
 
       // ── Player collision ────────────────────────────────────────────────
       const d = Math.hypot(e.x - player.x, e.y - player.y);
-      if (d < e.r + player.r) {
+      if (player.invuln <= 0 && d < e.r + player.r) {
         // Death blast
         for (let k = 0; k < 60; k++) {
           addParticle(player.x, player.y, k % 3 === 0 ? '#ffffff' : '#ff5555', rnd(2, 5), rnd(0.5, 1.0), 80, 480);
@@ -2987,7 +3137,7 @@
       }
 
       // Hit player → game over
-      if (Math.hypot(eb.x - player.x, eb.y - player.y) < eb.r + player.r) {
+      if (player.invuln <= 0 && Math.hypot(eb.x - player.x, eb.y - player.y) < eb.r + player.r) {
         enemyBullets.splice(i, 1); i--;
         for (let k = 0; k < 60; k++) {
           addParticle(player.x, player.y, k % 3 === 0 ? '#ffffff' : '#ff5555', rnd(2, 5), rnd(0.5, 1.0), 80, 480);
@@ -5669,6 +5819,21 @@
       ctx.arc(player.x, player.y, r * 1.4, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
+
+      // Post-revive shield — pulsing ring while the invulnerability window is active
+      if (player.invuln > 0) {
+        ctx.save();
+        const pulse = 0.5 + 0.5 * Math.sin(state.time * 18);
+        ctx.globalAlpha = 0.35 + 0.45 * pulse;
+        ctx.strokeStyle = '#aaffe6';
+        ctx.shadowColor = '#88ffcc';
+        ctx.shadowBlur = 16;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, r * 2.1 + pulse * 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // Thrust flame behind the ship (world-coords so it streams cleanly even mid-rotation)
       const thrustAng = player.angle + Math.PI;
