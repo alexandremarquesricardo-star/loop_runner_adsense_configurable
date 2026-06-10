@@ -7,13 +7,15 @@
  *      yesterday 00:00 UTC and today 00:00 UTC (the window in which the
  *      previous day's seed was active).
  *   2. Writes daily/YYYY-MM-DD/index.html with the top 10 + a long-form
- *      narrative recap (substantive content → AdSense-friendly, indexable).
- *   3. Ensures sitemap.xml has a <url> entry for the new page.
+ *      narrative recap. The page is noindex,follow: it's a thin templated
+ *      near-duplicate that would dilute the site's AdSense quality signal, so
+ *      it serves the share / Hall-of-Fame loop only, not search.
+ *   3. Prunes any stale daily entry from sitemap.xml (daily pages stay out).
  *   4. Optionally posts an X/Twitter announcement of yesterday's winner if
  *      TWITTER_CONSUMER_*, TWITTER_ACCESS_* secrets are all present in env.
  *
- * Idempotent: re-running on the same day overwrites the page and dedupes
- * sitemap entries. Safe to run via GitHub Actions schedule or manually.
+ * Idempotent: re-running on the same day overwrites the page and keeps the
+ * sitemap free of daily entries. Safe to run via GitHub Actions or manually.
  */
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -189,7 +191,7 @@ function renderHtml(dateStr, rows) {
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(description)}" />
   <link rel="canonical" href="${canonical}">
-  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="robots" content="noindex,follow,max-image-preview:large">
   <meta name="theme-color" content="#0b0b10">
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
@@ -367,25 +369,28 @@ ${itemsHtml || '          <li style="opacity:.7; font-size:14px;">Awaiting the f
   return true;
 }
 
-// --- sitemap update (idempotent) ---
+// --- sitemap: daily archives are intentionally kept OUT of the sitemap ---
+// Daily pages are thin, templated near-duplicates (only the date + scores change).
+// Indexing 20+ of them dilutes the site-quality signal Google/AdSense weigh and reads
+// as scaled low-value content. The pages are noindex,follow (see robots meta above) and
+// serve the share / Hall-of-Fame loop only. This prunes any stale daily entry so the
+// sitemap self-heals to evergreen pages only.
 async function updateSitemap(dateStr) {
   const file = path.join(REPO_ROOT, 'sitemap.xml');
-  const url = `${SITE}/daily/${dateStr}/`;
+  const loc = `${SITE}/daily/${dateStr}/`;
   let xml;
   try {
     xml = await readFile(file, 'utf8');
   } catch {
-    // sitemap missing — create a minimal one
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n</urlset>\n';
+    return false; // no sitemap yet — nothing to prune
   }
-  if (xml.includes(`<loc>${url}</loc>`)) {
-    // Already present; nothing to do.
-    return false;
-  }
-  const today = ymd(new Date());
-  const entry = `  <url>\n    <loc>${url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
-  xml = xml.replace('</urlset>', entry + '</urlset>');
-  await writeFile(file, xml, 'utf8');
+  if (!xml.includes(`<loc>${loc}</loc>`)) return false;
+  const escLoc = loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Strip the whole <url>…</url> block that contains this daily <loc>.
+  const block = new RegExp(`\\s*<url>(?:(?!</url>)[\\s\\S])*<loc>${escLoc}</loc>(?:(?!</url>)[\\s\\S])*</url>`, 'g');
+  const next = xml.replace(block, '');
+  if (next === xml) return false;
+  await writeFile(file, next, 'utf8');
   return true;
 }
 
@@ -462,7 +467,7 @@ async function main() {
   console.log('Wrote', path.join('daily', dateStr, 'index.html'));
 
   const sitemapChanged = await updateSitemap(dateStr);
-  console.log('Sitemap updated:', sitemapChanged);
+  console.log('Sitemap daily entry pruned:', sitemapChanged);
 
   const manifest = await upsertManifest(dateStr, rows);
   console.log(`Manifest now lists ${manifest.days.length} day(s).`);
