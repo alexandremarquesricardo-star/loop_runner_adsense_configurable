@@ -240,6 +240,7 @@
           <button class="cta" id="btnResume" style="display:none">▶ Resume</button>
           <button class="cta" id="btnPlayAgain" style="display:none">↻ Play Again</button>
           <button class="cta" id="btnShare" style="display:none">📣 Share Run</button>
+          <button class="cta cta--secondary" id="btnClip" style="display:none">🎬 Save Clip</button>
           <button class="cta cta--secondary" id="btnChallenge" style="display:none">🎯 Challenge a Friend</button>
         </div>
         <!-- Share preview — populated after a run ends. Shows the auto-generated card so the player sees what they're about to share. -->
@@ -279,6 +280,15 @@
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 id="lbHeading">Leaderboard</h2>
         <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
+      </div>
+      <!-- Game-over action row — shown only when the leaderboard opens at game-over. The modal
+           sits on top of #overlay's own buttons, so the share/clip CTAs are mirrored here, on the
+           surface the player actually sees, at the moment of peak sharing intent. -->
+      <div id="lbActions" class="row" style="display:none; gap:8px; margin:10px 0 4px 0; flex-wrap:wrap;">
+        <button class="cta cta--primary" id="lbPlayAgain">↻ Play Again</button>
+        <button class="cta cta--secondary" id="lbClip" style="display:none">🎬 Save Clip</button>
+        <button class="cta cta--secondary" id="lbShare">📣 Share</button>
+        <button class="cta cta--secondary" id="lbChallenge">🎯 Challenge</button>
       </div>
       <!-- AdSense placement: LEADERBOARD_MODAL (replace data-ad-slot with a dedicated slot for per-placement reporting) -->
       <div style="margin: 8px 0;">

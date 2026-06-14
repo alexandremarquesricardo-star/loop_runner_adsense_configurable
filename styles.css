@@ -77,9 +77,14 @@ body.playing #score, body.playing #combo{ display:block; }
 .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; border:1px solid rgba(124,253,214,.25); }
 .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; border:1px solid rgba(255,210,119,.25); }
 
-.modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:28; }
+/* z-index 40 keeps an open dialog above the fixed top ad (#ad-top-wrapper, z-index 30);
+   the modal is only shown on demand, so covering the ad while it's up is correct. */
+.modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:40; padding:12px; }
 .modal.show { display:flex; }
-.sheet { width:min(560px, 92vw); background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+/* max-height + internal scroll so tall content (ad + history + table + game-over CTAs) never
+   overflows the viewport — otherwise the sheet top (Close + action buttons) is pushed off-screen
+   and becomes unclickable on short / mobile screens. */
+.sheet { width:min(560px, 92vw); max-height:90vh; overflow-y:auto; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 table { width:100%; border-collapse: collapse; }
 th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size:14px; }

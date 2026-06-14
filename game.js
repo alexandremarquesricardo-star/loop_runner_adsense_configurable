@@ -196,9 +196,10 @@
     overlay:$('#overlay'),
     ovTitle:$('#overlayTitle'), ovBody:$('#overlayBody'),
     start:$('#start'), dailyBtn:$('#dailyBtn'),
-    btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'), btnChallenge:$('#btnChallenge'),
+    btnResume:$('#btnResume'), btnPlayAgain:$('#btnPlayAgain'), btnShare:$('#btnShare'), btnClip:$('#btnClip'), btnChallenge:$('#btnChallenge'),
     btnRevive:$('#btnRevive'), btnReviveSkip:$('#btnReviveSkip'),
     lbBtn:$('#lbBtn'), nameInput:$('#nameInput'),
+    lbActions:$('#lbActions'), lbPlayAgain:$('#lbPlayAgain'), lbClip:$('#lbClip'), lbShare:$('#lbShare'), lbChallenge:$('#lbChallenge'),
     restartBtn:$('#restartBtn'), shareBtn:$('#shareBtn'),
     dailyBanner:$('#dailyBanner')
   };
@@ -250,6 +251,7 @@
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
     if (ui.btnShare) ui.btnShare.style.display = 'none';
+    if (ui.btnClip) ui.btnClip.style.display = 'none';
     if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
     hideSharePreview();
     // Surface the daily-run hero on home (unless we're in a challenge flow, which the overlay text handles)
@@ -272,6 +274,7 @@
     ui.btnResume.style.display = '';
     ui.btnPlayAgain.style.display = '';
     if (ui.btnShare) ui.btnShare.style.display = 'none';
+    if (ui.btnClip) ui.btnClip.style.display = 'none';
     if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
     if (ui.btnRevive) ui.btnRevive.style.display = 'none';
     if (ui.btnReviveSkip) ui.btnReviveSkip.style.display = 'none';
@@ -320,6 +323,7 @@
     // Reveal share/challenge buttons + render preview thumbnail
     if (ui.btnShare) ui.btnShare.style.display = '';
     if (ui.btnChallenge) ui.btnChallenge.style.display = '';
+    clipRec.onGameOver();
     renderSharePreview();
     // Game-over overlay hides the daily-hero panel — the run's own result is the focus now.
     const dh = document.getElementById('dailyHero'); if (dh) dh.style.display = 'none';
@@ -1520,9 +1524,22 @@
     'Content-Type': 'application/json'
   };
 
-  function showLeaderboard(mode) {
+  function showLeaderboard(mode, fromGameOver) {
     lb.modal.classList.add('show');
     lb.modeSel.value = mode || (state.dailyMode ? 'daily' : 'normal');
+    // At game-over the modal covers #overlay's button row, so mirror the share/clip CTAs here.
+    if (ui.lbActions) {
+      if (fromGameOver) {
+        ui.lbActions.style.display = '';
+        if (ui.lbClip) {
+          ui.lbClip.style.display = clipRec.available ? '' : 'none';
+          ui.lbClip.disabled = false;
+          ui.lbClip.textContent = '🎬 Save Clip';
+        }
+      } else {
+        ui.lbActions.style.display = 'none';
+      }
+    }
     renderHistory();
     renderLeaderboard();
     startTicker();
@@ -1655,6 +1672,11 @@
     });
   }
   ui.lbBtn.addEventListener('click', () => showLeaderboard());
+  // In-modal game-over CTAs (mirror the overlay row, which the modal covers).
+  if (ui.lbPlayAgain) ui.lbPlayAgain.addEventListener('click', doPlayAgain);
+  if (ui.lbShare) ui.lbShare.addEventListener('click', doShare);
+  if (ui.lbChallenge) ui.lbChallenge.addEventListener('click', doChallengeShare);
+  if (ui.lbClip) ui.lbClip.addEventListener('click', () => clipRec.save(ui.lbClip));
 
   let modalAdFilled = false;
   function maybeFillModalAd() {
@@ -2063,6 +2085,203 @@
     try { plausible('Share', { props: { method: 'clipboard', kind: 'challenge' } }); } catch {}
   }
 
+  /* ====== Replay Clip Capture ======
+   * Records a rolling buffer of the last few seconds of gameplay and, on demand at
+   * game-over, encodes it to a short WebM with a baked-in "playloop.run" + score
+   * watermark. Motion clips are the share currency of TikTok/Shorts/Reels — a static
+   * card doesn't travel, a 6s loop does, and every clip self-promotes via the mark.
+   *
+   * Design notes:
+   *  - Fixed ring of downscaled <canvas> snapshots → memory is bounded regardless of
+   *    run length (we reuse the same N canvases, overwriting the oldest).
+   *  - Capture is throttled to CLIP_FPS and only fires from the live-play + death-burst
+   *    render paths, so the explosion lands at the end of the clip.
+   *  - Encoding is LAZY: MediaRecorder only spins up when the player taps "Save Clip",
+   *    so the majority who don't never pay the CPU/battery cost.
+   *  - Degrades silently to the existing PNG card on any browser lacking
+   *    canvas.captureStream + a supported MediaRecorder(webm) — the button just hides.
+   */
+  const clipRec = (function () {
+    const CLIP_SECONDS = 6;
+    const CLIP_FPS = 15;
+    const MAX_SIDE = 426;                       // longest edge of the encoded clip (~240p)
+    const MAX_FRAMES = CLIP_SECONDS * CLIP_FPS; // 90
+    const frameIntervalMs = 1000 / CLIP_FPS;
+
+    function pickMime() {
+      if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return null;
+      const cands = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      for (const m of cands) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {} }
+      return null;
+    }
+    const MIME = pickMime();
+    const SUPPORTED = !!MIME && typeof HTMLCanvasElement !== 'undefined'
+      && !!HTMLCanvasElement.prototype.captureStream;
+
+    let ring = [], ringCtx = [];
+    let frameW = 0, frameH = 0;
+    let head = 0;     // next write slot
+    let count = 0;    // frames captured this run (caps at MAX_FRAMES)
+    let armed = false, encoding = false;
+    let lastCapMs = 0;
+
+    const evenFloor = (n) => { n = Math.floor(n); return n % 2 ? n - 1 : n; };
+
+    function allocRing() {
+      // (Re)build the snapshot ring to match the live canvas aspect ratio.
+      const cw = canvas.width || 1, ch = canvas.height || 1;
+      const scale = Math.min(MAX_SIDE / Math.max(cw, ch), 1);
+      const w = Math.max(2, evenFloor(cw * scale));
+      const h = Math.max(2, evenFloor(ch * scale));
+      if (w === frameW && h === frameH && ring.length === MAX_FRAMES) return;
+      frameW = w; frameH = h; ring = []; ringCtx = [];
+      for (let i = 0; i < MAX_FRAMES; i++) {
+        const c = document.createElement('canvas');
+        c.width = frameW; c.height = frameH;
+        ring.push(c); ringCtx.push(c.getContext('2d'));
+      }
+    }
+
+    function arm() {
+      if (!SUPPORTED) return;
+      allocRing();
+      head = 0; count = 0; lastCapMs = 0; armed = true;
+    }
+
+    // Called once per render from the loop (live play + death-burst). tMs = performance.now().
+    function capture(tMs) {
+      if (!armed || encoding) return;
+      if (lastCapMs && (tMs - lastCapMs) < frameIntervalMs) return;
+      lastCapMs = tMs;
+      try { ringCtx[head].drawImage(canvas, 0, 0, frameW, frameH); } catch { return; }
+      head = (head + 1) % MAX_FRAMES;
+      if (count < MAX_FRAMES) count++;
+    }
+
+    // Oldest → newest snapshot order.
+    function orderedFrames() {
+      const out = [];
+      if (count < MAX_FRAMES) { for (let i = 0; i < count; i++) out.push(ring[i]); }
+      else { for (let i = 0; i < MAX_FRAMES; i++) out.push(ring[(head + i) % MAX_FRAMES]); }
+      return out;
+    }
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    function drawWatermark(octx, summary) {
+      const barH = Math.max(20, Math.round(frameH * 0.13));
+      const pad = Math.round(barH * 0.30);
+      const fs = Math.round(barH * 0.46);
+      octx.save();
+      const g = octx.createLinearGradient(0, frameH - barH * 1.7, 0, frameH);
+      g.addColorStop(0, 'rgba(8,10,16,0)');
+      g.addColorStop(1, 'rgba(8,10,16,0.80)');
+      octx.fillStyle = g;
+      octx.fillRect(0, frameH - barH * 1.7, frameW, barH * 1.7);
+      octx.textBaseline = 'alphabetic';
+      octx.font = `700 ${fs}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+      octx.fillStyle = '#7cfdd6';
+      octx.fillText('playloop.run', pad, frameH - pad);
+      if (summary) {
+        const label = `${(summary.score | 0).toLocaleString()} pts`;
+        octx.font = `800 ${fs}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+        octx.fillStyle = '#ffffff';
+        octx.fillText(label, frameW - octx.measureText(label).width - pad, frameH - pad);
+      }
+      octx.restore();
+    }
+
+    async function encode(summary, onProgress) {
+      const frames = orderedFrames();
+      if (!frames.length) return null;
+      const out = document.createElement('canvas');
+      out.width = frameW; out.height = frameH;
+      const octx = out.getContext('2d');
+      const stream = out.captureStream(CLIP_FPS);
+      const rec = new MediaRecorder(stream, { mimeType: MIME, videoBitsPerSecond: 3500000 });
+      const chunks = [];
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      const stopped = new Promise((res) => { rec.onstop = res; });
+      rec.start();
+      const HOLD = 4; // extra frames holding the final (death) frame so the loop ends on the burst
+      for (let i = 0; i < frames.length; i++) {
+        octx.drawImage(frames[i], 0, 0, frameW, frameH);
+        drawWatermark(octx, summary);
+        if (onProgress) onProgress((i + 1) / (frames.length + HOLD));
+        await sleep(frameIntervalMs);
+      }
+      await sleep(frameIntervalMs * HOLD);
+      rec.stop();
+      await stopped;
+      try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+      return chunks.length ? new Blob(chunks, { type: 'video/webm' }) : null;
+    }
+
+    async function save(btn) {
+      if (!SUPPORTED) { showToast('Clips not supported here — try Share', 'err'); return; }
+      if (encoding) return;
+      if (!count) { showToast('No clip yet — play a run first'); return; }
+      const summary = lastRunSummary;
+      btn = btn || ui.btnClip;
+      encoding = true;
+      if (btn) { btn.disabled = true; btn.textContent = '🎬 Rendering… 0%'; }
+      try {
+        const blob = await encode(summary, (p) => {
+          if (btn) btn.textContent = `🎬 Rendering… ${Math.round(p * 100)}%`;
+        });
+        if (!blob) { showToast('Could not render clip', 'err'); return; }
+        const fname = `loop-runner-${summary ? summary.score : 'clip'}.webm`;
+        const file = new File([blob], fname, { type: 'video/webm' });
+        const text = summary ? renderShareText(summary) : 'Loop Runner — playloop.run';
+        const url = summary ? buildChallengeUrl(summary) : 'https://playloop.run/';
+        try {
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: 'Loop Runner', text, url, files: [file] });
+            try { plausible('Clip', { props: { method: 'webshare-file' } }); } catch {}
+            return;
+          }
+        } catch { /* cancelled or unsupported → fall through to download */ }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        showToast('Clip saved 🎬');
+        try { plausible('Clip', { props: { method: 'download' } }); } catch {}
+      } catch {
+        showToast('Could not render clip', 'err');
+      } finally {
+        encoding = false;
+        if (btn) { btn.disabled = false; btn.textContent = '🎬 Save Clip'; }
+      }
+    }
+
+    // Reveal the button at game-over. We do NOT disarm here — capture keeps running
+    // through the ~1.5s death-freeze so the burst makes it into the buffer; capture
+    // naturally stops once the freeze ends (the loop returns before calling it).
+    function onGameOver() {
+      if (!ui.btnClip) return;
+      if (SUPPORTED && count > 0) {
+        ui.btnClip.style.display = '';
+        ui.btnClip.disabled = false;
+        ui.btnClip.textContent = '🎬 Save Clip';
+      } else {
+        ui.btnClip.style.display = 'none';
+      }
+    }
+
+    return { arm, capture, onGameOver, save, supported: SUPPORTED, get available() { return SUPPORTED && count > 0; } };
+  })();
+
+  // Shared play-again action — used by the game-over overlay button AND the in-modal button.
+  // startGame() closes the leaderboard, so it's safe to trigger from inside the modal.
+  function doPlayAgain() {
+    hideLeaderboard();
+    if (shouldShowInterstitial()) { showInterstitial(() => startGame(state.dailyMode)); }
+    else { startGame(state.dailyMode); }
+  }
+
   /* ====== Daily Run hero (home overlay marquee) ======
    * Surfaces today's daily-seed leader and a countdown to the next 00:00 UTC seed roll.
    * Cached in localStorage (`lr_daily_hero_<date>`) for ~5 minutes so the call doesn't
@@ -2320,7 +2539,9 @@
     refreshChallengeHud();
 
     hideOverlay();
+    hideLeaderboard(); // ensure the game-over leaderboard modal is gone before the new run renders
     document.body.classList.add('playing');
+    clipRec.arm();
   }
 
   function gameOver() {
@@ -2404,7 +2625,7 @@
     setOverlayGameOver(score, state.dailyMode ? state.dailyBest : state.best, isPB, lastRunSummary.flavor);
     incrementRunsCompleted();
     submitScore();
-    showLeaderboard(state.dailyMode ? 'daily' : 'normal');
+    showLeaderboard(state.dailyMode ? 'daily' : 'normal', true);
   }
 
   /* ====== Rewarded video — AdSense H5 Games Ads (adBreak API) ======
@@ -2480,6 +2701,7 @@
     ui.btnResume.style.display = 'none';
     ui.btnPlayAgain.style.display = 'none';
     if (ui.btnShare) ui.btnShare.style.display = 'none';
+    if (ui.btnClip) ui.btnClip.style.display = 'none';
     if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
     hideSharePreview();
     const dh = document.getElementById('dailyHero'); if (dh) dh.style.display = 'none';
@@ -2649,15 +2871,10 @@
     startGame(true);
   });
   ui.btnResume.addEventListener('click', resumeGameUI);
-  ui.btnPlayAgain.addEventListener('click', () => {
-    if (shouldShowInterstitial()) {
-      showInterstitial(() => startGame(state.dailyMode));
-    } else {
-      startGame(state.dailyMode);
-    }
-  });
+  ui.btnPlayAgain.addEventListener('click', doPlayAgain);
   ui.btnShare.addEventListener('click', doShare);
   ui.shareBtn.addEventListener('click', doShare);
+  if (ui.btnClip) ui.btnClip.addEventListener('click', () => clipRec.save());
   if (ui.btnChallenge) ui.btnChallenge.addEventListener('click', doChallengeShare);
 
   /* ====== Loop ====== */
@@ -2700,6 +2917,7 @@
         if (effects.shake > 0) effects.shake = Math.max(0, effects.shake - effects.shake * 8 * dt - 0.05);
         if (effects.flash > 0) effects.flash = Math.max(0, effects.flash - effects.flash * 6 * dt - 0.01);
         render();
+        clipRec.capture(t); // keep recording the death burst into the clip buffer
       }
       // After freeze window expires we skip render entirely — the canvas holds its last frame
       // and the leaderboard modal sits cleanly on top with no GPU churn underneath.
@@ -2756,6 +2974,7 @@
 
     update(dt);
     render();
+    clipRec.capture(t);
   }
 
   function update(dt) {
