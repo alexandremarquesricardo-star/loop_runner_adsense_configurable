@@ -37,8 +37,11 @@
        tracker (portal plays shouldn't pollute playloop.run analytics). -->
   <script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)};plausible.init=plausible.init||function(){};</script>
 
-  <!-- CrazyGames HTML5 SDK v2 (auto-inits). game.js wires gameplayStart/Stop + a midgame ad
-       on Play Again, all guarded on window.CrazyGames so they're inert on every other build. -->
+  <!-- Basic Launch forbids ads, so disable the midgame ad. Flip to true (or remove) once the
+       game is approved and eligible for CrazyGames' monetized "Full" track. -->
+  <script>window.__CG_ADS = false;</script>
+  <!-- CrazyGames HTML5 SDK v2 (auto-inits). game.js wires gameplayStart/Stop (kept — allowed in
+       Basic) all guarded on window.CrazyGames so they're inert on every other build. -->
   <script src="https://sdk.crazygames.com/crazygames-sdk-v2.js"></script>
 </head>
 

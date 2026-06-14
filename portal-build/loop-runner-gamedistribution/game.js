@@ -366,6 +366,9 @@
     const call = (mod, fn) => { try { const s = sdk(); if (s && s[mod] && typeof s[mod][fn] === 'function') s[mod][fn](); } catch {} };
     return {
       present() { return !!sdk(); },
+      // Ads are opt-out per build: a CrazyGames "Basic Launch" forbids ads, so that build sets
+      // window.__CG_ADS = false. Default (flag unset) = ads on, for the monetized "Full" track.
+      adsEnabled() { return typeof window !== 'undefined' && window.__CG_ADS !== false; },
       loadingStart() { call('game', 'sdkGameLoadingStart'); },
       loadingStop() { call('game', 'sdkGameLoadingStop'); },
       gameplayStart() { call('game', 'gameplayStart'); },
@@ -2312,7 +2315,10 @@
     try { if (typeof gdsdk !== 'undefined' && typeof gdsdk.showAd === 'function') gdsdk.showAd(); } catch (e) { /* ignore portal ad errors */ }
     // CrazyGames midgame ad: when their SDK is present, show the ad and start the next run
     // once it resolves. Inert (no SDK) everywhere else → falls through to the normal path.
-    if (CG.present()) { CG.midgameAd(() => startGame(state.dailyMode)); return; }
+    if (CG.present()) {
+      if (CG.adsEnabled()) { CG.midgameAd(() => startGame(state.dailyMode)); return; }
+      startGame(state.dailyMode); return; // CrazyGames Basic Launch: no ads
+    }
     if (shouldShowInterstitial()) { showInterstitial(() => startGame(state.dailyMode)); }
     else { startGame(state.dailyMode); }
   }
