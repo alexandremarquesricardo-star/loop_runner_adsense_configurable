@@ -355,6 +355,35 @@
     if (audio.state === 'suspended') audio.resume();
   }
 
+  /* ====== CrazyGames SDK (portal-only; inert everywhere else) ======
+   * Loaded only by the CrazyGames build's index.html (crazygames-sdk-v2.js). Every call is
+   * guarded on window.CrazyGames, so it no-ops on playloop.run and the other portals — one
+   * shared game.js, no fork. Wires their required gameplayStart/Stop + a between-runs midgame
+   * ad (mutes the master gain + pauses while the ad plays). */
+  const CG = (function () {
+    const sdk = () => (typeof window !== 'undefined' && window.CrazyGames && window.CrazyGames.SDK) || null;
+    const setMuted = (m) => { try { if (master) master.gain.value = m ? 0 : 0.4; } catch {} };
+    const call = (mod, fn) => { try { const s = sdk(); if (s && s[mod] && typeof s[mod][fn] === 'function') s[mod][fn](); } catch {} };
+    return {
+      present() { return !!sdk(); },
+      loadingStart() { call('game', 'sdkGameLoadingStart'); },
+      loadingStop() { call('game', 'sdkGameLoadingStop'); },
+      gameplayStart() { call('game', 'gameplayStart'); },
+      gameplayStop() { call('game', 'gameplayStop'); },
+      // Between-runs midgame ad. Mute+pause on adStarted, resume on adFinished/adError, then run `done`.
+      midgameAd(done) {
+        const s = sdk();
+        if (!s || !s.ad || typeof s.ad.requestAd !== 'function') { done(); return; }
+        let settled = false;
+        const finish = () => { if (settled) return; settled = true; setMuted(false); try { done(); } catch {} };
+        try {
+          s.ad.requestAd('midgame', { adStarted: () => setMuted(true), adFinished: finish, adError: finish });
+        } catch { finish(); return; }
+        setTimeout(finish, 30000); // safety: never strand the player if callbacks never fire
+      },
+    };
+  })();
+
   function _tone({ type='sine', freq=440, freq2=null, dur=0.15, gain=0.15, attack=0.005, delay=0 }) {
     if (!audio) return;
     const t0 = audio.currentTime + delay;
@@ -2281,6 +2310,9 @@
     // Portal ad-SDK between-runs break (GameDistribution): fires only when the SDK is loaded
     // by a portal host — undefined and skipped on playloop.run.
     try { if (typeof gdsdk !== 'undefined' && typeof gdsdk.showAd === 'function') gdsdk.showAd(); } catch (e) { /* ignore portal ad errors */ }
+    // CrazyGames midgame ad: when their SDK is present, show the ad and start the next run
+    // once it resolves. Inert (no SDK) everywhere else → falls through to the normal path.
+    if (CG.present()) { CG.midgameAd(() => startGame(state.dailyMode)); return; }
     if (shouldShowInterstitial()) { showInterstitial(() => startGame(state.dailyMode)); }
     else { startGame(state.dailyMode); }
   }
@@ -2545,6 +2577,7 @@
     hideLeaderboard(); // ensure the game-over leaderboard modal is gone before the new run renders
     document.body.classList.add('playing');
     clipRec.arm();
+    CG.gameplayStart();
   }
 
   function gameOver() {
@@ -2552,6 +2585,8 @@
     state.paused = false;
     state.deathFreezeTimer = 1.5; // play out the burst, then freeze the canvas
     document.body.classList.remove('playing');
+    CG.gameplayStop(); // gameplay ended — lets CrazyGames know it can serve ads
+
     // Offer a rewarded revive before finalizing. canOfferRevive() is false unless a
     // rewarded ad can actually serve (dev/localhost, or H5 Games Ads enabled in prod),
     // so today this falls straight through to commit — behaviour is unchanged.
@@ -2765,12 +2800,14 @@
     if (!state.running || state.paused) return;
     state.paused = true;
     setOverlayPaused();
+    CG.gameplayStop();
   }
 
   function resumeGameUI() {
     if (!state.paused) return;
     state.paused = false;
     hideOverlay();
+    CG.gameplayStart();
   }
 
   // Portal ad-SDK hooks (GameDistribution etc.): the host's GD_OPTIONS.onEvent in the portal
@@ -6211,10 +6248,12 @@
   }
 
   /* ====== Boot ====== */
+  CG.loadingStart();
   resize();
   requestAnimationFrame(function loopStart() {
     requestAnimationFrame(loop);
   });
   bootDailyHero();
   setOverlayHome();
+  CG.loadingStop(); // game shell is ready (single-bundle, no async asset load)
 })();
