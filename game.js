@@ -2278,6 +2278,9 @@
   // startGame() closes the leaderboard, so it's safe to trigger from inside the modal.
   function doPlayAgain() {
     hideLeaderboard();
+    // Portal ad-SDK between-runs break (GameDistribution): fires only when the SDK is loaded
+    // by a portal host — undefined and skipped on playloop.run.
+    try { if (typeof gdsdk !== 'undefined' && typeof gdsdk.showAd === 'function') gdsdk.showAd(); } catch (e) { /* ignore portal ad errors */ }
     if (shouldShowInterstitial()) { showInterstitial(() => startGame(state.dailyMode)); }
     else { startGame(state.dailyMode); }
   }
@@ -2769,6 +2772,12 @@
     state.paused = false;
     hideOverlay();
   }
+
+  // Portal ad-SDK hooks (GameDistribution etc.): the host's GD_OPTIONS.onEvent in the portal
+  // index.html calls these to pause/resume around its own ad breaks. No-op on playloop.run
+  // (nothing references them); harmless to define everywhere so portal builds stay no-fork.
+  window.__lrPauseForAd = pauseGameUI;
+  window.__lrResumeForAd = resumeGameUI;
 
   async function submitScore() {
     const name = (ui.nameInput.value || getLS('lr_name', 'Player')).trim() || 'Player';

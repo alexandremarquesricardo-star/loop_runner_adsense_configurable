@@ -1,5 +1,14 @@
 # CrazyGames — Loop Runner submission notes (v2)
 
+> **🔄 REFRESHED 2026-06-14.** Build regenerated from current `playloop.run` — now
+> carries replay clip capture + the leaderboard-modal fix. Build is **ad-free, no SDK**,
+> using byte-identical current `game.js`/`styles.css` (no fork → never goes stale; just
+> re-copy on each release). `index.html` is identical to the itch build. The shared
+> build recipe + paste-ready listing copy live in
+> [`loop-runner-itch-SUBMISSION.md`](loop-runner-itch-SUBMISSION.md) — use that for
+> field values; the CrazyGames-specific submission/review caveats below still apply.
+
+
 **This file lives OUTSIDE the build folder on purpose.** v1 leaked it into the
 submitted ZIP because `Compress-Archive -Path .../loop-runner-crazygames/*` globbed
 it in. The .md mentioned AdSense and competitor portals — both policy violations.

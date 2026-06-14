@@ -1,6 +1,15 @@
 # GameDistribution — Loop Runner submission
 
-This folder is a stripped, iframe-friendly build of Loop Runner for GameDistribution. It is byte-identical to the CrazyGames build (`loop-runner-crazygames/`) — the build itself is portal-agnostic; only the submission metadata and (post-approval) SDK differ between portals.
+> **🔄 REFRESHED 2026-06-14.** Regenerated from current `playloop.run` (clip capture + modal
+> fix included). **This notes file was moved OUT of the build folder** (it had been leaking
+> into the ZIP). The GD HTML5 SDK is now wired in `index.html` (`GD_OPTIONS` + loader), and
+> the pause/resume + between-runs `gdsdk.showAd()` hooks live in the **shared** `game.js`
+> behind `typeof gdsdk` guards — so they're inert on `playloop.run` and active only here
+> (no game.js fork). Build uses byte-identical current `game.js`/`styles.css`. Shared recipe
+> + listing copy: [`loop-runner-itch-SUBMISSION.md`](loop-runner-itch-SUBMISSION.md).
+
+This folder is a stripped, iframe-friendly build of Loop Runner for GameDistribution. The
+build is portal-agnostic apart from the GD SDK block in `index.html`; submission metadata is below.
 
 ## What was stripped vs. live playloop.run
 

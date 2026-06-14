@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Loop Runner</title>
-  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a fast-paced reflex action game." />
+  <meta name="description" content="Dash, chain, and climb the leaderboard in Loop Runner — a fast-paced reflex action game with 8 rotating themes, Daily Runs, and boss waves." />
   <meta name="theme-color" content="#0b0b10">
   <link rel="icon" href="./favicon.ico">
   <link rel="preload" href="./game.js" as="script">
@@ -15,12 +15,11 @@
     #overlay{
       position:fixed; inset:0; display:none;
       align-items:center; justify-content:center; z-index:27;
-      /* Click-through on empty area so the overlay doesn't swallow HUD clicks
-         (e.g. Leaderboard). Card + controls re-enable pointer-events below. */
+      /* Click-through on the empty area so the transparent overlay doesn't swallow
+         HUD clicks (e.g. the Leaderboard button). Card + controls re-enable below. */
       pointer-events:none;
     }
     #overlay.visible{ display:flex; }
-
     #overlayCard{
       min-width:min(85%,520px); max-width:92%;
       border-radius:16px; padding:16px 18px;
@@ -29,11 +28,14 @@
       outline:1px dashed #2e3240;
       pointer-events:auto;
     }
-
     #overlay input, #overlay select, #overlay button { pointer-events:auto; }
-
+    /* Portal build is iframe-embedded: lock scroll always (no SEO content below the canvas). */
     body.game { overflow:hidden; }
   </style>
+
+  <!-- Plausible no-op stub: keeps game.js's plausible(...) calls safe without loading the
+       tracker (portal plays shouldn't pollute playloop.run analytics). -->
+  <script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)};plausible.init=plausible.init||function(){};</script>
 </head>
 
 <body class="game">
@@ -43,7 +45,9 @@
   </main>
 
   <noscript>
-    <p style="color:#fff; padding:20px;">Loop Runner requires JavaScript. Enable JavaScript to play.</p>
+    <section class="container">
+      <p>Loop Runner requires JavaScript. Enable JavaScript to play. Move your cursor to dodge and right-click to fire.</p>
+    </section>
   </noscript>
 
   <!-- UI / HUD -->
@@ -56,19 +60,54 @@
       <button id="lbBtn" class="cta cta--secondary" style="pointer-events:auto;">Leaderboard</button>
     </div>
 
+    <!-- Challenge HUD strip — visible only when a ?c=<seed>&from=...&beat=... URL is loaded. -->
+    <div id="challengeHud" style="display:none;" aria-live="polite">
+      <span id="challengeHudFrom"></span>
+      <span id="challengeHudBeat"></span>
+      <span id="challengeHudYou"></span>
+    </div>
+
     <!-- Overlay -->
     <div id="overlay" class="visible" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
       <div id="overlayCard" class="container hero" style="max-width:560px;">
         <h3 id="overlayTitle">Loop Runner</h3>
         <div id="overlayBody">Player follows your mouse cursor. Right-click to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!</div>
+
+        <!-- Daily Run hero — visible on home overlay (hidden while in challenge mode). -->
+        <div id="dailyHero" style="display:none;">
+          <div class="dailyHero-bar">
+            <div class="dailyHero-meta">
+              <div class="dailyHero-label">TODAY'S DAILY RUN</div>
+              <div class="dailyHero-date" id="dailyHeroDate">—</div>
+            </div>
+            <div class="dailyHero-stats">
+              <div><span class="dailyHero-statLabel">Top today</span> <span id="dailyHeroTop">—</span></div>
+              <div><span class="dailyHero-statLabel">Next seed in</span> <span id="dailyHeroCountdown">—</span></div>
+            </div>
+          </div>
+          <div class="dailyHero-cta-row">
+            <button id="dailyHeroPlayBtn" class="cta cta--primary"><span aria-hidden="true">☀</span> Play today's Daily Run</button>
+            <span class="dailyHero-hint">Everyone plays the same seed · single global leaderboard</span>
+          </div>
+        </div>
+
         <div class="row" style="margin:8px 0;">
           <button id="start" class="cta cta--primary" aria-label="Play"><span aria-hidden="true">▶</span> Play</button>
           <button id="dailyBtn" class="cta cta--secondary" aria-label="Daily Run"><span aria-hidden="true">☀</span> Daily Run</button>
         </div>
         <div id="overlayRow" class="row" style="margin:8px 0 0 0;">
+          <button class="cta cta--primary" id="btnRevive" style="display:none">▶ Continue — Watch Ad</button>
+          <button class="cta cta--secondary" id="btnReviveSkip" style="display:none">No thanks</button>
           <button class="cta" id="btnResume" style="display:none">▶ Resume</button>
           <button class="cta" id="btnPlayAgain" style="display:none">↻ Play Again</button>
-          <button class="cta" id="btnShare">📣 Share</button>
+          <button class="cta" id="btnShare" style="display:none">📣 Share Run</button>
+          <button class="cta cta--secondary" id="btnClip" style="display:none">🎬 Save Clip</button>
+          <button class="cta cta--secondary" id="btnChallenge" style="display:none">🎯 Challenge a Friend</button>
+        </div>
+        <!-- Share preview — populated after a run ends. -->
+        <div id="sharePreview" style="display:none; margin-top:10px;">
+          <canvas id="shareCardCanvas" width="1200" height="630" style="width:100%; max-width:480px; border-radius:12px; outline:1px solid #2e3240; display:block; margin:0 auto;"></canvas>
+          <div id="shareCopyText" style="margin-top:6px; opacity:.8; font-size:12px; font-family: ui-monospace, SFMono-Regular, monospace; white-space:pre-line; text-align:left; max-width:480px; margin-left:auto; margin-right:auto;"></div>
         </div>
         <div class="hint" style="opacity:.85; font-size:13px;">Controls: Right-click to fire • Space to restart • P / Esc to pause</div>
         <div style="margin-top:10px; opacity:.9; font-size:13px;">
@@ -86,16 +125,40 @@
         <h2 id="lbHeading">Leaderboard</h2>
         <button id="lbClose" class="cta cta--secondary" style="padding:10px 14px;">Close</button>
       </div>
-      <div class="row" style="margin:8px 0 12px 0; align-items:center;">
+      <!-- Game-over action row — shown only when the leaderboard opens at game-over. -->
+      <div id="lbActions" class="row" style="display:none; gap:8px; margin:10px 0 4px 0; flex-wrap:wrap;">
+        <button class="cta cta--primary" id="lbPlayAgain">↻ Play Again</button>
+        <button class="cta cta--secondary" id="lbClip" style="display:none">🎬 Save Clip</button>
+        <button class="cta cta--secondary" id="lbShare">📣 Share</button>
+        <button class="cta cta--secondary" id="lbChallenge">🎯 Challenge</button>
+      </div>
+      <div class="row" style="margin:8px 0 12px 0; align-items:center; flex-wrap:wrap;">
         <label for="lbMode" class="pill" style="pointer-events:auto;">Mode</label>
         <select id="lbMode">
           <option value="normal">Normal</option>
           <option value="daily">Daily (today)</option>
         </select>
+        <label for="lbScope" class="pill" style="pointer-events:auto;">Scope</label>
+        <select id="lbScope">
+          <option value="world">Worldwide</option>
+          <option value="country">Your country</option>
+        </select>
         <div id="lbInfo" style="opacity:.8; font-size:13px;"></div>
       </div>
       <div id="lbUserBest" style="display:none; margin:0 0 12px 0; padding:10px 14px; background:rgba(108,207,255,.08); border:1px solid rgba(108,207,255,.25); border-radius:12px; font-size:14px;">
         <strong>Your best:</strong> <span id="lbUserScore">—</span><span id="lbUserRank" style="opacity:.85; margin-left:8px;"></span>
+      </div>
+      <!-- Personal history chart — last 20 runs (localStorage only, no backend) -->
+      <div id="lbHistory" style="display:none; margin:0 0 12px 0; padding:10px 14px; background:rgba(255,204,102,.06); border:1px solid rgba(255,204,102,.20); border-radius:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+          <strong style="font-size:13px;">Your last runs</strong>
+          <span id="lbHistoryStat" style="opacity:.7; font-size:11px;"></span>
+        </div>
+        <div id="lbHistoryChart" style="display:flex; align-items:flex-end; gap:4px; height:48px;"></div>
+      </div>
+      <!-- Live ticker — recently posted scores fade in/out at the top of the table area -->
+      <div id="lbTicker" style="display:none; min-height:22px; margin:4px 0 8px 0; padding:6px 10px; background:rgba(108,207,255,.06); border:1px dashed rgba(108,207,255,.20); border-radius:8px; font-size:12px; opacity:.85;">
+        <span id="lbTickerText">·</span>
       </div>
       <table id="lbTable">
         <thead>
@@ -118,6 +181,9 @@
   </div>
   <div id="dailyBanner" class="pill" style="position:fixed; right:8px; bottom:8px;">Daily Challenge</div>
 
+  <!-- In-game pause button (mobile-friendly tap target; hidden unless body.playing) -->
+  <button id="pauseBtn" aria-label="Pause" type="button">⏸</button>
+
   <!-- Game logic -->
   <script src="./game.js" defer></script>
 
@@ -126,7 +192,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     const nameInput = document.getElementById('nameInput');
     if (!nameInput) return;
-
     nameInput.addEventListener('input', (e) => {
       const name = e.target.value.trim();
       if (name) localStorage.setItem('lr_name', name);

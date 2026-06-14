@@ -1,5 +1,14 @@
 # Y8 — Loop Runner submission notes
 
+> **🔄 REFRESHED 2026-06-14 — and the AdSense decision was REVERSED.** This build is now
+> **ad-free** (identical to the itch/CrazyGames build), not AdSense-bearing as the older
+> notes below describe. Reason: serving our own AdSense pub code on `y8.com` (a domain not
+> in our AdSense account) risks the account — reckless while it's still in review. Y8 serves
+> its own ads via revshare regardless. Build uses byte-identical current `game.js`/`styles.css`
+> (no fork) so it carries clip capture + the modal fix. Listing copy + recipe:
+> [`loop-runner-itch-SUBMISSION.md`](loop-runner-itch-SUBMISSION.md). **The AdSense sections
+> below are obsolete — ignore them.**
+
 **Build path:** `portal-build/loop-runner-y8/`. **This file lives outside the
 build folder** so it can never accidentally leak into a submitted ZIP.
 

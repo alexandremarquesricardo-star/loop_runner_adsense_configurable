@@ -10,6 +10,22 @@
 html, body { height:100%; margin:0; background:var(--bg); color:var(--fg);
   font:14px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;
 }
+
+/* In-game pause button — only visible while playing. Mobile-friendly 48x48px tap target. */
+#pauseBtn{
+  display:none;
+  position:fixed; left:12px; bottom:12px; z-index:28;
+  width:48px; height:48px; border-radius:50%; padding:0;
+  background:rgba(20,20,28,.78); color:#e6edf3;
+  border:1px solid rgba(136,255,204,.35);
+  font-size:20px; font-weight:600; line-height:48px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  box-shadow:0 2px 10px rgba(0,0,0,.4);
+  transition: transform .12s ease, background .15s ease;
+}
+#pauseBtn:hover{ background:rgba(136,255,204,.18); }
+#pauseBtn:active{ transform:scale(.93); }
+body.playing #pauseBtn{ display:block; }
 a{ color:#b9ddff }
 main{ min-height:60vh }
 .container{ max-width:960px; margin:0 auto; padding:16px 20px; }
@@ -52,14 +68,23 @@ canvas{ display:block; width:100vw; height:calc(100vh - var(--adH, 0px) - var(--
 #ui{ position:fixed; inset:0; pointer-events:none; }
 .hud{ position:absolute; left:12px; top:calc(var(--adH, 0px) + var(--navH, 0px) + 12px); display:flex; gap:12px; align-items:center; transition: top .25s ease; }
 body.playing .hud{ top:calc(var(--adH, 0px) + 12px); }
+/* Score & Combo are live-only values (always 0 before a run) — hide them on the
+   landing screen so the HUD isn't four dead zeros. Best/Daily stay as record teasers. */
+#score, #combo{ display:none; }
+body.playing #score, body.playing #combo{ display:block; }
 .pill{ background:#111826; border:1px solid #2e3240; padding:6px 10px; border-radius:999px; font-weight:600; letter-spacing:.3px; color:#c9d1d9; }
 .cta{ pointer-events:auto; border:0; border-radius:14px; padding:.6rem .9rem; font-weight:800; display:inline-flex; align-items:center; gap:10px; letter-spacing:.3px; user-select:none; -webkit-tap-highlight-color:transparent; box-shadow:0 2px 8px rgba(0,0,0,.2); }
 .cta--primary{ background:linear-gradient(135deg,#2c7cf7,#7cfdd6 120%); color:#06101a; border:1px solid rgba(124,253,214,.25); }
 .cta--secondary{ background:linear-gradient(135deg,#ff7ab6,#ffd277 120%); color:#1a0b0f; border:1px solid rgba(255,210,119,.25); }
 
-.modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:28; }
+/* z-index 40 keeps an open dialog above the fixed top ad (#ad-top-wrapper, z-index 30);
+   the modal is only shown on demand, so covering the ad while it's up is correct. */
+.modal { pointer-events:auto; position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:40; padding:12px; }
 .modal.show { display:flex; }
-.sheet { width:min(560px, 92vw); background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+/* max-height + internal scroll so tall content (ad + history + table + game-over CTAs) never
+   overflows the viewport — otherwise the sheet top (Close + action buttons) is pushed off-screen
+   and becomes unclickable on short / mobile screens. */
+.sheet { width:min(560px, 92vw); max-height:90vh; overflow-y:auto; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 table { width:100%; border-collapse: collapse; }
 th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size:14px; }
@@ -161,4 +186,99 @@ th, td { text-align:left; padding:8px; border-bottom: 1px solid rgba(255,255,255
 @keyframes interstitialIn{
   from{ opacity:0; }
   to{ opacity:1; }
+}
+
+/* ====== Challenge HUD strip — pinned during a ?c=<seed>&from=... run ====== */
+#challengeHud{
+  position:fixed;
+  top: calc(var(--adH, 0px) + var(--navH, 44px) + 8px);
+  left:50%; transform:translateX(-50%);
+  z-index:18;
+  pointer-events:auto;
+  display:flex; gap:10px; align-items:center;
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(15,18,28,.85);
+  border:1px solid rgba(255,215,0,.45);
+  box-shadow:0 6px 22px rgba(0,0,0,.4), 0 0 24px rgba(255,215,0,.15);
+  font-size:13px; font-weight:600; letter-spacing:.02em;
+  color:#ffeeaa;
+  max-width:92vw;
+  white-space:nowrap;
+}
+body.playing #challengeHud{
+  top: calc(var(--adH, 0px) + 8px);
+}
+#challengeHud .ch-from{ color:#fff; opacity:.95; }
+#challengeHud .ch-beat{ color:#ffd700; }
+#challengeHud .ch-you{ color:#88ffcc; }
+#challengeHud .ch-you.win{ color:#7cfdd6; }
+#challengeHud .ch-you.lose{ color:#ff9999; }
+@media (max-width: 480px){
+  #challengeHud{ font-size:11.5px; gap:6px; padding:6px 10px; }
+}
+
+/* ====== Share preview thumbnail inside game-over overlay ====== */
+#sharePreview canvas{
+  background:#0b0b10;
+  /* Override the generic `canvas { height: calc(100vh - ...) }` rule above
+     (which is for the main game canvas). The share-card canvas must size
+     by its intrinsic 1200x630 aspect ratio, not full-viewport height —
+     otherwise it renders ~1320px tall and shoves Share/Challenge buttons
+     below the fold. */
+  height:auto;
+}
+#shareCopyText{
+  background:rgba(255,255,255,.04);
+  border:1px dashed rgba(255,255,255,.12);
+  border-radius:8px;
+  padding:8px 10px;
+}
+
+/* ====== Daily Run hero (home overlay marquee) ====== */
+#dailyHero{
+  margin:14px 0 6px 0;
+  padding:14px 16px;
+  border-radius:14px;
+  background:linear-gradient(135deg, rgba(255,215,0,.10), rgba(124,253,214,.06));
+  border:1px solid rgba(255,215,0,.30);
+  box-shadow:0 0 0 1px rgba(255,255,255,.03) inset, 0 8px 26px rgba(0,0,0,.35);
+}
+.dailyHero-bar{
+  display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
+  flex-wrap:wrap;
+}
+.dailyHero-meta{ min-width:160px; }
+.dailyHero-label{
+  font-size:11px; letter-spacing:.18em; font-weight:700;
+  color:#ffd700; opacity:.9;
+}
+.dailyHero-date{
+  font-size:20px; font-weight:700; color:#fff;
+  margin-top:2px; letter-spacing:.02em;
+}
+.dailyHero-stats{
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  font-size:14px; color:rgba(255,255,255,.85);
+}
+.dailyHero-stats > div{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  padding:6px 12px;
+  white-space:nowrap;
+}
+.dailyHero-statLabel{
+  opacity:.65; font-size:12px; margin-right:4px; text-transform:uppercase; letter-spacing:.06em;
+}
+.dailyHero-cta-row{
+  margin-top:12px;
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+.dailyHero-hint{
+  font-size:12px; opacity:.7;
+}
+@media (max-width: 520px){
+  .dailyHero-bar{ flex-direction:column; align-items:stretch; }
+  .dailyHero-stats{ flex-direction:column; align-items:flex-start; }
 }
