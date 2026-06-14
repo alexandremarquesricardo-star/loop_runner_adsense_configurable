@@ -2142,11 +2142,20 @@
 
     function pickMime() {
       if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return null;
-      const cands = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      // WebM first (Chrome/Firefox/Edge). Safari/iOS don't do WebM in MediaRecorder but DO
+      // support video/mp4 (H.264) — so fall through to mp4 there, which also unlocks the
+      // Save Clip button on iOS where it was previously hidden.
+      const cands = [
+        'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm',
+        'video/mp4;codecs=h264', 'video/mp4;codecs=avc1', 'video/mp4',
+      ];
       for (const m of cands) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {} }
       return null;
     }
     const MIME = pickMime();
+    const IS_MP4 = !!MIME && MIME.indexOf('mp4') !== -1;
+    const CONTAINER = IS_MP4 ? 'video/mp4' : 'video/webm';
+    const EXT = IS_MP4 ? 'mp4' : 'webm';
     const SUPPORTED = !!MIME && typeof HTMLCanvasElement !== 'undefined'
       && !!HTMLCanvasElement.prototype.captureStream;
 
@@ -2246,7 +2255,7 @@
       rec.stop();
       await stopped;
       try { stream.getTracks().forEach((t) => t.stop()); } catch {}
-      return chunks.length ? new Blob(chunks, { type: 'video/webm' }) : null;
+      return chunks.length ? new Blob(chunks, { type: CONTAINER }) : null;
     }
 
     async function save(btn) {
@@ -2262,14 +2271,14 @@
           if (btn) btn.textContent = `🎬 Rendering… ${Math.round(p * 100)}%`;
         });
         if (!blob) { showToast('Could not render clip', 'err'); return; }
-        const fname = `loop-runner-${summary ? summary.score : 'clip'}.webm`;
-        const file = new File([blob], fname, { type: 'video/webm' });
+        const fname = `loop-runner-${summary ? summary.score : 'clip'}.${EXT}`;
+        const file = new File([blob], fname, { type: CONTAINER });
         const text = summary ? renderShareText(summary) : 'Loop Runner — playloop.run';
         const url = summary ? buildChallengeUrl(summary) : 'https://playloop.run/';
         try {
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({ title: 'Loop Runner', text, url, files: [file] });
-            try { plausible('Clip', { props: { method: 'webshare-file' } }); } catch {}
+            try { plausible('Clip', { props: { method: 'webshare-file', format: EXT } }); } catch {}
             return;
           }
         } catch { /* cancelled or unsupported → fall through to download */ }
@@ -2280,7 +2289,7 @@
         a.click();
         setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
         showToast('Clip saved 🎬');
-        try { plausible('Clip', { props: { method: 'download' } }); } catch {}
+        try { plausible('Clip', { props: { method: 'download', format: EXT } }); } catch {}
       } catch {
         showToast('Could not render clip', 'err');
       } finally {
