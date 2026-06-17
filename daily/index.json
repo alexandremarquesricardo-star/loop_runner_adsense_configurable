@@ -1,6 +1,16 @@
 {
   "days": [
     {
+      "date": "2026-06-16",
+      "url": "/daily/2026-06-16/",
+      "entries": 1,
+      "winner": {
+        "name": "Player",
+        "score": 258,
+        "country": "ID"
+      }
+    },
+    {
       "date": "2026-06-15",
       "url": "/daily/2026-06-15/",
       "entries": 0,
@@ -211,5 +221,5 @@
       }
     }
   ],
-  "updatedAt": "2026-06-16T05:42:24.091Z"
+  "updatedAt": "2026-06-17T05:22:15.674Z"
 }
