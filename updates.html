@@ -93,6 +93,48 @@
 </section>
 
 <article>
+  <h2>2026-08-18 — Season 2: combo rebalance, chain decay, faster opening</h2>
+  <p>
+    The biggest balance change this game has had, and it comes with a leaderboard reset. If you
+    held a high score before today, it is still in the database — it is just no longer on the board.
+    Here is why that had to happen.
+  </p>
+  <p>
+    <b>The combo never expired.</b> Every page on this site has told you that chains need kills in
+    quick succession and that the combo pill dims as the timer runs down. Neither was true: the
+    counter only reset when a new run started, so "combo" was really a lifetime kill count. Paired
+    with a multiplier that compounded at 1.4 per step, a single kill at combo 60 paid over four
+    billion points. Scores ran to ten digits, the database silently rejected anything above 100
+    million, and the leaderboard stopped measuring skill — it measured who had one lucky
+    uninterrupted chain.
+  </p>
+  <p>
+    <b>What changed.</b> Chains now expire 2.5 seconds after your last kill, and the combo pill
+    dims as that window closes, exactly as the strategy guide always described. The multiplier
+    compounds at 1.08 per step instead of 1.4: a 30-combo kill is worth about 9× a fresh kill and
+    a 60-combo kill about 94×. Deep chains still dominate scoring — a 60-chain earns roughly 1,250×
+    base against 113× for a 30-chain — but a full run now lands in the tens of thousands, where two
+    scores can actually be compared.
+  </p>
+  <p>
+    <b>Season 2 leaderboard.</b> Scores set under the old curve would be unbeatable forever, so the
+    board now shows runs from 2026-08-18 onward. Nothing was deleted.
+  </p>
+  <p>
+    <b>A faster opening.</b> The theme rotation now starts on Cyberpunk rather than Jurassic, the
+    full enemy cast appears within 40 seconds instead of 100, enemies spawn more often from the
+    first second, the first power-up drops at 6 seconds instead of 25, and the first upgrade lands
+    at 500 points instead of 1,500. The first thirty seconds used to be almost empty.
+  </p>
+  <p>
+    <b>Fixes.</b> Scores above 2,147,483,647 wrapped to negative numbers — including the value
+    submitted to the leaderboard, which also silently blocked every later upgrade and boss spawn in
+    that run. The pause screen no longer stacks the Daily Run promo, the controls legend and the
+    name field under a "Paused" heading; it shows Resume and Play Again.
+  </p>
+</article>
+
+<article>
   <h2>2026-05-17 — Field guides: Strategy, Themes, Power-ups</h2>
   <p>
     Long-overdue documentation pass. Three new in-depth pages went live today, covering systems that

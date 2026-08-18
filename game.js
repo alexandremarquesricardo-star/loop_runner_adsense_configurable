@@ -71,6 +71,7 @@
     paused: false,
     score: 0,
     combo: 0,
+    comboTimer: 0,       // seconds since the last kill; the chain drops when it expires
     time: 0,
     best: Number(getLS('lr_best', 0)),
     dailyBest: Number(getLS('lr_daily', 0)),
@@ -243,6 +244,20 @@
   function showOverlay(){ ui.overlay.classList.add('visible'); }
   function hideOverlay(){ ui.overlay.classList.remove('visible'); }
 
+  // The overlay card is shared by home / pause / game-over, so every section is present in
+  // the DOM at all times and each state has to declare what it wants. Pause was declaring
+  // only the buttons, which left the Daily Run promo, the controls legend and the name field
+  // stacked under a 'Paused' heading mid-run.
+  function setOverlaySections({ dailyHero, controls, nameRow }) {
+    const set = (id, show) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = show ? '' : 'none';
+    };
+    set('dailyHero', dailyHero);
+    set('overlayControls', controls);
+    set('overlayNameRow', nameRow);
+  }
+
   function setOverlayHome(){
     ui.ovTitle.textContent = 'Loop Runner';
     ui.ovBody.innerHTML = 'Aim with your mouse or finger. <b>Right-click</b> or <b>tap</b> to fire (3 rounds, auto-recharge). Chain kills to build combo. Catch power-ups for special abilities!<br><span style="opacity:.9">Need help? Read the <a href=\'how-to-play.html\' style=\'color:#7cfdd6\'>How to Play</a> guide.</span>';
@@ -254,6 +269,7 @@
     if (ui.btnClip) ui.btnClip.style.display = 'none';
     if (ui.btnChallenge) ui.btnChallenge.style.display = 'none';
     hideSharePreview();
+    setOverlaySections({ dailyHero: true, controls: true, nameRow: true });
     // Surface the daily-run hero on home (unless we're in a challenge flow, which the overlay text handles)
     if (typeof bootDailyHero === 'function' && !state.challengeContext) {
       const el = document.getElementById('dailyHero');
@@ -266,6 +282,9 @@
   function setOverlayPaused(){
     ui.ovTitle.textContent = 'Paused';
     ui.ovBody.innerHTML = 'Press <b>P</b> or <b>Esc</b> to resume';
+    // Mid-run: nothing but the two things a paused player wants. The daily promo, the
+    // controls legend and the name field all belong to states where the run is over.
+    setOverlaySections({ dailyHero: false, controls: false, nameRow: false });
     // Hide the home-overlay start buttons during pause/game-over — they
     // duplicate Resume/Play Again and add noise that pulls focus away
     // from the action the player actually wants (resume now, share later).
@@ -326,7 +345,9 @@
     clipRec.onGameOver();
     renderSharePreview();
     // Game-over overlay hides the daily-hero panel — the run's own result is the focus now.
-    const dh = document.getElementById('dailyHero'); if (dh) dh.style.display = 'none';
+    // Game over: the name field is how a score gets submitted, so it stays; the daily promo
+    // and the controls legend do not compete with the share/play-again actions.
+    setOverlaySections({ dailyHero: false, controls: false, nameRow: true });
     if (ui.btnRevive) ui.btnRevive.style.display = 'none';
     if (ui.btnReviveSkip) ui.btnReviveSkip.style.display = 'none';
 
@@ -971,6 +992,12 @@
     { key:'magnet',      maxLvl:1, name:'Powerup Magnet',  desc:'Powerups drift toward you when nearby',    icon:'◉' },
     { key:'timeWarp',    maxLvl:1, name:'Time Warp',       desc:'0.15s slow-mo on every kill',              icon:'⌛' },
   ];
+  // Scoring shape. COMBO_BASE was 1.4, which paid 4.18 BILLION for a single kill at combo 60
+  // and made the leaderboard a lottery on one lucky chain. 1.08 keeps chains worth chasing
+  // (a 30-chain pays ~2,600 against a fresh kill's 23) while a full run lands in the tens of
+  // thousands, where scores are actually comparable.
+  const COMBO_BASE = 1.08;
+  const COMBO_WINDOW = 2.5;   // seconds without a kill before the chain drops
   const UPGRADE_THRESHOLDS = [500, 1400, 3000, 5500, 9000, 14000, 21000, 32000, 48000];
 
   function maybeShowUpgrade() {
@@ -1028,7 +1055,7 @@
       params.append('limit', '100');
       // Filter by mode for fairer comparison
       params.append('mode', `eq.${state.dailyMode ? 'daily' : 'normal'}`);
-      const r = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 5000);
+      const r = await fetchWithTimeout(`${SB_URL}?${withSeason(params)}`, { headers: SB_HEADERS }, 5000);
       if (r.ok) {
         const rows = await r.json();
         runFlags.topScores = rows.map(x => Math.floor(x.score)).filter(s => s > 0);
@@ -1455,7 +1482,7 @@
       params.append('select', 'name,score,country,created_at');
       params.append('order', 'created_at.desc');
       params.append('limit', '5');
-      const res = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 4000);
+      const res = await fetchWithTimeout(`${SB_URL}?${withSeason(params)}`, { headers: SB_HEADERS }, 4000);
       if (!res.ok) return;
       const rows = await res.json();
       // Newest-first → flip to chronological for the ticker
@@ -1548,6 +1575,16 @@
     setLS(key, JSON.stringify(arr));
   }
 
+  // Season 2 opens with the rebalanced scoring (COMBO_BASE 1.08 + chain decay). Scores set
+  // under the old 1.4 curve reached the hundreds of millions and would be unbeatable forever,
+  // so every read is filtered to this cutoff. Nothing is deleted — season 1 is still in the
+  // table, just off the board.
+  const SEASON_START = '2026-08-18T00:00:00Z';
+  const withSeason = (p) => {
+    const q = new URLSearchParams(p);
+    q.set('created_at', 'gte.' + SEASON_START);
+    return q.toString();
+  };
   const SB_URL = 'https://azaqjxovkewurgbecizs.supabase.co/rest/v1/scores';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YXFqeG92a2V3dXJnYmVjaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjIxNDMsImV4cCI6MjA5MzczODE0M30.ug99lkj1HoahFtjKSwz2GOBoPFStxf8JEh5FGE7UYr4';
   const SB_HEADERS = {
@@ -1611,7 +1648,7 @@
     else if (scope === 'country') lb.info.textContent = 'Worldwide Top 10 (country unknown — showing world)';
     else                         lb.info.textContent = 'Worldwide Top 10';
 
-    fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 5000)
+    fetchWithTimeout(`${SB_URL}?${withSeason(params)}`, { headers: SB_HEADERS }, 5000)
       .then(res => {
         if (!res.ok) throw new Error('REST ' + res.status);
         return res.json();
@@ -1658,7 +1695,7 @@
       rankParams.append('select', 'id');
       rankParams.append('score', `gt.${userBestVal}`);
       if (useCountry) rankParams.append('country', `eq.${userCountry}`);
-      fetchWithTimeout(`${SB_URL}?${rankParams.toString()}`, {
+      fetchWithTimeout(`${SB_URL}?${withSeason(rankParams)}`, {
         method: 'HEAD',
         headers: { ...SB_HEADERS, 'Prefer': 'count=exact', 'Range': '0-0' }
       }, 5000)
@@ -2400,7 +2437,7 @@
       params.append('mode', 'eq.daily');
       params.append('order', 'score.desc');
       params.append('limit', '1');
-      const res = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 4000);
+      const res = await fetchWithTimeout(`${SB_URL}?${withSeason(params)}`, { headers: SB_HEADERS }, 4000);
       if (!res.ok) throw new Error('hero fetch failed: ' + res.status);
       const rows = await res.json();
       const data = rows && rows[0] ? rows[0] : null;
@@ -2513,6 +2550,7 @@
     state.time = 0;
     state.score = 0;
     state.combo = 0;
+    state.comboTimer = 0;
     state.spawnTimer = 0;
     state.spawnInterval = 0.75;
     powerupSpawnTimer = 0;
@@ -3012,6 +3050,24 @@
 
     state.time += dt;
     state.score += dt * 10;
+
+    // Chain decay. Without this the "combo" never resets, so it is really a lifetime kill
+    // counter and an exponential multiplier on it sends scores past a billion. The window
+    // is what how-to-play has always promised players: chains need kills in quick succession.
+    if (state.combo > 0) {
+      state.comboTimer += dt;
+      // strategy.html has always told players the combo pill 'flickers and dims as the timer
+      // winds down' — the affordance just never existed. Now the chain actually expires, so
+      // the player needs to be able to read the window at a glance.
+      const left = 1 - state.comboTimer / COMBO_WINDOW;
+      ui.combo.style.opacity = left < 0.45 ? (0.4 + left).toFixed(2) : '1';
+      if (state.comboTimer >= COMBO_WINDOW) {
+        state.combo = 0;
+        state.comboTimer = 0;
+        ui.combo.textContent = 'Combo: 0';
+        ui.combo.style.opacity = '1';
+      }
+    }
     if (state.emptyFlash > 0) state.emptyFlash = Math.max(0, state.emptyFlash - dt);
 
     // Theme cycle — every THEME_DURATION seconds, advance to the next era
@@ -3329,6 +3385,8 @@
         killed = true;
 
         state.combo += 1;
+        state.comboTimer = 0;
+        ui.combo.style.opacity = '1';
         // Per-run tally for share card / ladder
         state.runStats.kills++;
         if (state.combo > state.runStats.peakCombo) state.runStats.peakCombo = state.combo;
@@ -3341,7 +3399,7 @@
         const critLvl = state.upgrades.critical || 0;
         const isCrit = critLvl > 0 && Math.random() < critLvl * 0.2;
         if (isCrit) mult *= 2;
-        const add = Math.floor(10 * mult * Math.pow(1.4, state.combo - 1));
+        const add = Math.floor(10 * mult * Math.pow(COMBO_BASE, state.combo - 1));
         state.score += add;
         ui.combo.textContent = `Combo: ${state.combo}`;
         ui.score.textContent = `Score: ${Math.floor(state.score)}`;
