@@ -6,7 +6,7 @@
  *
  * On activate we sweep any older pl-cache-* entries so the disk footprint stays tight.
  */
-const CACHE_VERSION = 'pl-cache-v14-2026-06-14';
+const CACHE_VERSION = 'pl-cache-v15-2026-08-18';
 const SHELL = [
   '/',
   '/styles.css',
