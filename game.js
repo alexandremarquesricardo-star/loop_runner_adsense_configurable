@@ -3658,12 +3658,22 @@
     ];
   }
 
-  const COL_BLUE = [88, 166, 255];
-  const COL_YELLOW = [255, 210, 119];
-  const COL_RED = [255, 95, 95];
+  // Enemy tint ramp, cool -> hot with rising speed. These used to start at a muted
+  // blue-grey (88,166,255) and, since baseSpeed opens at 90, that washed-out end is where
+  // every enemy sat for the first minute of a run — the palest possible look at exactly
+  // the moment a new player is deciding whether to keep playing.
+  const COL_BLUE = [64, 224, 255];    // electric cyan
+  const COL_YELLOW = [255, 208, 80];  // saturated gold
+  const COL_RED = [255, 64, 112];     // hot magenta-red
+
+  function speedToRGB(speed) {
+    const t = clamp01((speed - 70) / 190);
+    return t < 0.5 ? lerpColor(COL_BLUE, COL_YELLOW, t / 0.5)
+                   : lerpColor(COL_YELLOW, COL_RED, (t - 0.5) / 0.5);
+  }
 
   function speedToColor(speed) {
-    const t = clamp01((speed - 40) / 270);
+    const t = clamp01((speed - 70) / 190);   // tightened: opening speeds land in vivid cyan, not grey
     if (t < 0.5) {
       const u = t / 0.5;
       const c = lerpColor(COL_BLUE, COL_YELLOW, u);
@@ -3866,23 +3876,65 @@
       return;
     }
 
-    // Grunt — 8-pointed star, slow spin, speed-tinted
-    const fill = speedToColor(e.speed);
+    // Grunt — Interceptor drone. Every other theme gives its most-spawned enemy real art
+    // (Velociraptor, Jellyfish, Skull, Goblin, Asteroid, Cogwheel); Cyberpunk's was a plain
+    // 8-point star. Cyberpunk now opens the rotation, so this is the first enemy anyone meets.
+    const rgb = speedToRGB(e.speed);
+    const fill = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+    const spin = e.age * 0.8;
     ctx.save();
-    ctx.translate(e.x, e.y); ctx.rotate(e.age * 0.8);
-    ctx.shadowColor = fill; ctx.shadowBlur = 12;
-    ctx.fillStyle = fill; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
-    ctx.beginPath();
-    const pts = 8;
-    for (let i = 0; i < pts * 2; i++) {
-      const a = i * Math.PI / pts;
-      const rr = (i % 2 === 0) ? r * 1.15 : r * 0.6;
-      if (i === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
-      else         ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    ctx.translate(e.x, e.y);
+
+    // Sensor ring — three arcs counter-rotating against the hull. Skipped when the frame-rate
+    // governor has shed quality, since this is the most-spawned enemy in the game.
+    if (perf.level >= 2) {
+      ctx.rotate(-spin * 1.6);
+      // One path for all three arcs, and no shadow: canvas shadowBlur is the dominant cost
+      // here and this enemy spawns more than every other type combined.
+      ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.55)`;
+      ctx.lineWidth = Math.max(1, r * 0.09);
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const a0 = i * Math.PI * 2 / 3;
+        ctx.arc(0, 0, r * 1.24, a0, a0 + 1.05);
+      }
+      ctx.stroke();
+      ctx.rotate(spin * 1.6);
     }
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2); ctx.fill();
+
+    // Hull — dark faceted body with a bright rim, so the silhouette reads against the nebula
+    // instead of dissolving into it the way a flat-filled star did.
+    ctx.rotate(spin);
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const ang = i * Math.PI / 3;
+      const rr = (i % 2 === 0) ? r * 1.04 : r * 0.76;
+      const px = Math.cos(ang) * rr, py = Math.sin(ang) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${rgb[0] * 0.20 | 0},${rgb[1] * 0.20 | 0},${rgb[2] * 0.26 | 0},0.95)`;
+    ctx.shadowColor = fill; ctx.shadowBlur = 14; ctx.fill();
+    ctx.strokeStyle = fill; ctx.lineWidth = Math.max(1.4, r * 0.13); ctx.stroke();
+
+    // Swept blades along the long axis — gives it a heading and a wider silhouette
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.72)`;
+    for (const sgn of [1, -1]) {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.32 * sgn, 0);
+      ctx.lineTo(r * 1.34 * sgn, -r * 0.19);
+      ctx.lineTo(r * 1.34 * sgn,  r * 0.19);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // Core — the part that stays legible once the sprite is only a few pixels across
+    const pulse = 0.82 + 0.18 * Math.sin(e.age * 7);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.30 * pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.9)`;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.15 * pulse, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
@@ -5876,7 +5928,9 @@
 
   function drawBackground() {
     // Solid base
-    ctx.fillStyle = '#070710';
+    // Darker ground than before: the nebulae composite with 'lighter', so a lighter base
+    // lifted the whole mid-field and enemies had nothing to sit against.
+    ctx.fillStyle = '#04040b';
     ctx.fillRect(0, 0, W, H);
 
     const comboPulse = Math.min(state.combo / 30, 1);
@@ -5893,8 +5947,8 @@
       const cy = (n.baseY + driftY) * H;
       const radius = n.radius * Math.max(W, H);
       const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-      grad.addColorStop(0, n.color + '0.18)');
-      grad.addColorStop(0.5, n.color + '0.06)');
+      grad.addColorStop(0, n.color + '0.155)');
+      grad.addColorStop(0.5, n.color + '0.055)');
       grad.addColorStop(1, n.color + '0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
@@ -5929,7 +5983,7 @@
     // Corner vignette — subtle dark falloff toward the edges to focus play
     const vg = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.4, W/2, H/2, Math.max(W,H)*0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.62)');
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
 
