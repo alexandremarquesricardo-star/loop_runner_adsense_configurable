@@ -35,6 +35,33 @@ The leaderboard is backed by Supabase. The anon key is embedded client-side (it'
 
 If Supabase is unreachable, the leaderboard falls back to a local (per-device) list automatically.
 
+## Store art capture
+
+`tools/capture.mjs` renders the portal/social art straight from the live game, so the
+covers always match what the build actually looks like. Zero npm deps — it serves the
+site over a built-in static server and drives Chrome via CDP.
+
+```sh
+node tools/capture.mjs                          # six cover JPEGs, Cyberpunk theme
+node tools/capture.mjs --theme cosmic           # any theme key from THEMES
+node tools/capture.mjs --video --seconds 10     # plus landscape + portrait MP4s (needs ffmpeg)
+node tools/capture.mjs --skip-stills --clip portrait
+```
+
+Output goes to `portal-build/store-assets/` (`--out` to change). It works by posing
+the game through `window.__lrCapture`, a hook in `game.js` that only exists when the URL
+carries `?capture=1` **and** the host is localhost — it can set an arbitrary score, and
+the leaderboard has no server-side validation, so it must never be reachable in production.
+
+Clips are rendered offline: the world is paused and advanced by an exact 1/30s per frame.
+Headless software-GL renders far slower than real time, so recording live (via CDP
+screencast) yields ~2fps; stepping decouples clip framerate from wall-clock and gives a
+true 30fps at the cost of taking a few minutes to produce.
+
+The 2026-06 covers were shot from a fresh run — a near-empty screen captioned
+"WARMING UP" — which is what every portal reviewer saw first. Capture at a high score
+with a bright theme, never from the opening seconds.
+
 ## Files
 
 - `index.html` — game page (SEO meta, structured data, AdSense, CMP)

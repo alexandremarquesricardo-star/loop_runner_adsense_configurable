@@ -280,7 +280,7 @@ function renderHtml(dateStr, rows) {
 
     <section style="margin-top:28px;">
       <h2 style="font-size:18px;">About Loop Runner Daily Run</h2>
-      <p style="font-size:15px; line-height:1.65; opacity:.9;">Loop Runner is a free, instant-play browser arcade. Daily Run is a 24-hour event where every player worldwide shares the exact same seed — the same enemy spawn order, the same powerups, the same boss positions at the 5,000 / 15,000 / 30,000-point thresholds. The leaderboard is single-pool worldwide. There is no skin shop, no premium tier, and no rewarded ads on the main site: the only currency is your score. Try the eight rotating themes (Jurassic, Cyberpunk, Deep Sea, Underworld, Mythical, Cosmic, Glitch, Steampunk), chain combos, time your reloads, and stack roguelite upgrade picks every 9 thresholds — pierce, ring burst, crit, time-warp, magnet, hyper-velocity, and more.</p>
+      <p style="font-size:15px; line-height:1.65; opacity:.9;">Loop Runner is a free, instant-play browser arcade. Daily Run is a 24-hour event where every player worldwide shares the exact same seed — the same enemy spawn order, the same powerups, the same boss positions at the 5,000 / 15,000 / 30,000-point thresholds. The leaderboard is single-pool worldwide. There is no skin shop, no premium tier, and no rewarded ads on the main site: the only currency is your score. Try the eight rotating themes (Cyberpunk, Deep Sea, Underworld, Mythical, Cosmic, Glitch, Steampunk, Jurassic), chain combos, time your reloads, and stack roguelite upgrade picks every 9 thresholds — pierce, ring burst, crit, time-warp, magnet, hyper-velocity, and more.</p>
     </section>
 
     <footer class="da-foot">
