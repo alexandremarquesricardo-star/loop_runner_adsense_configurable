@@ -65,6 +65,23 @@
   function getLS(k, fallback){ try{ const v = localStorage.getItem(k); return v===null? fallback: v; }catch{ return fallback; } }
   function setLS(k, v){ try{ localStorage.setItem(k, v); }catch{} }
 
+  /* ====== season migration ====== */
+  // Season 2 rebalanced the combo curve (1.4 -> 1.08 with a 2.5s chain window), so a personal
+  // best set under the old curve is unreachable now — a full run lands in the tens of thousands
+  // against season-1 bests in the hundreds of millions. Left alone, every returning player would
+  // never see 'New Best!' again and the local progression loop would be dead. The old values are
+  // archived rather than dropped, matching the server side where season 1 stays in the table.
+  const SEASON_ID = '2';
+  if (getLS('lr_season', '1') !== SEASON_ID) {
+    const prevBest = getLS('lr_best', '0');
+    const prevDaily = getLS('lr_daily', '0');
+    if (Number(prevBest) > 0) setLS('lr_best_s1', prevBest);
+    if (Number(prevDaily) > 0) setLS('lr_daily_s1', prevDaily);
+    setLS('lr_best', '0');
+    setLS('lr_daily', '0');
+    setLS('lr_season', SEASON_ID);
+  }
+
   /* ====== state ====== */
   const state = {
     running: false,
