@@ -75,7 +75,7 @@
     best: Number(getLS('lr_best', 0)),
     dailyBest: Number(getLS('lr_daily', 0)),
     spawnTimer: 0,
-    spawnInterval: 1.1,
+    spawnInterval: 0.75,
     dailyMode: false,
     fireRounds: 3,
     maxFireRounds: 3,
@@ -106,12 +106,6 @@
   /* ====== Theme system — visual era rotates every 3 min ====== */
   const THEME_DURATION = 180;
   const THEMES = [
-    { key: 'jurassic',  name: 'JURASSIC',   nebulae: [
-        { baseX: 0.22, baseY: 0.30, color: 'rgba(180,120, 60,', radius: 0.55, speed: 0.012 },
-        { baseX: 0.78, baseY: 0.65, color: 'rgba(120,180, 80,', radius: 0.50, speed: 0.018 },
-        { baseX: 0.55, baseY: 0.18, color: 'rgba(220,170, 90,', radius: 0.40, speed: 0.022 },
-        { baseX: 0.30, baseY: 0.82, color: 'rgba( 90,140, 60,', radius: 0.42, speed: 0.015 },
-    ]},
     { key: 'cyberpunk', name: 'CYBERPUNK',  nebulae: [
         { baseX: 0.22, baseY: 0.30, color: 'rgba(120, 60, 200,', radius: 0.55, speed: 0.012 },
         { baseX: 0.78, baseY: 0.65, color: 'rgba( 60,180, 220,', radius: 0.50, speed: 0.018 },
@@ -153,6 +147,12 @@
         { baseX: 0.78, baseY: 0.65, color: 'rgba(140, 90, 50,', radius: 0.55, speed: 0.012 },
         { baseX: 0.55, baseY: 0.18, color: 'rgba(220,170,100,', radius: 0.40, speed: 0.018 },
         { baseX: 0.30, baseY: 0.82, color: 'rgba( 90, 60, 40,', radius: 0.50, speed: 0.013 },
+    ]},
+    { key: 'jurassic',  name: 'JURASSIC',   nebulae: [
+        { baseX: 0.22, baseY: 0.30, color: 'rgba(180,120, 60,', radius: 0.55, speed: 0.012 },
+        { baseX: 0.78, baseY: 0.65, color: 'rgba(120,180, 80,', radius: 0.50, speed: 0.018 },
+        { baseX: 0.55, baseY: 0.18, color: 'rgba(220,170, 90,', radius: 0.40, speed: 0.022 },
+        { baseX: 0.30, baseY: 0.82, color: 'rgba( 90,140, 60,', radius: 0.42, speed: 0.015 },
     ]},
   ];
   function currentTheme() { return THEMES[state.themeIdx % THEMES.length]; }
@@ -287,7 +287,7 @@
     let title;
     let body = '';
     if (cc && Number.isFinite(cc.beat)) {
-      const beat = cc.beat | 0;
+      const beat = Math.floor(cc.beat);
       const rival = (cc.from || 'A friend').toString().slice(0, 20);
       const delta = score - beat;
       if (delta > 0) {
@@ -773,7 +773,7 @@
     addShockwave(e.x, e.y, '#ff4422', 220, 0.7, 6);
   }
   function maybeSpawnBoss() {
-    const score = state.score | 0;
+    const score = Math.floor(state.score);
     for (const cfg of BOSS_THRESHOLDS) {
       if (score >= cfg.score && !runFlags.bossesSpawned.has(cfg.score)) {
         runFlags.bossesSpawned.add(cfg.score);
@@ -783,7 +783,7 @@
   }
 
   function checkRecordTriggers() {
-    const score = state.score | 0;
+    const score = Math.floor(state.score);
 
     // Score milestones (once per run, once per threshold)
     for (const m of SCORE_MILESTONES) {
@@ -971,12 +971,12 @@
     { key:'magnet',      maxLvl:1, name:'Powerup Magnet',  desc:'Powerups drift toward you when nearby',    icon:'◉' },
     { key:'timeWarp',    maxLvl:1, name:'Time Warp',       desc:'0.15s slow-mo on every kill',              icon:'⌛' },
   ];
-  const UPGRADE_THRESHOLDS = [1500, 3500, 6500, 10500, 16000, 23000, 33000, 47000, 65000];
+  const UPGRADE_THRESHOLDS = [500, 1400, 3000, 5500, 9000, 14000, 21000, 32000, 48000];
 
   function maybeShowUpgrade() {
     if (!state.running) return;
     const next = UPGRADE_THRESHOLDS[state.picksTaken];
-    if (next === undefined || (state.score | 0) < next) return;
+    if (next === undefined || (Math.floor(state.score)) < next) return;
 
     // Filter to upgrades still under their max level
     const available = UPGRADE_POOL.filter(u => (state.upgrades[u.key] || 0) < u.maxLvl);
@@ -1031,7 +1031,7 @@
       const r = await fetchWithTimeout(`${SB_URL}?${params.toString()}`, { headers: SB_HEADERS }, 5000);
       if (r.ok) {
         const rows = await r.json();
-        runFlags.topScores = rows.map(x => x.score | 0).filter(s => s > 0);
+        runFlags.topScores = rows.map(x => Math.floor(x.score)).filter(s => s > 0);
       }
     } catch { /* offline — rank-tier banners just won't fire */ }
   }
@@ -1042,11 +1042,11 @@
    */
   const ENEMY_TYPES = {
     grunt:    { unlockAt:   0, weight: 12, scoreMul: 1.0 },
-    swarmer:  { unlockAt:  10, weight:  4, scoreMul: 0.6 },
-    splitter: { unlockAt:  25, weight:  3, scoreMul: 1.8 },
-    charger:  { unlockAt:  45, weight:  3, scoreMul: 2.5 },
-    shielder: { unlockAt:  70, weight:  3, scoreMul: 2.2 },
-    orbiter:  { unlockAt: 100, weight:  2, scoreMul: 2.8 },
+    swarmer:  { unlockAt:   4, weight:  4, scoreMul: 0.6 },
+    splitter: { unlockAt:  10, weight:  3, scoreMul: 1.8 },
+    charger:  { unlockAt:  18, weight:  3, scoreMul: 2.5 },
+    shielder: { unlockAt:  28, weight:  3, scoreMul: 2.2 },
+    orbiter:  { unlockAt:  40, weight:  2, scoreMul: 2.8 },
   };
   const FIRST_SEEN_BANNER = {
     swarmer:  ['SWARM INCOMING',        'good'],
@@ -1759,7 +1759,7 @@
     const rival = (cc.from || 'A friend').toString().slice(0, 20);
     challengeHudEl.style.display = '';
     challengeHudFromEl.innerHTML = `🎯 <span class="ch-from">${escapeHtml(rival)}</span>:`;
-    challengeHudBeatEl.innerHTML = `<span class="ch-beat">${(cc.beat | 0).toLocaleString()}</span>`;
+    challengeHudBeatEl.innerHTML = `<span class="ch-beat">${(Math.floor(cc.beat)).toLocaleString()}</span>`;
     challengeHudYouEl.innerHTML = '';
   }
 
@@ -1768,8 +1768,8 @@
     if (!challengeHudEl || challengeHudEl.style.display === 'none') return;
     const cc = state.challengeContext;
     if (!cc) return;
-    const my = state.score | 0;
-    const beat = cc.beat | 0;
+    const my = Math.floor(state.score);
+    const beat = Math.floor(cc.beat);
     const cls = my > beat ? 'ch-you win' : (my === beat ? 'ch-you' : 'ch-you lose');
     challengeHudYouEl.innerHTML = `· you <span class="${cls}">${my.toLocaleString()}</span>`;
   }
@@ -1867,7 +1867,7 @@
     const params = new URLSearchParams();
     params.set('c', String(summary.seed >>> 0));
     if (summary.name) params.set('from', summary.name);
-    if (summary.score) params.set('beat', String(summary.score | 0));
+    if (summary.score) params.set('beat', String(Math.floor(summary.score)));
     if (summary.themeKey) params.set('theme', summary.themeKey);
     if (summary.country && summary.country !== 'XX') params.set('country', summary.country);
     return base + '?' + params.toString();
@@ -2224,7 +2224,7 @@
       octx.fillStyle = '#7cfdd6';
       octx.fillText('playloop.run', pad, frameH - pad);
       if (summary) {
-        const label = `${(summary.score | 0).toLocaleString()} pts`;
+        const label = `${(Math.floor(summary.score)).toLocaleString()} pts`;
         octx.font = `800 ${fs}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
         octx.fillStyle = '#ffffff';
         octx.fillText(label, frameW - octx.measureText(label).width - pad, frameH - pad);
@@ -2514,7 +2514,9 @@
     state.score = 0;
     state.combo = 0;
     state.spawnTimer = 0;
-    state.spawnInterval = 1.1;
+    state.spawnInterval = 0.75;
+    powerupSpawnTimer = 0;
+    powerupsSpawned = 0;
     state.fireRounds = state.maxFireRounds;
     state.rechargeTimer = 0;
 
@@ -2611,7 +2613,7 @@
 
   // Finalize the run: persist history, update bests, submit score, surface the LB.
   function commitGameOver() {
-    const score = state.score | 0;
+    const score = Math.floor(state.score);
     let isPB = false;
 
     // Persist this run to local history (last 20). Used by the personal-history chart in the LB modal.
@@ -2712,7 +2714,7 @@
       if (!adsLive()) return false;            // no ad can serve → no offer (no UI flicker)
       if ((state.revivesUsed || 0) >= 1) return false; // one revive per run
       if (state.dailyMode) return false;       // keep the shared-seed daily board revive-free
-      if ((state.score | 0) < 200) return false; // not worth an ad on a tiny run
+      if ((Math.floor(state.score)) < 200) return false; // not worth an ad on a tiny run
       return true;
     }
 
@@ -2762,7 +2764,7 @@
   }
 
   function offerRevive() {
-    const score = state.score | 0;
+    const score = Math.floor(state.score);
     setOverlayRevive(score);
     // Continue button stays hidden until a rewarded ad is confirmed available.
     if (ui.btnRevive) { ui.btnRevive.style.display = 'none'; ui.btnRevive.disabled = false; }
@@ -2838,7 +2840,7 @@
     try {
       const body = {
         name: name.slice(0, 20),
-        score: state.score | 0,
+        score: Math.floor(state.score),
         mode: (state.dailyMode ? 'daily' : 'normal'),
         country: userCountry
       };
@@ -2941,6 +2943,7 @@
   /* ====== Loop ====== */
   let last = performance.now();
   let powerupSpawnTimer = 0;
+  let powerupsSpawned = 0;
 
   function loop() {
     requestAnimationFrame(loop);
@@ -3028,8 +3031,8 @@
       addShake(10);
     }
 
-    if (((state.score | 0) % 10) === 0) {
-      ui.score.textContent = `Score: ${state.score | 0}`;
+    if (((Math.floor(state.score)) % 10) === 0) {
+      ui.score.textContent = `Score: ${Math.floor(state.score)}`;
       updateChallengeHudLive();
     }
 
@@ -3049,22 +3052,25 @@
       }
     }
 
-    // Spawn enemies — interval shortens as difficulty rises (1.1s → ~0.42s by t=120)
+    // Spawn enemies — interval shortens as difficulty rises (0.75s → ~0.42s by t=120)
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0) {
       spawnEnemy();
       const d = difficulty01();
-      state.spawnInterval = lerp(1.1, 0.42, d);
-      // Past 60s, sometimes burst-spawn a second enemy at the same beat (skip when the
+      state.spawnInterval = lerp(0.75, 0.42, d);
+      // Past 25s, sometimes burst-spawn a second enemy at the same beat (skip when the
       // governor is shedding load so we don't fight the frame budget it's trying to free).
-      if (state.time > 60 && perf.level >= 1 && Math.random() < 0.15 + d * 0.15) spawnEnemy();
+      if (state.time > 25 && perf.level >= 1 && Math.random() < 0.15 + d * 0.15) spawnEnemy();
       state.spawnTimer = state.spawnInterval;
     }
 
     // Spawn power-ups
     powerupSpawnTimer += dt;
-    if (powerupSpawnTimer >= 25 && powerups.length === 0) { // Every 25 seconds
+    // First drop lands fast so a new player gets a pickup inside the opening seconds;
+    // after that it settles into a steadier cadence.
+    if (powerupSpawnTimer >= (powerupsSpawned === 0 ? 6 : 18) && powerups.length === 0) {
       spawnPowerup();
+      powerupsSpawned++;
       powerupSpawnTimer = 0;
     }
 
@@ -3338,7 +3344,7 @@
         const add = Math.floor(10 * mult * Math.pow(1.4, state.combo - 1));
         state.score += add;
         ui.combo.textContent = `Combo: ${state.combo}`;
-        ui.score.textContent = `Score: ${state.score | 0}`;
+        ui.score.textContent = `Score: ${Math.floor(state.score)}`;
         updateChallengeHudLive();
         const floatColor = isCrit
           ? '#ff6688'
@@ -3441,7 +3447,7 @@
           enemyBullets.splice(i, 1); i--;
           shotDown = true;
           state.score += 5;
-          ui.score.textContent = `Score: ${state.score | 0}`;
+          ui.score.textContent = `Score: ${Math.floor(state.score)}`;
           addFloater(eb.x, eb.y - 6, '+5', '#ff6688');
           for (let k = 0; k < 8; k++) {
             addParticle(eb.x, eb.y, '#ff6688', rnd(1, 2.5), 0.22, 60, 220);
@@ -3507,7 +3513,7 @@
           addFlash(0.28, '136,255,204');
         } else if (p.type === 'multiplier') {
           state.score *= 3;
-          ui.score.textContent = `Score: ${state.score | 0}`;
+          ui.score.textContent = `Score: ${Math.floor(state.score)}`;
 
           for (let k = 0; k < 28; k++) {
             addParticle(p.x, p.y, '#ffd700', rnd(1.5, 4.5), rnd(0.4, 0.9), 60, 320);
@@ -6262,6 +6268,111 @@
     });
   }
 
+  /* ====== Capture harness (dev only) ====== */
+  // Inert unless the URL carries ?capture=1, so this never runs for a real player.
+  // tools/capture.mjs drives it over CDP to pose the game at a chosen theme, score and
+  // enemy density for store art — far more reliable than hand-playing a run to that
+  // state and hoping the frame happens to look right.
+  // Localhost-only: the hook can set an arbitrary score, and the leaderboard has no
+  // server-side validation, so exposing it on playloop.run would make score forgery a
+  // one-line URL. The capture driver serves the site from 127.0.0.1, so this still fires.
+  if (new URLSearchParams(location.search).has('capture') &&
+      ['localhost', '127.0.0.1', '::1'].includes(location.hostname)) {
+    window.__lrCapture = {
+      themes: THEMES.map((t) => t.key),
+      pose(opt = {}) {
+        const { theme = 'cyberpunk', score = 62400, combo = 34, time = 210, enemies: n = 12 } = opt;
+        startGame(false);
+        hideOverlay();
+        state.score = score;
+        state.combo = combo;
+        state.time = time;              // pins the difficulty ramp at full
+        state.best = Math.max(state.best, score);
+        state.dailyBest = Math.max(state.dailyBest, Math.round(score * 0.72));
+        Object.assign(state.upgrades, { ringBurst: 3, pierce: 2, heavyCal: 1, critical: 2 });
+        const i = THEMES.findIndex((t) => t.key === theme);
+        state.themeIdx = i < 0 ? 0 : i;
+        state.themeTimer = 0;           // keep the era from flipping mid-capture
+        // Stripping the nav/ad chrome resizes the canvas after load, so mouse still holds
+        // the pre-resize centre and the ship drifts into a corner. Re-centre both.
+        mouse.x = W / 2; mouse.y = H / 2;
+        player.x = W / 2; player.y = H / 2;
+        player.vx = 0; player.vy = 0;
+        this.spawn(n);
+        state.maxFireRounds = 9;
+        state.fireRounds = 9;
+        updateFireIndicator();
+        player.invuln = 9e9;            // nobody is driving during a capture; collisions are skipped while > 0
+        this.hud();
+        return this.stats();
+      },
+      spawn(n = 10) { for (let k = 0; k < n; k++) spawnEnemy(); return enemies.length; },
+      // The HUD only repaints combo/best/daily on kill events, so a posed frame has to
+      // push them itself — otherwise the cover shows a maxed score beside 'Combo: 0'.
+      hud() {
+        ui.combo.textContent = 'Combo: ' + state.combo;
+        ui.best.textContent  = 'Best: '  + state.best;
+        ui.daily.textContent = 'Daily: ' + state.dailyBest;
+      },
+      // The settle runs the game unattended, so it racks up score and trips milestone
+      // banners whose full-screen flash tints the entire frame. Reset the cosmetics and
+      // pin score/combo back to the intended values immediately before the shot.
+      calm(opt = {}) {
+        const { score = 62400, combo = 34 } = opt;
+        banners.active = null; banners.queue.length = 0;
+        effects.flash = 0; effects.shake = 0; effects.hitStop = 0;
+        floaters.length = 0; flashes.length = 0; shockwaves.length = 0;
+        state.score = score; state.combo = combo;
+        this.hud();
+      },
+      // First-seen tutorial banners ('SPLITTERS') are noise on a store cover.
+      clearBanners() { banners.active = null; banners.queue.length = 0; },
+      fire(times = 3) { for (let i = 0; i < times; i++) fireBullet(); },
+      // render() honours state.paused without drawing any pause chrome, so this halts the
+      // simulation while the frame stays fully drawn — otherwise kills keep landing (and
+      // score keeps exploding) in the frames between calm() and the screenshot.
+      freeze() { state.paused = true; },
+      // Offline render. With state.paused true the rAF loop only redraws, so the driver can
+      // advance the world by an exact dt per captured frame. Headless software-GL renders far
+      // slower than real time; stepping decouples clip framerate from wall-clock entirely.
+      step(dt = 1 / 30, t = 0) {
+        mouse.x = W * (0.5 + 0.34 * Math.sin(t * 0.9));
+        mouse.y = H * (0.5 + 0.30 * Math.sin(t * 1.37 + 1.1));
+        if (state.fireRounds > 0 && Math.random() < 0.5) fireBullet();
+        if (enemies.length < 26) spawnEnemy();
+        player.invuln = 9e9;
+        // Nothing ever kills the autopilot, so the combo would climb without bound and the
+        // HUD would show a score no real run produces. Cap it at a plausible chain length.
+        if (state.combo > 45) state.combo = 45;
+        // The autopilot never dies, so it farms at max combo indefinitely and the score
+        // runs to billions — an artifact of god mode, not anything a real run produces.
+        // Pin it to a believable ramp so the clip shows a representative score.
+        state.score = 48000 + t * 5200;
+        banners.active = null; banners.queue.length = 0;
+        update(dt);
+        render();
+      },
+      // Steers the ship along a lissajous path and fires on a cadence, so a recorded
+      // clip reads as someone playing rather than a stationary turret in a shooting gallery.
+      autopilot(on = true) {
+        if (this._ap) { clearInterval(this._ap); this._ap = null; }
+        if (!on) return;
+        let t = 0;
+        this._ap = setInterval(() => {
+          t += 0.05;
+          mouse.x = W * (0.5 + 0.34 * Math.sin(t * 0.9));
+          mouse.y = H * (0.5 + 0.30 * Math.sin(t * 1.37 + 1.1));
+          if (state.fireRounds > 0 && Math.random() < 0.55) fireBullet();
+          if (enemies.length < 26) spawnEnemy();
+          player.invuln = 9e9;
+        }, 50);
+      },
+      stats() {
+        return { theme: currentTheme().key, score: Math.floor(state.score), combo: state.combo,
+                 enemies: enemies.length, bullets: bullets.length, particles: particles.length };
+      },
+    };
+  }
   /* ====== Boot ====== */
   CG.loadingStart();
   resize();
